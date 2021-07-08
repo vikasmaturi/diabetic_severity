@@ -4,6 +4,7 @@ author: "Vikas Maturi"
 date: 2021-07-07
 output: 
   github_document:
+    md_extension: +gfm_auto_identifiers
     toc: true
     toc_depth: 6
 ---
@@ -258,7 +259,7 @@ all_va_prog <-
 
 ```
 
-## Timeseries Analysis
+## Timeseries aanalysis of visual acuity
 
 ```{r}
 # filter out the necesssary data to conduct time series analysis
@@ -300,11 +301,10 @@ timeseries_analysis <-
 ```
 
 
-
-
 #### Timeseries VA by race and severity
 
 ```{r}
+## calculate change in va over time for people in each severity group/race
 severity_race_va <-
   timeseries_analysis %>% 
   group_by(race_ethnicity, severity_score) %>% 
@@ -313,22 +313,6 @@ severity_race_va <-
 
 ```
 
-```{r}
-# average two year visual acuity by starting severity and race
-
-severity_race_va %>% 
-  filter(timepoint == "two_year_va") %>% 
-  filter(severity_score < 80) %>% 
-  ggplot(aes(x = severity_score, y = va_plot, color = race_ethnicity)) +
-  geom_point() +
-  geom_line(aes(group = race_ethnicity)) +
-  theme_light() + 
-  labs(
-    title = "VA at two year by race and severity score", 
-    x = "Severity score", 
-    y = "Two-year visual acuity"
-  )
-```
 
 ```{r}
 ## density chart of distribution of severity scores, by race
@@ -338,18 +322,29 @@ timeseries_analysis %>%
   theme_light()
 ```
 
+This chart shows the density of patients by severity score. There are two peaks - first at around severity scores between 40-48, and a second at severity scores betewen 73-78. These numbers are generally aligned to categorizations of moderate NPDR (with and without edema), and PDR (with and without edema).
+
 
 ```{r}
+# plot change in visual acuity by race at one and two yeaars
 severity_race_va %>% 
   filter(severity_score == 73) %>% 
   ggplot(aes(x = timepoint, y = va_plot, color = race_ethnicity)) +
   geom_point() +
   geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint == "two_year_va", severity_score %in% c(73)),
+    aes(label = count)
+  ) +
   theme_light() + 
   labs(
-    title = "VA at baseline, one, and two years by race at severity score 73"
+    title = "VA at baseline, one, and two years by race at severity score 73",
+    y = "Visual acuity"
   )
 ```
+
+Patients with starting severity score of 73, split by race, with visual acuity measured over time. It appears that visual acuity changes seem to follow similar trends (i.e., net change is quite similar), but White people start with a visual acuity 1 letter higher than Black people and two letters higher than Hispanic people. 
+
 
 ```{r}
 severity_race_va %>% 
@@ -363,6 +358,34 @@ severity_race_va %>%
     title = "VA at baseline, one, and two years by race and severity score"
   ) 
 ```
+
+
+
+
+```{r}
+# average two year visual acuity by starting severity and race
+
+severity_race_va %>% 
+  filter(timepoint == "two_year_va") %>% 
+  # filtering out severity scores larger than 79, as there are less than 50 people in each category
+  filter(severity_score < 80) %>% 
+  ggplot(aes(x = severity_score, y = va_plot, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint == "two_year_va", severity_score %in% c(35, 78)),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA at two years by race and severity score", 
+    x = "Severity score", 
+    y = "Two-year visual acuity"
+  )
+```
+
+
+This chart confirms our expectation that visual acuity two years after index date typically is lower for patients with a higher starting severity score. 
 
 #### Timeseries VA by insurance and race
 
@@ -423,8 +446,94 @@ gender_race_va %>%
     title = "VA at baseline, one, and two years by race and gender"
   ) 
 ```
+
 Female patients appear to hvae lower baseline VA as compared to their male counterparts of the same race. The raw gain or loss in VA over time appears to be similar between genders within racial groups.
 
+
+```{r}
+
+race_va <-
+  timeseries_analysis %>% 
+  # round baseline data to nearest multiple of 5
+  mutate(
+    baseline_va_r = plyr::round_any(baseline_va_letter, 5)
+  ) %>% 
+  # group patients by race and same baseline va data
+  group_by(baseline_va_r, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+```
+
+
+```{r}
+race_va %>%
+  filter(count > 25) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = baseline_va_r, linetype = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  scale_color_viridis_c() +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at the same baseline visual acuity"
+  ) 
+```
+
+This graph is hard to interpret, but is showing the differential progression of va for people of different races that start at the same level of baseline visual acuity. The next graphs dive into this daata more closely.
+
+This graph takes on an interesting shape. It indicates that people that start with higher visual acuity are likely to experience a decline in visual acuity, aand those starting at the lowest end of the spectrum of visuala acuity are likely to make gains.
+
+```{r}
+race_va %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r %in% c(65, 70, 75)) %>% 
+  mutate(baseline_va_r = as.factor(baseline_va_r)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(65, 70, 75)) %>% mutate(baseline_va_r = as.factor(baseline_va_r)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(64, 78, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~65, ~70, ~75 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+We observe that Hispanic patients experience starting with ~65 visual acuity, they experiences much less gain in vision over two years as compared to their White and Black counterprats. White people appear to gain two letters, while Hispanic people gain less than hallf a letter.
+
+Exemplifying the trends from above, we also se that those who start with VA at ~75 all experience substantial decline, with those at other starting points experiencing less severe declines or even making gains.
+
+
+```{r}
+race_va %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r %in% c(50, 55, 60)) %>% 
+  mutate(baseline_va_r = as.factor(baseline_va_r)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(50, 55, 60)) %>% mutate(baseline_va_r = as.factor(baseline_va_r)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(40, 65, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~50, ~55, ~60 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+
+At this level, the dispairities in improvements are much more stark. Whie people with baseline va of 50 are 3 additional points of VA gain as compared to their Black and Hispanic counterparts. Similar, though not as stark disparities are present for people with starting VA at 55 and 60.
+
+
+Further analysis is required to control for the specific condition associated that the patient is diagnosed with. 
 
 
 ## Injection data
@@ -535,7 +644,7 @@ injection_clean <-
 
 
 
-## Analysis
+## Baseline analysis
 
 #### Dataset for baseline analysis
 

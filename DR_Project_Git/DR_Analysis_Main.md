@@ -248,7 +248,7 @@ all_va_prog <-
   left_join(all %>% select(first_problem_code, severity_score, gender, race_ethnicity, first_dr_age, age_group, insurance, region, smoke_status, new_class, valid_class, pt_code_name, eye, index_date, baseline_va_letter, proc_group_28, proc_group_365, proc_group_any, vegf_group_28, vegf_group_365, vegf_group_any, retina_speciality, baseline_iop, pdr_group, cat_eyes), by = c("patient_guid" = "pt_code_name", "va_eye" = "eye", "index_date"))
 ```
 
-## Timeseries Analysis
+## Timeseries aanalysis of visual acuity
 
 ``` r
 # filter out the necesssary data to conduct time series analysis
@@ -291,31 +291,13 @@ timeseries_analysis <-
 #### Timeseries VA by race and severity
 
 ``` r
+## calculate change in va over time for people in each severity group/race
 severity_race_va <-
   timeseries_analysis %>% 
   group_by(race_ethnicity, severity_score) %>% 
   summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
 ```
-
-``` r
-# average two year visual acuity by starting severity and race
-
-severity_race_va %>% 
-  filter(timepoint == "two_year_va") %>% 
-  filter(severity_score < 80) %>% 
-  ggplot(aes(x = severity_score, y = va_plot, color = race_ethnicity)) +
-  geom_point() +
-  geom_line(aes(group = race_ethnicity)) +
-  theme_light() + 
-  labs(
-    title = "VA at two year by race and severity score", 
-    x = "Severity score", 
-    y = "Two-year visual acuity"
-  )
-```
-
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 ## density chart of distribution of severity scores, by race
@@ -325,21 +307,39 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+This chart shows the density of patients by severity score. There are
+two peaks - first at around severity scores between 40-48, and a second
+at severity scores betewen 73-78. These numbers are generally aligned to
+categorizations of moderate NPDR (with and without edema), and PDR (with
+and without edema).
 
 ``` r
+# plot change in visual acuity by race at one and two yeaars
 severity_race_va %>% 
   filter(severity_score == 73) %>% 
   ggplot(aes(x = timepoint, y = va_plot, color = race_ethnicity)) +
   geom_point() +
   geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint == "two_year_va", severity_score %in% c(73)),
+    aes(label = count)
+  ) +
   theme_light() + 
   labs(
-    title = "VA at baseline, one, and two years by race at severity score 73"
+    title = "VA at baseline, one, and two years by race at severity score 73",
+    y = "Visual acuity"
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+Patients with starting severity score of 73, split by race, with visual
+acuity measured over time. It appears that visual acuity changes seem to
+follow similar trends (i.e., net change is quite similar), but White
+people start with a visual acuity 1 letter higher than Black people and
+two letters higher than Hispanic people.
 
 ``` r
 severity_race_va %>% 
@@ -354,7 +354,35 @@ severity_race_va %>%
   ) 
 ```
 
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+# average two year visual acuity by starting severity and race
+
+severity_race_va %>% 
+  filter(timepoint == "two_year_va") %>% 
+  # filtering out severity scores larger than 79, as there are less than 50 people in each category
+  filter(severity_score < 80) %>% 
+  ggplot(aes(x = severity_score, y = va_plot, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint == "two_year_va", severity_score %in% c(35, 78)),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA at two years by race and severity score", 
+    x = "Severity score", 
+    y = "Two-year visual acuity"
+  )
+```
+
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+This chart confirms our expectation that visual acuity two years after
+index date typically is lower for patients with a higher starting
+severity score.
 
 #### Timeseries VA by insurance and race
 
@@ -418,9 +446,111 @@ gender_race_va %>%
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
 Female patients appear to hvae lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
 appears to be similar between genders within racial groups.
+
+``` r
+race_va <-
+  timeseries_analysis %>% 
+  # round baseline data to nearest multiple of 5
+  mutate(
+    baseline_va_r = plyr::round_any(baseline_va_letter, 5)
+  ) %>% 
+  # group patients by race and same baseline va data
+  group_by(baseline_va_r, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+```
+
+``` r
+race_va %>%
+  filter(count > 25) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = baseline_va_r, linetype = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  scale_color_viridis_c() +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at the same baseline visual acuity"
+  ) 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+This graph is hard to interpret, but is showing the differential
+progression of va for people of different races that start at the same
+level of baseline visual acuity. The next graphs dive into this daata
+more closely.
+
+This graph takes on an interesting shape. It indicates that people that
+start with higher visual acuity are likely to experience a decline in
+visual acuity, aand those starting at the lowest end of the spectrum of
+visuala acuity are likely to make gains.
+
+``` r
+race_va %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r %in% c(65, 70, 75)) %>% 
+  mutate(baseline_va_r = as.factor(baseline_va_r)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(65, 70, 75)) %>% mutate(baseline_va_r = as.factor(baseline_va_r)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(64, 78, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~65, ~70, ~75 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+We observe that Hispanic patients experience starting with ~65 visual
+acuity, they experiences much less gain in vision over two years as
+compared to their White and Black counterprats. White people appear to
+gain two letters, while Hispanic people gain less than hallf a letter.
+
+Exemplifying the trends from above, we also se that those who start with
+VA at ~75 all experience substantial decline, with those at other
+starting points experiencing less severe declines or even making gains.
+
+``` r
+race_va %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r %in% c(50, 55, 60)) %>% 
+  mutate(baseline_va_r = as.factor(baseline_va_r)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(50, 55, 60)) %>% mutate(baseline_va_r = as.factor(baseline_va_r)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(40, 65, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~50, ~55, ~60 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+At this level, the dispairities in improvements are much more stark.
+Whie people with baseline va of 50 are 3 additional points of VA gain as
+compared to their Black and Hispanic counterparts. Similar, though not
+as stark disparities are present for people with starting VA at 55 and
+60.
+
+Further analysis is required to control for the specific condition
+associated that the patient is diagnosed with.
 
 ## Injection data
 
@@ -521,7 +651,7 @@ injection_clean <-
   select(pt_code_name, eye, eye1, eye2, code_type, index_date, first_problem_code, severity_score, race_ethnicity, first_dr_age, everything())
 ```
 
-## Analysis
+## Baseline analysis
 
 #### Dataset for baseline analysis
 
@@ -566,12 +696,12 @@ severity_race %>% kable()
 
 | race\_ethnicity           |  average | count |
 | :------------------------ | -------: | ----: |
-| Hispanic                  | 60.73258 | 20537 |
-| Other                     | 58.98754 |  3210 |
-| Unknown                   | 58.10541 | 14021 |
-| Black or African American | 57.32034 | 18218 |
-| Asian                     | 56.93627 |  3860 |
-| Caucasian                 | 55.97076 | 74042 |
+| Hispanic                  | 60.69582 | 20537 |
+| Other                     | 58.99377 |  3210 |
+| Unknown                   | 58.07132 | 14021 |
+| Black or African American | 57.34417 | 18218 |
+| Asian                     | 56.91192 |  3860 |
+| Caucasian                 | 55.95708 | 74042 |
 
 Hispanic people have the highest severity of all racial groups, nearaly
 5 points higher than White people. Black, Asian, and Caucasian people
@@ -595,16 +725,16 @@ severity_race_reg
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity            region    average count
     ##    <chr>                     <chr>       <dbl> <int>
-    ##  1 Hispanic                  West         62.2  7051
-    ##  2 Hispanic                  Midwest      61.2  1458
-    ##  3 Hispanic                  South        60.6  8703
-    ##  4 Other                     West         60.5  1197
-    ##  5 Unknown                   West         59.9  4700
-    ##  6 Other                     Midwest      58.5   447
-    ##  7 Other                     South        58.3  1093
-    ##  8 Unknown                   South        58.3  4725
-    ##  9 Hispanic                  Northeast    58.2  2626
-    ## 10 Black or African American South        57.8 10623
+    ##  1 Hispanic                  West         62.2  7055
+    ##  2 Hispanic                  Midwest      61.1  1459
+    ##  3 Hispanic                  South        60.6  8696
+    ##  4 Other                     West         60.5  1194
+    ##  5 Unknown                   West         59.8  4700
+    ##  6 Other                     Midwest      58.6   449
+    ##  7 Unknown                   South        58.2  4716
+    ##  8 Other                     South        58.2  1098
+    ##  9 Hispanic                  Northeast    58.1  2627
+    ## 10 Black or African American South        57.8 10630
     ## # … with 20 more rows
 
 ``` r
@@ -621,7 +751,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -643,16 +773,16 @@ severity_race_age %>% head(10) %>% kable()
 
 | race\_ethnicity           | age\_group | avg\_severity | count |
 | :------------------------ | ---------: | ------------: | ----: |
-| Other                     |         35 |      70.62687 |    67 |
-| Asian                     |         25 |      70.54545 |    22 |
+| Other                     |         35 |      69.89552 |    67 |
 | Other                     |         25 |      69.47368 |    19 |
-| Hispanic                  |         35 |      68.59471 |   454 |
-| Hispanic                  |         30 |      68.26766 |   269 |
-| Hispanic                  |         25 |      68.23423 |   111 |
-| Unknown                   |         30 |      67.96916 |   227 |
-| Other                     |         30 |      67.95652 |    46 |
-| Black or African American |         25 |      67.43836 |    73 |
-| Asian                     |         30 |      67.18182 |    44 |
+| Asian                     |         25 |      68.50000 |    22 |
+| Hispanic                  |         35 |      68.49559 |   454 |
+| Other                     |         30 |      68.36957 |    46 |
+| Hispanic                  |         30 |      68.06320 |   269 |
+| Hispanic                  |         25 |      68.06306 |   111 |
+| Unknown                   |         30 |      67.94273 |   227 |
+| Black or African American |         25 |      67.09589 |    73 |
+| Caucasian                 |         35 |      66.81516 |  1385 |
 
 ``` r
 # graph severity by race and age group
@@ -668,7 +798,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -697,7 +827,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is ~1.5-2
 pts higher for Black people vs. Caucasian people, and ~3-4 pts higher
@@ -719,11 +849,11 @@ severity_reg %>% kable()
 
 | region    |  average |     n |
 | :-------- | -------: | ----: |
-| West      | 58.86380 | 27165 |
-| South     | 57.65373 | 53086 |
-| Midwest   | 56.08193 | 27464 |
-| Northeast | 55.82708 | 23675 |
-| NA        | 55.22538 |  2498 |
+| West      | 58.84087 | 27154 |
+| South     | 57.64241 | 53088 |
+| Midwest   | 56.08889 | 27450 |
+| Northeast | 55.80512 | 23691 |
+| NA        | 55.10739 |  2505 |
 
 Severity in the West does appear to be a few points higher than in other
 regions - perhaps due to a higher number of Hispanic people being from
@@ -747,16 +877,16 @@ severity_race_ins
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity insurance       average count
     ##    <chr>          <chr>             <dbl> <int>
-    ##  1 Other          Medicaid           62.9   351
-    ##  2 Hispanic       Govt               62.7   379
-    ##  3 Other          Govt               62.4   104
+    ##  1 Other          Govt               62.9   104
+    ##  2 Other          Medicaid           62.7   351
+    ##  3 Hispanic       Govt               62.6   379
     ##  4 Hispanic       Medicaid           61.8  2447
-    ##  5 Hispanic       Unknown/Missing    61.6  2490
+    ##  5 Hispanic       Unknown/Missing    61.5  2490
     ##  6 Unknown        Medicaid           60.8  1425
-    ##  7 Hispanic       Private            60.7  4905
+    ##  7 Hispanic       Private            60.6  4905
     ##  8 Caucasian      Medicaid           60.5  4016
-    ##  9 Hispanic       Medicare           60.3 10200
-    ## 10 Unknown        Govt               60.1   298
+    ##  9 Hispanic       Medicare           60.2 10200
+    ## 10 Unknown        Govt               60.2   298
     ## # … with 26 more rows
 
 ``` r
@@ -778,7 +908,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -800,11 +930,11 @@ severity_race_sex %>% head(5) %>% kable()
 
 | race\_ethnicity | gender  |  average | count |
 | :-------------- | :------ | -------: | ----: |
-| Hispanic        | Male    | 61.84665 | 10766 |
-| Hispanic        | Female  | 59.52116 |  9640 |
-| Other           | Male    | 59.46301 |  1568 |
-| Unknown         | Unknown | 59.21154 |    52 |
-| Other           | Female  | 58.58075 |  1610 |
+| Hispanic        | Male    | 61.84293 | 10766 |
+| Other           | Male    | 59.47513 |  1568 |
+| Hispanic        | Female  | 59.44606 |  9640 |
+| Unknown         | Unknown | 59.17308 |    52 |
+| Other           | Female  | 58.57143 |  1610 |
 
 ``` r
 # graphing severity by race and sex
@@ -822,7 +952,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -856,7 +986,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -877,20 +1007,20 @@ treatment_sev_race %>%
   arrange(desc(severity_score, race_ethnicity))
 ```
 
-    ## # A tibble: 269 x 5
+    ## # A tibble: 268 x 5
     ##    severity_score race_ethnicity            proc_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
     ##  1             85 Asian                     antivegf      0.8        4
     ##  2             85 Asian                     laser         0.2        1
-    ##  3             85 Black or African American antivegf      0.848     39
-    ##  4             85 Black or African American combo         0.0217     1
-    ##  5             85 Black or African American laser         0.130      6
-    ##  6             85 Caucasian                 antivegf      0.897     52
-    ##  7             85 Caucasian                 laser         0.103      6
-    ##  8             85 Hispanic                  antivegf      0.923     24
-    ##  9             85 Hispanic                  combo         0.0385     1
-    ## 10             85 Hispanic                  laser         0.0385     1
-    ## # … with 259 more rows
+    ##  3             85 Black or African American antivegf      0.833     40
+    ##  4             85 Black or African American combo         0.0208     1
+    ##  5             85 Black or African American laser         0.125      6
+    ##  6             85 Black or African American steroid       0.0208     1
+    ##  7             85 Caucasian                 antivegf      0.895     51
+    ##  8             85 Caucasian                 laser         0.105      6
+    ##  9             85 Hispanic                  antivegf      0.96      24
+    ## 10             85 Hispanic                  combo         0.04       1
+    ## # … with 258 more rows
 
 ``` r
 # Graphing likelihood of first treatment type by severity and race
@@ -908,7 +1038,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -931,7 +1061,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -963,15 +1093,15 @@ drug_sev_race %>%
     ##    severity_score race_ethnicity            vegf_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
     ##  1             85 Asian                     Avastin       1          4
-    ##  2             85 Black or African American Avastin       0.949     37
-    ##  3             85 Black or African American Eylea         0.0513     2
-    ##  4             85 Caucasian                 Avastin       0.788     41
-    ##  5             85 Caucasian                 Eylea         0.135      7
-    ##  6             85 Caucasian                 Lucentis      0.0769     4
-    ##  7             85 Hispanic                  Avastin       0.833     20
-    ##  8             85 Hispanic                  Eylea         0.125      3
-    ##  9             85 Hispanic                  Lucentis      0.0417     1
-    ## 10             85 Other                     Avastin       1          7
+    ##  2             85 Black or African American Avastin       0.9       36
+    ##  3             85 Black or African American Eylea         0.05       2
+    ##  4             85 Black or African American Lucentis      0.05       2
+    ##  5             85 Caucasian                 Avastin       0.804     41
+    ##  6             85 Caucasian                 Eylea         0.118      6
+    ##  7             85 Caucasian                 Lucentis      0.0784     4
+    ##  8             85 Hispanic                  Avastin       0.833     20
+    ##  9             85 Hispanic                  Eylea         0.125      3
+    ## 10             85 Hispanic                  Lucentis      0.0417     1
     ## # … with 253 more rows
 
 ``` r
@@ -988,7 +1118,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -1006,7 +1136,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -1030,7 +1160,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Avastin as compared to their Caucasian counterparts
@@ -1067,12 +1197,12 @@ drug_sev_race_ins %>%
     ##  2             85 Asian               Medicare    Avastin       1         1
     ##  3             85 Asian               Private     Avastin       1         1
     ##  4             85 Asian               Unknown/Mi… Avastin       1         1
-    ##  5             85 Black or African A… Medicaid    Avastin       1         3
+    ##  5             85 Black or African A… Medicaid    Avastin       0.75      3
     ##  6             85 Black or African A… Medicare    Avastin       0.895    17
-    ##  7             85 Black or African A… Private     Avastin       1        16
+    ##  7             85 Black or African A… Private     Avastin       0.938    15
     ##  8             85 Black or African A… Unknown/Mi… Avastin       1         1
     ##  9             85 Black or African A… Medicare    Eylea         0.105     2
-    ## 10             85 Caucasian           Govt        Avastin       1         1
+    ## 10             85 Black or African A… Medicaid    Lucentis      0.25      1
     ## # … with 1,202 more rows
 
 ``` r
@@ -1093,7 +1223,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -1114,7 +1244,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -1135,7 +1265,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -1154,21 +1284,21 @@ severity_race_vision <-
 severity_race_vision
 ```
 
-    ## # A tibble: 72 x 4
+    ## # A tibble: 71 x 4
     ## # Groups:   race_ethnicity [6]
-    ##    race_ethnicity            baseline_va_letter avg_severity count
-    ##    <chr>                                  <dbl>        <dbl> <int>
-    ##  1 Hispanic                                26           65.7   110
-    ##  2 Hispanic                                35           65.2  1160
-    ##  3 Hispanic                                40           65.1   454
-    ##  4 Hispanic                                50           63.6  1040
-    ##  5 Unknown                                 35           63.5   609
-    ##  6 Hispanic                                55.          63.1   966
-    ##  7 Unknown                                 40           63.0   245
-    ##  8 Caucasian                               26           63.0   312
-    ##  9 Caucasian                               45.0         62.8   351
-    ## 10 Black or African American               35           62.8   885
-    ## # … with 62 more rows
+    ##    race_ethnicity baseline_va_letter avg_severity count
+    ##    <chr>                       <dbl>        <dbl> <int>
+    ##  1 Hispanic                     35           65.1  1169
+    ##  2 Hispanic                     40           65.0   472
+    ##  3 Hispanic                     26           64.9   114
+    ##  4 Hispanic                     50           63.8  1037
+    ##  5 Unknown                      35           63.7   626
+    ##  6 Other                        35           63.5   167
+    ##  7 Hispanic                     55.          63.0   961
+    ##  8 Caucasian                    26           63.0   325
+    ##  9 Caucasian                    45.0         62.9   361
+    ## 10 Caucasian                    30.0         62.7   173
+    ## # … with 61 more rows
 
 ``` r
 # graph severity by race and age group
@@ -1186,7 +1316,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -1216,4 +1346,4 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
