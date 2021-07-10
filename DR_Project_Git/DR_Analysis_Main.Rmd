@@ -36,6 +36,9 @@ va_scale_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/visual_acuity_co
 # injection file
 injection_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_antivegf_table_20210508.csv"
 
+# va_progression_file
+va_progression_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_progression.csv"
+
 # Data output files
 
 # path for cleaned, joined data file (all data)
@@ -53,6 +56,8 @@ va_basedate_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_basedate.c
 # universe of data with timeseries added
 clean_universe_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/clean_universe.csv" 
 
+# va_progression
+va_progression_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_progression.csv" 
 
 ```
 
@@ -134,7 +139,7 @@ all <-
 
 ## Get VA data by time of visit for each patient/eye
 
-```{r}
+```{r, eval = FALSE}
 va_basedate <-
   raw_va %>% 
   # add in the baseline date to the va data, by patient id and eye
@@ -172,7 +177,7 @@ index_date_results <-
 
 It appears that using diagnosis date and index date result in a similar amount of visits being identified, except for two-year later - ~100K more visits are identified with diagnosis data. 
 
-```{r}
+```{r, eval = FALSE}
 
 # create a cleaned dataset with each entry categorized as a one month, six month, one year, or two-year measurement, and the difference in days between the injection date and the "ideal' date (e.g., exactly one month after the index date for a one-month injection)
 
@@ -200,7 +205,7 @@ va_clean <-
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 
 # if there is more than one measurement within the timeframe, select the measurement closest to the ideal date (e.g., exactly one month, six months, etc. from the index date). If more than onne measurement at the same distance, select randomly.
 
@@ -226,6 +231,8 @@ va_progression <-
 
 
 ```{r}
+# read in VA progression file from desktop
+va_progression <- read_csv(va_progression_file)
 
 va_prog_test <-
   va_progression %>%
@@ -283,12 +290,15 @@ timeseries_analysis <-
     !cat_eyes == 1
   ) %>% 
   # select only one eye per patient
-  group_by(patient_guid) %>% 
-  sample_n(1) %>% 
-  ungroup() %>% 
+  group_by(patient_guid) %>%
+  sample_n(1) %>%
+  ungroup() %>%
   # adjust insurance data to combine medicare FFS and medicare managed
   mutate(
     insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
+  ) %>% 
+  mutate(
+    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
   ) 
 
 # timeseries_plotting <-
@@ -299,6 +309,50 @@ timeseries_analysis <-
 #   write_csv(timeseries_analysis, path = clean_universe_path)
 
 ```
+
+
+#### Distribution of VA by race
+
+```{r}
+timeseries_analysis %>% 
+  ggplot(aes(x = baseline_va_letter)) +
+  geom_histogram(binwidth = 10, aes(fill = race_ethnicity)) +
+  theme_light() +
+  scale_x_continuous(breaks = seq(0, 100, 10)) +
+  labs(
+    title = "Histogram of eye count by race"
+  )
+
+```
+
+```{r}
+# table of percentage distribution to baseline letter va by race
+race_distribution <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity, baseline_va_r10) %>%   
+  summarize(count = n()) %>% 
+  ungroup() %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(prop = count / sum(count)) %>% 
+  ungroup()
+
+```
+
+```{r}
+race_distribution %>% 
+  ggplot(aes(x = baseline_va_r10, y = prop, color = race_ethnicity)) + 
+  geom_line() +
+  geom_point() +
+  theme_light() +
+  scale_y_continuous() +
+  labs(
+    title = "Propotion of eyes in each group of baseline visual acuity, by race",
+    y = "Proportion", 
+    x = "Baseline VA, rounded to nearest multiple of 10"
+  )
+```
+
+
 
 
 #### Timeseries VA by race and severity
@@ -450,6 +504,11 @@ gender_race_va %>%
 Female patients appear to hvae lower baseline VA as compared to their male counterparts of the same race. The raw gain or loss in VA over time appears to be similar between genders within racial groups.
 
 
+#### Race VA timeseries
+
+
+
+
 ```{r}
 
 race_va <-
@@ -509,6 +568,7 @@ We observe that Hispanic patients experience starting with ~65 visual acuity, th
 Exemplifying the trends from above, we also se that those who start with VA at ~75 all experience substantial decline, with those at other starting points experiencing less severe declines or even making gains.
 
 
+
 ```{r}
 race_va %>%
   filter(count > 25) %>% 
@@ -534,6 +594,263 @@ At this level, the dispairities in improvements are much more stark. Whie people
 
 
 Further analysis is required to control for the specific condition associated that the patient is diagnosed with. 
+
+```{r}
+race_va %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r %in% c(35, 40, 45)) %>% 
+  mutate(baseline_va_r = as.factor(baseline_va_r)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(35, 40, 45)) %>% mutate(baseline_va_r = as.factor(baseline_va_r)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(30, 60, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~35, ~40, ~45 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+
+#### Race VA timeseries bucketed by 10
+
+
+```{r}
+
+race_va_10 <-
+  timeseries_analysis %>% 
+  # group patients by race and same baseline va data
+  group_by(baseline_va_r10, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+
+## Same as above - split by ten 
+race_va_10 %>%
+  filter(count > 25) %>% 
+  filter(baseline_va_r10 %in% c(50, 60, 70)) %>% 
+  mutate(baseline_va_r10 = as.factor(baseline_va_r10)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = baseline_va_r10, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(baseline_va_r10, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = race_va_10 %>% filter(timepoint %in% c("two_year_va"), baseline_va_r10 %in% c(50, 60, 70)) %>% mutate(baseline_va_r10 = as.factor(baseline_va_r10)), 
+    aes(label = count, hjust = -1)
+  ) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~50, ~60, ~70 baseline va",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+```{r}
+
+severity_race_va_10 <-
+  timeseries_analysis %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_r10, severity_score, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+
+severity_race_va_10_sd <-
+  timeseries_analysis %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_r10, severity_score, race_ethnicity) %>% 
+  summarize(baseline_va = sd(baseline_va_letter), one_year_va = sd(one_year), two_year_va = sd(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot_sd", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+
+test <-
+  timeseries_analysis %>% 
+  filter(baseline_va_r10 == 60, severity_score == 43) %>% 
+  select(patient_guid, va_eye, index_date, baseline_va_letter, one_year, two_year, severity_score, everything()) %>% 
+  arrange(two_year)
+
+severity_race_va_10 %>% 
+  arrange(desc(count))
+
+```
+
+```{r}
+severity_race_va_10 %>%
+  filter(
+    baseline_va_r10 %in% c(80),
+    severity_score %in% c(73)
+  ) %>% 
+  left_join(severity_race_va_10_sd %>% select(-count), by = c("baseline_va_r10", "severity_score", "race_ethnicity", "timepoint")) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = severity_score, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = severity_race_va_10 %>% filter(timepoint %in% c("two_year_va"), baseline_va_r10 %in% c(80), severity_score %in% c(73)) %>% mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  geom_errorbar(aes(ymin = va_plot - va_plot_sd, ymax = va_plot + va_plot_sd)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~80 baseline VA",
+    subtitle = "Grouped by starting severity score and race",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+
+
+
+#### Severity race VA timeseries
+
+```{r}
+
+severity_race_va <-
+  timeseries_analysis %>% 
+  # round baseline data to nearest multiple of 5
+  mutate(
+    baseline_va_r = plyr::round_any(baseline_va_letter, 5)
+  ) %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_r, severity_score, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+```
+
+```{r}
+severity_race_va %>%
+  filter(
+    baseline_va_r %in% c(50),
+    severity_score %in% c(73, 78)
+  ) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = severity_score, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(50), severity_score %in% c(73, 78)) %>% mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(40, 65, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~50 baseline VA",
+    subtitle = "Grouped by starting severity score and race",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+For patients that start with a baseline visual acuity close to 50, the change in visual acuity over one to two years is associated with race. White patients with starting severity at 73 experience ~6pt gain in visual acuity, as compared to ~5pt gain for Black and Hispanic counterparts. After two years, white patients maintain that gain in visual acuity; however, Black and Hispanic patients experiences a moderate drop in visual acuity by .5pts (Hispanics) and 1.5pts (Black).
+
+For those patients with starting severity at 78, gains in visual acuity the first year are again similar across races, ~3 to 3.5 points. However, in year two, white patients experience another substantial gain in visual acuity (~3pts), while Hispanic paitents experience no gain in visual acuity and Black patients experience a small decline in visual acuity (~.5 pts). 
+
+This analysis suggests that there may be factors between the first and second year of treatment that are creating disparate treatment outcomes for Black and Hispanic patients as compared to white patients. 
+
+
+```{r}
+severity_race_va %>%
+  filter(
+    baseline_va_r %in% c(35),
+    severity_score %in% c(73, 78)
+  ) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = severity_score, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
+  theme_light() + 
+  theme(panel.grid.minor = element_blank()) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(35), severity_score %in% c(73, 78)) %>% mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  scale_y_continuous(breaks = seq(33, 55, 1)) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~35 baseline VA",
+    subtitle = "Grouped by starting severity score and race",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+The trend identified for patients with a baseline VA of 50 (the prior chart) partially holds for those patients with starting VA of 35. We see that, for patients with starting severity of 73, gains in visual acuity after one year are consistent by race. However, aafter two yers, Black patients lost abaout 3pts of visual acutiy, while white patients gained ~1pt in visual acuity and Hispanic patients did not experience any change.
+
+This trend does not hold for patients with starting severity of 78. We see that in year one, white patients make substantially higher gains (16pts) in VA as compared to Black patients (14 pts) and Hipanic patients (11 pts). After two years, however, white patients experience a drop in visual acuity (1 pts) while Black patients experience another gain of three points. 
+
+
+
+```{r}
+severity_race_va %>%
+  filter(
+    baseline_va_r %in% c(70),
+    severity_score %in% c(73, 78)
+  ) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = severity_score, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
+  theme_light() + 
+  theme(panel.grid.minor = element_blank()) +
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(70), severity_score %in% c(73, 78)) %>% mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~70 baseline VA",
+    subtitle = "Grouped by starting severity score and race",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+
+
+#### Severity insurance race VA timeseries
+
+```{r}
+
+severity_ins_race_va <-
+  timeseries_analysis %>% 
+  # round baseline data to nearest multiple of 5
+  mutate(
+    baseline_va_r = plyr::round_any(baseline_va_letter, 5)
+  ) %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_r, severity_score, insurance, race_ethnicity) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+```
+
+```{r}
+severity_ins_race_va %>%
+  filter(
+    baseline_va_r %in% c(50),
+    severity_score %in% c(78),
+    insurance %in% c("Medicaid", "Medicare", "Private")
+  ) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = insurance, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(insurance, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = severity_ins_race_va %>% filter(timepoint %in% c("two_year_va"), baseline_va_r %in% c(50), severity_score %in% c(78), insurance %in% c("Medicaid", "Medicare", "Private")) %>% mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people starting at ~50 baseline VA",
+    subtitle = "Grouped by insuraance and race; starting severity = 78 ",
+    y = "visual acuity (letter)"
+  ) 
+```
+
 
 
 ## Injection data
