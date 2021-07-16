@@ -706,20 +706,20 @@ severity_race_va_10 %>%
   arrange(desc(count))
 ```
 
-    ## # A tibble: 726 x 6
+    ## # A tibble: 735 x 6
     ##    baseline_va_r10 severity_score race_ethnicity count timepoint   va_plot
     ##              <dbl>          <int> <chr>          <int> <chr>         <dbl>
-    ##  1              80             73 Caucasian       2882 baseline_va    79.3
-    ##  2              80             73 Caucasian       2882 one_year_va    76.3
-    ##  3              80             73 Caucasian       2882 two_year_va    74.9
-    ##  4              60             73 Caucasian       2628 baseline_va    61.1
-    ##  5              60             73 Caucasian       2628 one_year_va    64.0
-    ##  6              60             73 Caucasian       2628 two_year_va    64.1
-    ##  7              80             44 Caucasian       1697 baseline_va    78.9
-    ##  8              80             44 Caucasian       1697 one_year_va    76.8
-    ##  9              80             44 Caucasian       1697 two_year_va    75.4
-    ## 10              70             73 Caucasian       1519 baseline_va    70.0
-    ## # … with 716 more rows
+    ##  1              80             73 Caucasian       2883 baseline_va    79.3
+    ##  2              80             73 Caucasian       2883 one_year_va    76.1
+    ##  3              80             73 Caucasian       2883 two_year_va    74.7
+    ##  4              60             73 Caucasian       2631 baseline_va    61.1
+    ##  5              60             73 Caucasian       2631 one_year_va    63.9
+    ##  6              60             73 Caucasian       2631 two_year_va    63.9
+    ##  7              80             44 Caucasian       1707 baseline_va    78.9
+    ##  8              80             44 Caucasian       1707 one_year_va    76.9
+    ##  9              80             44 Caucasian       1707 two_year_va    75.5
+    ## 10              70             73 Caucasian       1504 baseline_va    70.0
+    ## # … with 725 more rows
 
 ``` r
 severity_race_va_10 %>%
@@ -1020,6 +1020,7 @@ injection_clean <-
 ``` r
 # ensure that the same filters are applied to the top conditions dataset as in the timeseries analysis
 # NOTE TO SELF - use the updated timeseries analysis here (save top_conditions as time_series analysis to avoid confusion, or go through and replace)
+## AND MAKE SURE to set the seed here annd before!!
 top_conditions <-
   all %>% 
   filter(
@@ -1039,6 +1040,9 @@ top_conditions <-
   # adjust insurance data to combine medicare FFS and medicare managed
   mutate(
     insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
+  ) %>% 
+  mutate(
+    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
   ) 
 ```
 
@@ -1058,12 +1062,12 @@ severity_race %>% kable()
 
 | race\_ethnicity           |  average | count |
 | :------------------------ | -------: | ----: |
-| Hispanic                  | 60.69402 | 20537 |
-| Other                     | 58.93520 |  3210 |
-| Unknown                   | 58.07339 | 14021 |
-| Black or African American | 57.35103 | 18218 |
-| Asian                     | 56.86295 |  3860 |
-| Caucasian                 | 55.98015 | 74042 |
+| Hispanic                  | 60.70025 | 20537 |
+| Other                     | 58.95950 |  3210 |
+| Unknown                   | 58.07125 | 14021 |
+| Black or African American | 57.35201 | 18218 |
+| Asian                     | 56.89326 |  3860 |
+| Caucasian                 | 55.98243 | 74042 |
 
 Hispanic people have the highest severity of all racial groups, nearaly
 5 points higher than White people. Black, Asian, and Caucasian people
@@ -1087,16 +1091,16 @@ severity_race_reg
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity            region    average count
     ##    <chr>                     <chr>       <dbl> <int>
-    ##  1 Hispanic                  West         62.1  7056
-    ##  2 Hispanic                  Midwest      61.1  1455
-    ##  3 Hispanic                  South        60.5  8698
-    ##  4 Other                     West         60.3  1195
-    ##  5 Unknown                   West         59.9  4698
-    ##  6 Other                     Midwest      58.6   448
-    ##  7 Unknown                   South        58.2  4727
-    ##  8 Other                     South        58.2  1092
-    ##  9 Hispanic                  Northeast    58.2  2627
-    ## 10 Black or African American West         57.8  1040
+    ##  1 Hispanic                  West         62.2  7056
+    ##  2 Hispanic                  Midwest      61.2  1455
+    ##  3 Hispanic                  South        60.5  8700
+    ##  4 Other                     West         60.4  1193
+    ##  5 Unknown                   West         59.8  4704
+    ##  6 Other                     Midwest      58.3   449
+    ##  7 Other                     South        58.3  1097
+    ##  8 Unknown                   South        58.2  4718
+    ##  9 Hispanic                  Northeast    58.1  2627
+    ## 10 Black or African American South        57.8 10627
     ## # … with 20 more rows
 
 ``` r
@@ -1135,16 +1139,16 @@ severity_race_age %>% head(10) %>% kable()
 
 | race\_ethnicity           | age\_group | avg\_severity | count |
 | :------------------------ | ---------: | ------------: | ----: |
-| Asian                     |         25 |      70.54545 |    22 |
-| Other                     |         25 |      69.47368 |    19 |
-| Other                     |         35 |      68.88235 |    68 |
-| Hispanic                  |         35 |      68.45374 |   454 |
-| Hispanic                  |         30 |      68.37546 |   269 |
-| Other                     |         30 |      68.15217 |    46 |
-| Hispanic                  |         25 |      68.10811 |   111 |
-| Unknown                   |         30 |      67.90351 |   228 |
+| Other                     |         25 |      69.73684 |    19 |
+| Asian                     |         25 |      69.63636 |    22 |
+| Other                     |         35 |      68.72059 |    68 |
+| Hispanic                  |         35 |      68.47577 |   454 |
+| Hispanic                  |         30 |      68.33829 |   269 |
+| Hispanic                  |         25 |      68.11712 |   111 |
+| Unknown                   |         30 |      68.02203 |   227 |
+| Other                     |         30 |      67.95652 |    46 |
 | Black or African American |         25 |      67.43836 |    73 |
-| Hispanic                  |         40 |      66.83990 |   812 |
+| Asian                     |         30 |      67.18182 |    44 |
 
 ``` r
 # graph severity by race and age group
@@ -1211,11 +1215,11 @@ severity_reg %>% kable()
 
 | region    |  average |     n |
 | :-------- | -------: | ----: |
-| West      | 58.87023 | 27156 |
-| South     | 57.66547 | 53092 |
-| Midwest   | 56.06052 | 27460 |
-| Northeast | 55.80441 | 23687 |
-| NA        | 55.18652 |  2493 |
+| West      | 58.85795 | 27166 |
+| South     | 57.64418 | 53074 |
+| Midwest   | 56.10075 | 27463 |
+| Northeast | 55.83694 | 23684 |
+| NA        | 55.21671 |  2501 |
 
 Severity in the West does appear to be a few points higher than in other
 regions - perhaps due to a higher number of Hispanic people being from
@@ -1239,16 +1243,16 @@ severity_race_ins
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity insurance       average count
     ##    <chr>          <chr>             <dbl> <int>
-    ##  1 Other          Medicaid           62.7   351
-    ##  2 Other          Govt               62.6   104
-    ##  3 Hispanic       Govt               62.2   379
-    ##  4 Hispanic       Medicaid           61.7  2447
+    ##  1 Other          Medicaid           62.8   351
+    ##  2 Hispanic       Govt               62.5   379
+    ##  3 Other          Govt               62.5   104
+    ##  4 Hispanic       Medicaid           61.8  2447
     ##  5 Hispanic       Unknown/Missing    61.5  2490
-    ##  6 Unknown        Medicaid           60.8  1425
+    ##  6 Unknown        Medicaid           60.9  1425
     ##  7 Hispanic       Private            60.6  4905
     ##  8 Caucasian      Medicaid           60.5  4016
-    ##  9 Hispanic       Medicare           60.3 10200
-    ## 10 Unknown        Govt               60.2   298
+    ##  9 Hispanic       Medicare           60.2 10200
+    ## 10 Unknown        Govt               60.1   298
     ## # … with 26 more rows
 
 ``` r
@@ -1292,11 +1296,11 @@ severity_race_sex %>% head(5) %>% kable()
 
 | race\_ethnicity | gender  |  average | count |
 | :-------------- | :------ | -------: | ----: |
-| Hispanic        | Male    | 61.84832 | 10766 |
-| Hispanic        | Female  | 59.43973 |  9640 |
-| Other           | Male    | 59.40179 |  1568 |
-| Unknown         | Unknown | 59.15385 |    52 |
-| Other           | Female  | 58.54783 |  1610 |
+| Hispanic        | Male    | 61.82120 | 10766 |
+| Hispanic        | Female  | 59.48226 |  9640 |
+| Other           | Male    | 59.38265 |  1568 |
+| Unknown         | Unknown | 59.05769 |    52 |
+| Other           | Female  | 58.60870 |  1610 |
 
 ``` r
 # graphing severity by race and sex
@@ -1369,20 +1373,20 @@ treatment_sev_race %>%
   arrange(desc(severity_score, race_ethnicity))
 ```
 
-    ## # A tibble: 268 x 5
+    ## # A tibble: 269 x 5
     ##    severity_score race_ethnicity            proc_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
-    ##  1             85 Asian                     antivegf      0.75       3
-    ##  2             85 Asian                     laser         0.25       1
-    ##  3             85 Black or African American antivegf      0.857     42
-    ##  4             85 Black or African American combo         0.0204     1
-    ##  5             85 Black or African American laser         0.122      6
-    ##  6             85 Caucasian                 antivegf      0.902     55
-    ##  7             85 Caucasian                 laser         0.0984     6
-    ##  8             85 Hispanic                  antivegf      0.92      23
-    ##  9             85 Hispanic                  combo         0.04       1
-    ## 10             85 Hispanic                  laser         0.04       1
-    ## # … with 258 more rows
+    ##  1             85 Asian                     antivegf      0.8        4
+    ##  2             85 Asian                     laser         0.2        1
+    ##  3             85 Black or African American antivegf      0.833     40
+    ##  4             85 Black or African American combo         0.0208     1
+    ##  5             85 Black or African American laser         0.125      6
+    ##  6             85 Black or African American steroid       0.0208     1
+    ##  7             85 Caucasian                 antivegf      0.897     52
+    ##  8             85 Caucasian                 laser         0.103      6
+    ##  9             85 Hispanic                  antivegf      0.958     23
+    ## 10             85 Hispanic                  combo         0.0417     1
+    ## # … with 259 more rows
 
 ``` r
 # Graphing likelihood of first treatment type by severity and race
@@ -1451,25 +1455,25 @@ drug_sev_race %>%
   arrange(desc(severity_score, race_ethnicity))
 ```
 
-    ## # A tibble: 262 x 5
+    ## # A tibble: 264 x 5
     ##    severity_score race_ethnicity            vegf_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
-    ##  1             85 Asian                     Avastin       1          3
-    ##  2             85 Black or African American Avastin       0.881     37
-    ##  3             85 Black or African American Eylea         0.0714     3
-    ##  4             85 Black or African American Lucentis      0.0476     2
-    ##  5             85 Caucasian                 Avastin       0.782     43
-    ##  6             85 Caucasian                 Eylea         0.127      7
-    ##  7             85 Caucasian                 Lucentis      0.0909     5
+    ##  1             85 Asian                     Avastin       1          4
+    ##  2             85 Black or African American Avastin       0.925     37
+    ##  3             85 Black or African American Eylea         0.05       2
+    ##  4             85 Black or African American Lucentis      0.025      1
+    ##  5             85 Caucasian                 Avastin       0.808     42
+    ##  6             85 Caucasian                 Eylea         0.115      6
+    ##  7             85 Caucasian                 Lucentis      0.0769     4
     ##  8             85 Hispanic                  Avastin       0.826     19
     ##  9             85 Hispanic                  Eylea         0.130      3
     ## 10             85 Hispanic                  Lucentis      0.0435     1
-    ## # … with 252 more rows
+    ## # … with 254 more rows
 
 ``` r
 # Graphing likelihood of first drug type by severity and race
 drug_sev_race %>% 
-  filter(!race_ethnicity %in% c("Unknown")) %>% 
+  filter(!race_ethnicity %in% c("Unknown", "Asian", "Other")) %>% 
   ggplot(aes(x = severity_score, y = prop, color = race_ethnicity, shape = vegf_group_28)) +
   geom_point() + 
   theme_bw() +
@@ -1552,25 +1556,25 @@ drug_sev_race_ins %>%
   arrange(desc(severity_score, race_ethnicity, insurance))
 ```
 
-    ## # A tibble: 1,203 x 6
-    ##    severity_score race_ethnicity     insurance   vegf_group_28   prop count
-    ##             <int> <chr>              <chr>       <chr>          <dbl> <int>
-    ##  1             85 Asian              Medicare    Avastin       1          1
-    ##  2             85 Asian              Private     Avastin       1          1
-    ##  3             85 Asian              Unknown/Mi… Avastin       1          1
-    ##  4             85 Black or African … Medicaid    Avastin       0.75       3
-    ##  5             85 Black or African … Medicare    Avastin       0.857     18
-    ##  6             85 Black or African … Private     Avastin       0.938     15
-    ##  7             85 Black or African … Unknown/Mi… Avastin       1          1
-    ##  8             85 Black or African … Medicare    Eylea         0.143      3
-    ##  9             85 Black or African … Medicaid    Lucentis      0.25       1
-    ## 10             85 Black or African … Private     Lucentis      0.0625     1
-    ## # … with 1,193 more rows
+    ## # A tibble: 1,210 x 6
+    ##    severity_score race_ethnicity      insurance   vegf_group_28  prop count
+    ##             <int> <chr>               <chr>       <chr>         <dbl> <int>
+    ##  1             85 Asian               Medicaid    Avastin       1         1
+    ##  2             85 Asian               Medicare    Avastin       1         1
+    ##  3             85 Asian               Private     Avastin       1         1
+    ##  4             85 Asian               Unknown/Mi… Avastin       1         1
+    ##  5             85 Black or African A… Medicaid    Avastin       0.75      3
+    ##  6             85 Black or African A… Medicare    Avastin       0.895    17
+    ##  7             85 Black or African A… Private     Avastin       1        16
+    ##  8             85 Black or African A… Unknown/Mi… Avastin       1         1
+    ##  9             85 Black or African A… Medicare    Eylea         0.105     2
+    ## 10             85 Black or African A… Medicaid    Lucentis      0.25      1
+    ## # … with 1,200 more rows
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicare FFS  insurance
 drug_sev_race_ins %>% 
-  filter(!race_ethnicity %in% c("Unknown", "Other")) %>% 
+  filter(!race_ethnicity %in% c("Unknown", "Other", "Asian")) %>% 
   filter(severity_score > 50) %>% 
   filter(vegf_group_28 == "Eylea") %>% 
   filter(insurance == "Medicare") %>% 
@@ -1580,7 +1584,7 @@ drug_sev_race_ins %>%
   theme_bw() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Likelihood of receiving Eylea at higher severity score by race, with Medicare FFS insurance",
+    title = "Likelihood of receiving Eylea at higher severity score by race, with Medicare insurance",
     y = "Percentage of people receiving Eylea"
   )
 ```
@@ -1629,6 +1633,40 @@ drug_sev_race_ins %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
+``` r
+# Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
+drug_sev_race_va <-
+  top_conditions %>% 
+  filter(proc_group_28 == "antivegf") %>% 
+  count(severity_score, race_ethnicity, vegf_group_28,  baseline_va_r10) %>% 
+  group_by(severity_score, race_ethnicity) %>% 
+  mutate(count_severity_race_ins_va = sum(n)) %>% 
+  mutate(prop = n / count_severity_race_ins_va) %>% 
+  ungroup() %>% 
+  select(severity_score, race_ethnicity, vegf_group_28, baseline_va_r10, prop, count = n)
+```
+
+``` r
+# Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
+drug_sev_race_va %>% 
+  # Asian filtered due to too small data size
+  filter(!race_ethnicity %in% c("Unknown", "Other", "Asian")) %>% 
+  filter(vegf_group_28 == "Eylea") %>% 
+  filter(count > 25) %>%
+  filter(baseline_va_r10 == 60) %>% 
+  ggplot(aes(x = severity_score, y = prop, color = race_ethnicity)) +
+  geom_point() + 
+  geom_line() +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Eylea at higher severity score by race",
+    y = "Percentage of people receiving Eylea"
+  ) 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
+
 #### Severity vs. vision
 
 Do severity scores differ by race for people with the same vision score?
@@ -1646,21 +1684,21 @@ severity_race_vision <-
 severity_race_vision
 ```
 
-    ## # A tibble: 73 x 4
+    ## # A tibble: 72 x 4
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity            baseline_va_letter avg_severity count
     ##    <chr>                                  <dbl>        <dbl> <int>
-    ##  1 Hispanic                                40           65.2   442
-    ##  2 Hispanic                                26           65.2   110
-    ##  3 Hispanic                                35           65.1  1166
-    ##  4 Hispanic                                50           63.8  1072
-    ##  5 Unknown                                 35           63.3   636
-    ##  6 Caucasian                               30.0         63.0   175
-    ##  7 Black or African American               35           62.9   874
-    ##  8 Caucasian                               26           62.8   320
-    ##  9 Caucasian                               45.0         62.8   353
-    ## 10 Hispanic                                55.          62.6   988
-    ## # … with 63 more rows
+    ##  1 Hispanic                                 26          65.5   110
+    ##  2 Hispanic                                 40          65.3   457
+    ##  3 Hispanic                                 35          65.2  1161
+    ##  4 Hispanic                                 50          63.9  1045
+    ##  5 Caucasian                                26          63.2   322
+    ##  6 Other                                    35          63.2   169
+    ##  7 Unknown                                  40          63.1   249
+    ##  8 Hispanic                                 55.         63.1   975
+    ##  9 Unknown                                  35          62.9   607
+    ## 10 Black or African American                35          62.6   887
+    ## # … with 62 more rows
 
 ``` r
 # graph severity by race and age group
@@ -1678,7 +1716,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -1708,4 +1746,4 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->

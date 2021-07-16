@@ -969,6 +969,7 @@ injection_clean <-
 
 # ensure that the same filters are applied to the top conditions dataset as in the timeseries analysis
 # NOTE TO SELF - use the updated timeseries analysis here (save top_conditions as time_series analysis to avoid confusion, or go through and replace)
+## AND MAKE SURE to set the seed here annd before!!
 top_conditions <-
   all %>% 
   filter(
@@ -988,6 +989,9 @@ top_conditions <-
   # adjust insurance data to combine medicare FFS and medicare managed
   mutate(
     insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
+  ) %>% 
+  mutate(
+    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
   ) 
 
 ```
@@ -1315,7 +1319,7 @@ drug_sev_race %>%
 
 # Graphing likelihood of first drug type by severity and race
 drug_sev_race %>% 
-  filter(!race_ethnicity %in% c("Unknown")) %>% 
+  filter(!race_ethnicity %in% c("Unknown", "Asian", "Other")) %>% 
   ggplot(aes(x = severity_score, y = prop, color = race_ethnicity, shape = vegf_group_28)) +
   geom_point() + 
   theme_bw() +
@@ -1394,7 +1398,7 @@ drug_sev_race_ins %>%
 ```{r}
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicare FFS  insurance
 drug_sev_race_ins %>% 
-  filter(!race_ethnicity %in% c("Unknown", "Other")) %>% 
+  filter(!race_ethnicity %in% c("Unknown", "Other", "Asian")) %>% 
   filter(severity_score > 50) %>% 
   filter(vegf_group_28 == "Eylea") %>% 
   filter(insurance == "Medicare") %>% 
@@ -1404,7 +1408,7 @@ drug_sev_race_ins %>%
   theme_bw() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Likelihood of receiving Eylea at higher severity score by race, with Medicare FFS insurance",
+    title = "Likelihood of receiving Eylea at higher severity score by race, with Medicare insurance",
     y = "Percentage of people receiving Eylea"
   )
 
@@ -1450,6 +1454,45 @@ drug_sev_race_ins %>%
   )
 
 ```
+
+```{r}
+# Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
+drug_sev_race_va <-
+  top_conditions %>% 
+  filter(proc_group_28 == "antivegf") %>% 
+  count(severity_score, race_ethnicity, vegf_group_28,  baseline_va_r10) %>% 
+  group_by(severity_score, race_ethnicity) %>% 
+  mutate(count_severity_race_ins_va = sum(n)) %>% 
+  mutate(prop = n / count_severity_race_ins_va) %>% 
+  ungroup() %>% 
+  select(severity_score, race_ethnicity, vegf_group_28, baseline_va_r10, prop, count = n)
+
+
+```
+
+
+```{r}
+
+# Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
+drug_sev_race_va %>% 
+  # Asian filtered due to too small data size
+  filter(!race_ethnicity %in% c("Unknown", "Other", "Asian")) %>% 
+  filter(vegf_group_28 == "Eylea") %>% 
+  filter(count > 25) %>%
+  filter(baseline_va_r10 == 60) %>% 
+  ggplot(aes(x = severity_score, y = prop, color = race_ethnicity)) +
+  geom_point() + 
+  geom_line() +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Eylea at higher severity score by race",
+    y = "Percentage of people receiving Eylea"
+  ) 
+
+```
+
+
 
 
 #### Severity vs. vision
