@@ -22,42 +22,50 @@ library(knitr)
 # Data files
 
 # maturi universe file
-universe_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_universe_ultimate.xlsx"
+universe_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_universe_ultimate.xlsx"
 
 # severity scale file
-severity_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/DR_severity_scale.xlsx"
+severity_file <- "~/Documents/R_Projects/DR Analysis/dr_data/DR_severity_scale.xlsx"
 
 # va file
-va_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_va_combine_20210508.csv"
+va_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_va_combine_20210508.csv"
 
 # va scale file
-va_scale_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/visual_acuity_conversion.xlsx"
+va_scale_file <- "~/Documents/R_Projects/DR Analysis/dr_data/visual_acuity_conversion.xlsx"
 
 # injection file
-injection_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_antivegf_table_20210508.csv"
+injection_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_antivegf_table_20210508.csv"
+
+# clean injection file 
+injection_clean_file <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_clean_file.csv"
 
 # va_progression_file
-va_progression_file <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_progression.csv"
+va_progression_file <- "~/Documents/R_Projects/DR Analysis/dr_data/va_progression.csv"
+
+
 
 # Data output files
 
 # path for cleaned, joined data file (all data)
-all_cleaned_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_all_cleaned.csv"
+all_cleaned_path <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_all_cleaned.csv"
 
 # path for cleaned, joined data file (top conditions)
-top_conditions_cleaned_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/maturi_top_cleaned.csv"
+top_conditions_cleaned_path <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_top_cleaned.csv"
 
 # bottom conditions - to be coded
-bottom_codes_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/bottom_codes.csv"
+bottom_codes_path <- "~/Documents/R_Projects/DR Analysis/dr_data/bottom_codes.csv"
 
 # va_basedate_by_pt 
-va_basedate_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_basedate.csv"
+va_basedate_path <- "~/Documents/R_Projects/DR Analysis/dr_data/va_basedate.csv"
 
 # universe of data with timeseries added
-clean_universe_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/clean_universe.csv" 
+clean_universe_path <- "~/Documents/R_Projects/DR Analysis/dr_data/clean_universe.csv" 
 
 # va_progression
-va_progression_path <- "~/Documents/R_Projects/DR Analysis/DR_Project/va_progression.csv" 
+va_progression_path <- "~/Documents/R_Projects/DR Analysis/dr_data/va_progression.csv" 
+
+# clean injection data path 
+injection_clean_path <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_clean_file.csv"
 
 ```
 
@@ -857,49 +865,21 @@ severity_ins_race_va %>%
 
 ```{r, eval = FALSE} 
 
-# only for patients where raw injection data is 1 or 2
-injection_count <-
-  raw_injection %>%
-  left_join(all %>% select(pt_code_name, eye, index_date), by = c("patient_guid" = "pt_code_name", "eye" =  "eye")) %>% 
-  filter(index_date %m+% years(1) > injection_date) %>%
-  select(patient_guid, eye, injection_date) %>% 
-  distinct() 
+# for testing - do not evaluation
 
 raw_injection %>% 
-  filter(patient_guid == "d402e848a6d5442387a0030ae910aeb3") %>% 
+  filter(patient_guid == "000bb3881e3a40e28324582e5c8bfe1d") %>% 
   arrange(desc(injection_date))
-```
 
-
-
-```{r, eval = FALSE}
-injection_count %>% 
-  count(patient_guid, eye) %>% 
-  count(n) %>% 
-  arrange(desc(nn))
+all %>%
+  filter(pt_code_name == "0019c0027b5e409b94c5870ae902737c") %>% 
+  arrange(desc(index_date))
 ```
 
 
 ```{r, eval = FALSE}
-# raw_injection %>% 
-#   count(patient_guid, eye, injection_date) %>% 
-#   arrange(desc(n))
-# 
-# raw_injection %>% 
-#   filter(patient_guid == "000340244d4948c1bf7d05483c11671c") %>% 
-#   arrange(injection_date)
-```
 
-
-```{r, eval = FALSE}
-# injection_count %>% 
-#   filter(n < 13) %>% 
-#   ggplot(aes(x = n)) +
-#   geom_histogram(binwidth = 1)
-```
-
-
-```{r, eval = FALSE}
+# identify injections for patient/eye pairs in the study
 in_study <-
   all %>% 
   mutate(
@@ -909,56 +889,186 @@ in_study <-
   group_by(pt_code_name) %>% 
   summarize(eye1 = sum(eye1), eye2 = sum(eye2))
 
+# for each patient/eye/injection date group, identify whether there is at least one injection entry marked in eye 1, eye 2, or eye 4 (not defined)
 eye_match <-
   raw_injection %>% 
+  select(patient_guid, eye, injection_date) %>%
+  group_by(patient_guid, eye, injection_date) %>% 
+  sample_n(1) %>% 
   group_by(patient_guid, injection_date) %>% 
   add_count(eye) %>% 
   ungroup() %>% 
   arrange(desc(n)) %>% 
-  spread(eye, n) 
-
-eye_match <-
-  eye_match %>% 
+  spread(eye, n) %>% 
   rename(
     "one" = `1`, 
     "two" = `2`,
     "four" = `4`
   )
 
-
-eye_match %>% filter(patient_guid == "d402e848a6d5442387a0030ae910aeb3")
-
-
+# flag each patient/eye/injection date grouping based on the 1/2/4 eye specification AND which patient/eyes pairs are in the dataset, if any
 injection_clean <-
   eye_match %>% 
   left_join(in_study, by = c("patient_guid" = "pt_code_name")) %>% 
+  left_join(all %>% dplyr::select(pt_code_name, index_date), by = c("patient_guid" = "pt_code_name")) %>% 
+  # calculate days past index date of injection
+  mutate(
+    days_past_first_injection = injection_date - index_date
+  ) %>% 
+  # only keep injection data in first year
+  filter(days_past_first_injection > -1L, days_past_first_injection < 367) %>% 
   mutate(
     new_eye = case_when(
       (one == 1 & is.na(two) & is.na(four)) ~ 1, # keep entry
       (is.na(one) & two == 1 & is.na(four)) ~ 2,  # keep entry
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 1, # reassign entry to eye 1
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 2, # reassign entry to eye 2
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 5, # remove pt. eye 1 and 2 from dataset
       (one == 1 & two == 1 & is.na(four)) ~ 3, # 3 means entries should be made for both eyes 
-      (one > 1 & is.na(two) & is.na(four)) ~ 1, # keep only one entry from this date
-      (is.na(one) & two > 1 & is.na(four)) ~ 2, # keep only one entry from this date
-      (one > 1 & two > 1 & is.na(four)) ~ 3, # 3 means keep oen entry for both eyes
-      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & is.na(eye2)) ~ 1,
-      (is.na(one) & is.na(two) & four > 0 & is.na(eye1) & eye2 == 1) ~ 2,
-      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 5, # 5 means to remove all data for this person from the dataset
-      (one > 0 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 6, # throw out four, keep eye one
-      (is.na(one) & two > 0 & four > 0 & eye1 == 0 & eye2 == 1) ~ 7, # throw out four, keep eye two
-      (one > 0 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 8, # throw out four and all eye two data
-      (is.na(one) & two > 0 & four > 0 & eye1 == 1 & eye2 == 1) ~ 9, # throw out four and all eye one data
-      
-      (is.na()),
+      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
+      (one == 1 & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
+      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
+      (is.na(one) & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data 
+      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
+      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data
+      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 9, # keep entry (two and four will go away)
+      (one == 1 & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 9, # keep entry (one and four will go away)
+      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 9, # keep entry (four will go away)
       TRUE ~ NA_real_
     )
   )
-  
 
-  left_join(all %>% select(pt_code_name, eye1, eye2, index_date), by = c("patient_guid" = "pt_code_name", "eye" =  "eye")) 
-  select(pt_code_name, eye, eye1, eye2, code_type, index_date, first_problem_code, severity_score, race_ethnicity, first_dr_age, everything())
+
+
+#write_csv(injection_clean, path = injection_clean_path)
+
 
 ```
 
+```{r}
+
+injection_clean <- read_csv(injection_clean_file)
+
+# identify pateints to remove based on classification above
+pts_to_remove <-
+  injection_clean %>% 
+  group_by(patient_guid) %>% 
+  mutate(
+    remove1 = ifelse(any(new_eye == 8), 1, 0),
+    remove2 = ifelse(any(new_eye == 6), 1, 0),
+    removeboth = ifelse(any(new_eye == 5), 1, 0),
+  ) %>% 
+  select(patient_guid, remove1, remove2, removeboth) %>% 
+  sample_n(1)
+
+# construct preliminary injection dataset
+injections <-
+  raw_injection %>%
+  select(patient_guid, eye, injection_date) %>% 
+  group_by(patient_guid, eye, injection_date) %>% 
+  sample_n(1) %>% 
+  ungroup() %>% 
+  left_join(
+    injection_clean %>% 
+      select(patient_guid, injection_date, new_eye) %>% 
+      group_by(patient_guid, injection_date, new_eye) %>% 
+      sample_n(1), 
+    by = c("patient_guid", "injection_date")) %>% 
+  mutate(
+    eye = ifelse(new_eye == 1 & eye == 4, 1, eye),
+    eye = ifelse(new_eye == 2 & eye == 4, 2, eye),
+  ) %>% 
+  left_join(pts_to_remove, by = "patient_guid") %>% 
+  filter(
+    !(eye == 1 & remove1 == 1),
+    !(eye == 2 & remove2 == 1), 
+    !(removeboth == 1)
+  )  %>% 
+  left_join(all %>% dplyr::select(pt_code_name, index_date, eye), by = c("patient_guid" = "pt_code_name", "eye")) %>% 
+  # calculate days past index date of injection
+  mutate(
+    days_past_first_injection = injection_date - index_date
+  ) %>% 
+  # only keep injection data in first year
+  filter(days_past_first_injection > -1L, days_past_first_injection < 367)
+  
+# identify patients to remove that have injections too close together (implying incorrect data)
+injections_remove <-
+  injections %>% 
+  group_by(patient_guid, eye) %>% 
+  arrange(injection_date) %>% 
+  mutate(prior_date = lag(injection_date)) %>% 
+  mutate(
+    too_close = ifelse(!is.na(prior_date), ifelse(injection_date - prior_date < 22, 1, 0), 0)
+  ) %>% 
+  mutate(remove_close = ifelse(any(too_close == 1), 1, 0)) %>% 
+  ungroup() %>% 
+  select(patient_guid, eye, remove_close) %>% 
+  group_by(patient_guid, eye, remove_close) %>% 
+  sample_n(1) %>% 
+  ungroup()
+
+# remove patients with injections too close together (identified above)
+injections2 <-
+  injections %>% 
+  left_join(injections_remove, by = c("patient_guid", "eye")) %>% 
+  filter(remove_close == 0)
+
+# identify patients where the first injection is more than 60 days after the index date. 
+inj_rem_date <-
+  injections2 %>% 
+  group_by(patient_guid, eye) %>%
+  arrange(injection_date) %>% 
+  mutate(first_entry = ifelse(row_number() == 1, 1, 0)) %>%
+  ungroup() %>% 
+  mutate(
+    inj_index_diff = injection_date - index_date,
+    gap = ifelse(inj_index_diff > 60, 1, 0),
+    gap_first = ifelse(gap == 1 & first_entry == 1, 1, 0)
+  ) %>% 
+  group_by(patient_guid, eye) %>%
+  mutate(remove_gap = if_else(any(gap_first == 1), 1, 0)) %>% 
+  ungroup() %>% 
+  select(patient_guid, eye, remove_gap) %>% 
+  group_by(patient_guid, eye, remove_gap) %>% 
+  sample_n(1) %>% 
+  ungroup()
+
+# remove patients where the first injection is more than 60 days after the index date
+# when this is the case, it suggests that the index date might be wrong 
+injections3 <-
+  injections2 %>% 
+  left_join(inj_rem_date, by = c("patient_guid", "eye")) %>% 
+  filter(remove_gap == 0)
+```
+
+
+```{r}
+
+# for each patient, number of injections in first year
+inj_per_patient3 <-
+  all %>% 
+  left_join(injections3 %>% select(patient_guid, eye, injection_date), by = c("pt_code_name" = "patient_guid", "eye")) %>% 
+  count(pt_code_name, eye) %>% 
+  arrange(desc(n))
+
+# count of patients that had each number of injections in one year
+inj_per_patient3 %>% 
+  count(n)
+
+# plotting histogram of above data
+inj_per_patient3 %>% 
+  ggplot(aes(x = n)) +
+  geom_histogram(binwidth = 1) +
+  theme_light() + 
+  labs(
+    title = "Total number of patients that received the number of injections in one year", 
+    x = "Number of injections within one year of index date", 
+    y = "Count"
+  )
+
+
+```
 
 
 ## Baseline analysis
