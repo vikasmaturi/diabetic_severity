@@ -3,7 +3,9 @@ DR\_Analysis\_Main
 Vikas Maturi
 2021-07-07
 
-## Libraries and parameters
+## Setup & import
+
+#### Libraries and parameters
 
 ``` r
 # load libraries
@@ -61,7 +63,7 @@ va_progression_path <- "~/Documents/R_Projects/DR Analysis/dr_data/va_progressio
 injection_clean_path <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_clean_file.csv"
 ```
 
-## Data import
+#### Data import
 
 ``` r
 # read in data
@@ -77,7 +79,7 @@ raw_va_scale <- read_excel(path = va_scale_file)
 raw_injection <- read_csv(injection_file)
 ```
 
-## Clean data
+## Clean main data
 
 ``` r
 # Clean the raw data and save into new datasets
@@ -114,7 +116,7 @@ severity <-
     ## Warning in replace_with(out, !condition, false, fmt_args(~false),
     ## glue("length of {fmt_args(~condition)}")): NAs introduced by coercion
 
-## Merge Data
+#### Merge Data
 
 ``` r
 # merge patient data with severity data
@@ -127,7 +129,9 @@ all <-
 # if fillter(code_type == New) is included, filter out data with less common conditions and classified under old system (~120k entries removed)
 ```
 
-## Get VA data by time of visit for each patient/eye
+## Clean VA data
+
+#### Get VA data by time of visit for each patient/eye
 
 ``` r
 va_basedate <-
@@ -274,13 +278,324 @@ va_prog_test %>%
 
 ``` r
 all_va_prog <- 
-  va_progression %>% 
-  left_join(all %>% select(first_problem_code, severity_score, gender, race_ethnicity, first_dr_age, age_group, insurance, region, smoke_status, new_class, valid_class, pt_code_name, eye, index_date, baseline_va_letter, proc_group_28, proc_group_365, proc_group_any, vegf_group_28, vegf_group_365, vegf_group_any, retina_speciality, baseline_iop, pdr_group, cat_eyes), by = c("patient_guid" = "pt_code_name", "va_eye" = "eye", "index_date"))
+  all %>% 
+  select(pt_code_name, eye, first_problem_code, severity_score, gender, race_ethnicity, first_dr_age, age_group, insurance, region, smoke_status, new_class, valid_class, pt_code_name, eye, index_date, baseline_va_letter, proc_group_28, proc_group_365, proc_group_any, vegf_group_28, vegf_group_365, vegf_group_any, retina_speciality, baseline_iop, pdr_group, cat_eyes) %>% 
+  left_join(va_progression, by = c("pt_code_name" = "patient_guid", "eye" = "va_eye", "index_date"))
 ```
 
-## Timeseries aanalysis of visual acuity
+## Clean injection data
 
 ``` r
+# for testing - do not evaluation
+
+raw_injection %>% 
+  filter(patient_guid == "000bb3881e3a40e28324582e5c8bfe1d") %>% 
+  arrange(desc(injection_date))
+
+all %>%
+  filter(pt_code_name == "0019c0027b5e409b94c5870ae902737c") %>% 
+  arrange(desc(index_date))
+```
+
+``` r
+# identify injections for patient/eye pairs in the study
+in_study <-
+  all %>% 
+  mutate(
+    eye1 = if_else(eye == 1, 1, 0),
+    eye2 = if_else(eye == 2, 1, 0)
+  )  %>%
+  group_by(pt_code_name) %>% 
+  summarize(eye1 = sum(eye1), eye2 = sum(eye2))
+
+# for each patient/eye/injection date group, identify whether there is at least one injection entry marked in eye 1, eye 2, or eye 4 (not defined)
+eye_match <-
+  raw_injection %>% 
+  # some people have multiple injections for the same eye on the same date listed - remove those injections
+  select(patient_guid, eye, injection_date) %>%
+  group_by(patient_guid, eye, injection_date) %>% 
+  sample_n(1) %>% 
+  group_by(patient_guid, injection_date) %>% 
+  add_count(eye) %>% 
+  ungroup() %>% 
+  arrange(desc(n)) %>% 
+  # for each patient/injection date, determine whether they are listed as receiving an injection in eye 1, 2, and/or 4
+  spread(eye, n) %>% 
+  rename(
+    "one" = `1`, 
+    "two" = `2`,
+    "four" = `4`
+  )
+
+
+# flag each patient/eye/injection date grouping based on the 1/2/4 eye specification AND which patient/eyes pairs are in the dataset, if any
+# injection data actions: https://docs.google.com/spreadsheets/d/1Sg7CWuF5Bp-p76gc5IliIxdquiZlx3KAkVvKiHGjWvE/edit#gid=0
+injection_clean <-
+  eye_match %>% 
+  left_join(in_study, by = c("patient_guid" = "pt_code_name")) %>% 
+  # join in index date, to calculate injections within the first year. 
+  left_join(all %>% dplyr::select(pt_code_name, index_date), by = c("patient_guid" = "pt_code_name")) %>% 
+  # calculate days past index date of injection
+  mutate(
+    days_past_first_injection = injection_date - index_date
+  ) %>% 
+  # only keep injection data in first year
+  filter(days_past_first_injection > -1L, days_past_first_injection < 367) %>% 
+  mutate(
+    new_eye = case_when(
+      (one == 1 & is.na(two) & is.na(four)) ~ 1, # keep entry
+      (is.na(one) & two == 1 & is.na(four)) ~ 2,  # keep entry
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 1, # reassign entry to eye 1
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 2, # reassign entry to eye 2
+      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 5, # remove pt. eye 1 and 2 from dataset
+      (one == 1 & two == 1 & is.na(four)) ~ 3, # 3 means entries should be made for both eyes 
+      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
+      (one == 1 & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
+      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
+      (is.na(one) & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data 
+      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
+      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data
+      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 9, # keep entry (two and four will go away)
+      (one == 1 & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 9, # keep entry (one and four will go away)
+      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 9, # keep entry (four will go away)
+      TRUE ~ NA_real_
+    )
+  )
+
+
+
+
+
+#write_csv(injection_clean, path = injection_clean_path)
+```
+
+``` r
+# read in the clean injection file, developed in the above code
+injection_clean <- read_csv(injection_clean_file)
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   patient_guid = col_character(),
+    ##   injection_date = col_date(format = ""),
+    ##   one = col_double(),
+    ##   two = col_double(),
+    ##   four = col_double(),
+    ##   eye1 = col_double(),
+    ##   eye2 = col_double(),
+    ##   index_date = col_date(format = ""),
+    ##   days_past_first_injection = col_double(),
+    ##   new_eye = col_double()
+    ## )
+
+``` r
+# identify pateints to remove based on classification above
+pts_to_remove <-
+  injection_clean %>% 
+  group_by(patient_guid) %>% 
+  # see the classification table on the explanation for why these codes merit different forms of removal
+  mutate(
+    # remove all patient data for the first eye
+    remove1 = ifelse(any(new_eye == 8), 1, 0),
+    # remove all patient data for the second eye
+    remove2 = ifelse(any(new_eye == 6), 1, 0),
+    # remove all patient data
+    removeboth = ifelse(any(new_eye == 5), 1, 0),
+  ) %>% 
+  select(patient_guid, remove1, remove2, removeboth) %>% 
+  sample_n(1)
+
+
+pts_to_remove %>% 
+  ungroup() %>% 
+  count(remove1, remove2, removeboth)
+```
+
+    ## # A tibble: 8 x 4
+    ##   remove1 remove2 removeboth     n
+    ##     <dbl>   <dbl>      <dbl> <int>
+    ## 1       0       0          0 90230
+    ## 2       0       0          1 32482
+    ## 3       0       1          0  2294
+    ## 4       0       1          1  2447
+    ## 5       1       0          0  7723
+    ## 6       1       0          1  2124
+    ## 7       1       1          0  5789
+    ## 8       1       1          1  3544
+
+``` r
+# construct preliminary injection dataset
+injections <-
+  # again, remove duplicate entries to have just one patient/injection date/eye group
+  raw_injection %>%
+  select(patient_guid, eye, injection_date) %>% 
+  group_by(patient_guid, eye, injection_date) %>% 
+  sample_n(1) %>% 
+  ungroup() %>% 
+  # join in the "cleaned" dataset that provides updated codes for patients
+  left_join(
+    injection_clean %>% 
+      select(patient_guid, injection_date, new_eye) %>% 
+      group_by(patient_guid, injection_date, new_eye) %>% 
+      sample_n(1), 
+    by = c("patient_guid", "injection_date")) %>% 
+  # based on codes above, manipulate the data
+  mutate(
+    eye = ifelse(new_eye == 1 & eye == 4, 1, eye),
+    eye = ifelse(new_eye == 2 & eye == 4, 2, eye),
+  ) %>% 
+  # remove patients identified as "to be removed" based on the classification
+  left_join(pts_to_remove, by = "patient_guid") %>% 
+  filter(
+    !(eye == 1 & remove1 == 1),
+    !(eye == 2 & remove2 == 1), 
+    !(removeboth == 1)
+  )  %>% 
+  left_join(all %>% dplyr::select(pt_code_name, index_date, eye), by = c("patient_guid" = "pt_code_name", "eye")) %>% 
+  # calculate days past index date of injection
+  mutate(
+    days_past_first_injection = injection_date - index_date
+  ) %>% 
+  # only keep injection data in first year
+  filter(days_past_first_injection > -1L, days_past_first_injection < 367)
+
+test <-
+  # again, remove duplicate entries to have just one patient/injection date/eye group
+  raw_injection %>%
+  select(patient_guid, eye, injection_date) %>% 
+  group_by(patient_guid, eye, injection_date) %>% 
+  sample_n(1) %>% 
+  ungroup() %>% 
+  # join in the "cleaned" dataset that provides updated codes for patients
+  left_join(
+    injection_clean %>% 
+      select(patient_guid, injection_date, new_eye) %>% 
+      group_by(patient_guid, injection_date, new_eye) %>% 
+      sample_n(1), 
+    by = c("patient_guid", "injection_date")) %>% 
+  # based on codes above, manipulate the data
+  mutate(
+    eye = ifelse(new_eye == 1 & eye == 4, 1, eye),
+    eye = ifelse(new_eye == 2 & eye == 4, 2, eye),
+  ) %>% 
+  # remove patients identified as "to be removed" based on the classification
+  left_join(pts_to_remove, by = "patient_guid") %>% 
+  filter(
+    !(eye == 1 & remove1 == 1),
+    !(eye == 2 & remove2 == 1), 
+    !(removeboth == 1)
+  )  %>% 
+  left_join(all %>% dplyr::select(pt_code_name, index_date, eye), by = c("patient_guid" = "pt_code_name", "eye")) %>% 
+  # calculate days past index date of injection
+  mutate(
+    days_past_first_injection = injection_date - index_date
+  ) 
+  
+# identify patients to remove that have injections too close together (implying incorrect data)
+injections_remove <-
+  injections %>% 
+  group_by(patient_guid, eye) %>% 
+  arrange(injection_date) %>% 
+  mutate(prior_date = lag(injection_date)) %>% 
+  mutate(
+    too_close = ifelse(!is.na(prior_date), ifelse(injection_date - prior_date < 22, 1, 0), 0)
+  ) %>% 
+  mutate(remove_close = ifelse(any(too_close == 1), 1, 0)) %>% 
+  ungroup() %>% 
+  select(patient_guid, eye, remove_close) %>% 
+  group_by(patient_guid, eye, remove_close) %>% 
+  sample_n(1) %>% 
+  ungroup()
+
+# remove patients with injections too close together (identified above)
+injections2 <-
+  injections %>% 
+  left_join(injections_remove, by = c("patient_guid", "eye")) %>% 
+  filter(remove_close == 0)
+
+# identify patients where the first injection is more than 60 days after the index date. 
+inj_rem_date <-
+  injections2 %>% 
+  group_by(patient_guid, eye) %>%
+  arrange(injection_date) %>% 
+  mutate(first_entry = ifelse(row_number() == 1, 1, 0)) %>%
+  ungroup() %>% 
+  mutate(
+    inj_index_diff = injection_date - index_date,
+    gap = ifelse(inj_index_diff > 180, 1, 0),
+    gap_first = ifelse(gap == 1 & first_entry == 1, 1, 0)
+  ) %>% 
+  group_by(patient_guid, eye) %>%
+  mutate(remove_gap = if_else(any(gap_first == 1), 1, 0)) %>% 
+  ungroup() %>% 
+  select(patient_guid, eye, remove_gap) %>% 
+  group_by(patient_guid, eye, remove_gap) %>% 
+  sample_n(1) %>% 
+  ungroup()
+
+# remove patients where the first injection is more than 60 days after the index date
+# when this is the case, it suggests that the index date might be wrong 
+injections3 <-
+  injections2 %>% 
+  left_join(inj_rem_date, by = c("patient_guid", "eye")) %>% 
+  filter(remove_gap == 0)
+```
+
+``` r
+# for each patient, number of injections in first year
+inj_per_patient3 <-
+  all %>% 
+  left_join(injections3 %>% select(patient_guid, eye, injection_date), by = c("pt_code_name" = "patient_guid", "eye")) %>% 
+  count(pt_code_name, eye) %>% 
+  arrange(desc(n))
+
+# count of patients that had each number of injections in one year
+count_inj_per_year <-
+  inj_per_patient3 %>% 
+  count(n)
+
+count_inj_per_year
+```
+
+    ## # A tibble: 14 x 2
+    ##        n     nn
+    ##    <int>  <int>
+    ##  1     1 163754
+    ##  2     2  13730
+    ##  3     3  12353
+    ##  4     4   9561
+    ##  5     5   8052
+    ##  6     6   7457
+    ##  7     7   6310
+    ##  8     8   5372
+    ##  9     9   4423
+    ## 10    10   3150
+    ## 11    11   1949
+    ## 12    12   1014
+    ## 13    13    299
+    ## 14    14      5
+
+``` r
+# plotting histogram of above data
+inj_per_patient3 %>% 
+  ggplot(aes(x = n)) +
+  geom_histogram(binwidth = 1) +
+  theme_light() + 
+  labs(
+    title = "Total number of patients that received the number of injections in one year", 
+    x = "Number of injections within one year of index date", 
+    y = "Count"
+  )
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+## Cleaned datasets for analysis
+
+``` r
+# Question - do we want to limit the baseline analysis to daata that we use in the timeseries analysis? 
+
+set.seed(1)
 # filter out the necesssary data to conduct time series analysis
 timeseries_analysis <-
   all_va_prog %>% 
@@ -302,7 +617,7 @@ timeseries_analysis <-
     !cat_eyes == 1
   ) %>% 
   # select only one eye per patient
-  group_by(patient_guid) %>%
+  group_by(pt_code_name) %>%
   sample_n(1) %>%
   ungroup() %>%
   # adjust insurance data to combine medicare FFS and medicare managed
@@ -310,8 +625,10 @@ timeseries_analysis <-
     insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
   ) %>% 
   mutate(
-    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
-  ) 
+    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10),
+    baseline_va_quart = ntile(baseline_va_letter, 4)
+  ) %>% 
+  left_join(inj_per_patient3 %>% dplyr::rename(inj_year_1 = n), by = c("pt_code_name", "eye"))
 
 # timeseries_plotting <-
 #   timeseries_analysis %>% 
@@ -320,6 +637,40 @@ timeseries_analysis <-
 # clean_universe <-
 #   write_csv(timeseries_analysis, path = clean_universe_path)
 ```
+
+``` r
+# ensure that the same filters are applied to the top conditions dataset as in the timeseries analysis
+# NOTE TO SELF - use the updated timeseries analysis here (save top_conditions as time_series analysis to avoid confusion, or go through and replace)
+## AND MAKE SURE to set the seed here annd before!!
+
+
+set.seed(1)
+top_conditions <-
+  all %>% 
+  filter(
+    # only data classified under new ICD codes or codes starting of the format 36x.xxx
+    valid_class == 1,
+    #race and gender data available for the patient
+    !is.na(race_ethnicity), 
+    !is.na(gender),
+    !is.na(severity_score),
+    # no cat eyes
+    !cat_eyes == 1
+  ) %>% 
+  # select only one eye per patient
+  group_by(pt_code_name) %>% 
+  sample_n(1) %>% 
+  ungroup() %>% 
+  # adjust insurance data to combine medicare FFS and medicare managed
+  mutate(
+    insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
+  ) %>% 
+  mutate(
+    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
+  ) 
+```
+
+## Timeseries analysis of visual acuity
 
 #### Distribution of VA by race
 
@@ -334,7 +685,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 # table of percentage distribution to baseline letter va by race
@@ -362,7 +713,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -383,7 +734,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -409,7 +760,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -430,7 +781,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -454,7 +805,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -488,7 +839,7 @@ insurance_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 There are disparities in baseline VA that persist over time for Black
 and Hispanic patients as compared to White patients. The type of
@@ -521,7 +872,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 Female patients appear to hvae lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -556,7 +907,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -588,7 +939,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with ~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -619,7 +970,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -650,7 +1001,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -683,7 +1034,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -703,31 +1054,24 @@ severity_race_va_10_sd <-
   gather(key = "timepoint", value = "va_plot_sd", baseline_va, one_year_va, two_year_va) %>% 
   ungroup()
 
-
-test <-
-  timeseries_analysis %>% 
-  filter(baseline_va_r10 == 60, severity_score == 43) %>% 
-  select(patient_guid, va_eye, index_date, baseline_va_letter, one_year, two_year, severity_score, everything()) %>% 
-  arrange(two_year)
-
 severity_race_va_10 %>% 
   arrange(desc(count))
 ```
 
-    ## # A tibble: 672 x 6
+    ## # A tibble: 669 x 6
     ##    baseline_va_r10 severity_score race_ethnicity count timepoint   va_plot
     ##              <dbl>          <int> <chr>          <int> <chr>         <dbl>
-    ##  1              80             73 Caucasian       2858 baseline_va    79.3
-    ##  2              80             73 Caucasian       2858 one_year_va    76.3
-    ##  3              80             73 Caucasian       2858 two_year_va    74.9
-    ##  4              60             73 Caucasian       2632 baseline_va    61.1
-    ##  5              60             73 Caucasian       2632 one_year_va    64.0
-    ##  6              60             73 Caucasian       2632 two_year_va    64.0
-    ##  7              80             44 Caucasian       1713 baseline_va    78.9
-    ##  8              80             44 Caucasian       1713 one_year_va    76.9
-    ##  9              80             44 Caucasian       1713 two_year_va    75.3
-    ## 10              70             73 Caucasian       1523 baseline_va    70.0
-    ## # … with 662 more rows
+    ##  1              80             73 Caucasian       2863 baseline_va    79.3
+    ##  2              80             73 Caucasian       2863 one_year_va    76.2
+    ##  3              80             73 Caucasian       2863 two_year_va    74.8
+    ##  4              60             73 Caucasian       2648 baseline_va    61.1
+    ##  5              60             73 Caucasian       2648 one_year_va    64.0
+    ##  6              60             73 Caucasian       2648 two_year_va    64.1
+    ##  7              80             44 Caucasian       1729 baseline_va    78.9
+    ##  8              80             44 Caucasian       1729 one_year_va    76.9
+    ##  9              80             44 Caucasian       1729 two_year_va    75.4
+    ## 10              70             73 Caucasian       1532 baseline_va    70.0
+    ## # … with 659 more rows
 
 ``` r
 severity_race_va_10 %>%
@@ -753,7 +1097,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -794,7 +1138,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -839,7 +1183,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -879,7 +1223,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -920,277 +1264,128 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
-## Injection data
-
-``` r
-# for testing - do not evaluation
-
-raw_injection %>% 
-  filter(patient_guid == "000bb3881e3a40e28324582e5c8bfe1d") %>% 
-  arrange(desc(injection_date))
-
-all %>%
-  filter(pt_code_name == "0019c0027b5e409b94c5870ae902737c") %>% 
-  arrange(desc(index_date))
-```
+## Injections by VA analysis
 
 ``` r
-# identify injections for patient/eye pairs in the study
-in_study <-
-  all %>% 
-  mutate(
-    eye1 = if_else(eye == 1, 1, 0),
-    eye2 = if_else(eye == 2, 1, 0)
-  )  %>%
-  group_by(pt_code_name) %>% 
-  summarize(eye1 = sum(eye1), eye2 = sum(eye2))
-
-# for each patient/eye/injection date group, identify whether there is at least one injection entry marked in eye 1, eye 2, or eye 4 (not defined)
-eye_match <-
-  raw_injection %>% 
-  select(patient_guid, eye, injection_date) %>%
-  group_by(patient_guid, eye, injection_date) %>% 
-  sample_n(1) %>% 
-  group_by(patient_guid, injection_date) %>% 
-  add_count(eye) %>% 
-  ungroup() %>% 
-  arrange(desc(n)) %>% 
-  spread(eye, n) %>% 
-  rename(
-    "one" = `1`, 
-    "two" = `2`,
-    "four" = `4`
-  )
-
-# flag each patient/eye/injection date grouping based on the 1/2/4 eye specification AND which patient/eyes pairs are in the dataset, if any
-injection_clean <-
-  eye_match %>% 
-  left_join(in_study, by = c("patient_guid" = "pt_code_name")) %>% 
-  left_join(all %>% dplyr::select(pt_code_name, index_date), by = c("patient_guid" = "pt_code_name")) %>% 
-  # calculate days past index date of injection
-  mutate(
-    days_past_first_injection = injection_date - index_date
-  ) %>% 
-  # only keep injection data in first year
-  filter(days_past_first_injection > -1L, days_past_first_injection < 367) %>% 
-  mutate(
-    new_eye = case_when(
-      (one == 1 & is.na(two) & is.na(four)) ~ 1, # keep entry
-      (is.na(one) & two == 1 & is.na(four)) ~ 2,  # keep entry
-      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 1, # reassign entry to eye 1
-      (is.na(one) & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 2, # reassign entry to eye 2
-      (is.na(one) & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 5, # remove pt. eye 1 and 2 from dataset
-      (one == 1 & two == 1 & is.na(four)) ~ 3, # 3 means entries should be made for both eyes 
-      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
-      (one == 1 & is.na(two) & four > 0 & eye1 == 0 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
-      (one == 1 & is.na(two) & four > 0 & eye1 == 1 & eye2 == 1) ~ 6, # keep entry (four will go away), remove pt. eye 2 data 
-      (is.na(one) & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data 
-      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 4, # keep entry (four will go away)
-      (is.na(one) & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 8, # keep entry (four will go away), remove pt. eye 1 data
-      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 0) ~ 9, # keep entry (two and four will go away)
-      (one == 1 & two == 1 & four > 0 & eye1 == 0 & eye2 == 1) ~ 9, # keep entry (one and four will go away)
-      (one == 1 & two == 1 & four > 0 & eye1 == 1 & eye2 == 1) ~ 9, # keep entry (four will go away)
-      TRUE ~ NA_real_
-    )
-  )
-
-
-
-#write_csv(injection_clean, path = injection_clean_path)
-```
-
-``` r
-injection_clean <- read_csv(injection_clean_file)
-```
-
-    ## Parsed with column specification:
-    ## cols(
-    ##   patient_guid = col_character(),
-    ##   injection_date = col_date(format = ""),
-    ##   one = col_double(),
-    ##   two = col_double(),
-    ##   four = col_double(),
-    ##   eye1 = col_double(),
-    ##   eye2 = col_double(),
-    ##   index_date = col_date(format = ""),
-    ##   days_past_first_injection = col_double(),
-    ##   new_eye = col_double()
-    ## )
-
-``` r
-# identify pateints to remove based on classification above
-pts_to_remove <-
-  injection_clean %>% 
-  group_by(patient_guid) %>% 
-  mutate(
-    remove1 = ifelse(any(new_eye == 8), 1, 0),
-    remove2 = ifelse(any(new_eye == 6), 1, 0),
-    removeboth = ifelse(any(new_eye == 5), 1, 0),
-  ) %>% 
-  select(patient_guid, remove1, remove2, removeboth) %>% 
-  sample_n(1)
-
-# construct preliminary injection dataset
-injections <-
-  raw_injection %>%
-  select(patient_guid, eye, injection_date) %>% 
-  group_by(patient_guid, eye, injection_date) %>% 
-  sample_n(1) %>% 
-  ungroup() %>% 
-  left_join(
-    injection_clean %>% 
-      select(patient_guid, injection_date, new_eye) %>% 
-      group_by(patient_guid, injection_date, new_eye) %>% 
-      sample_n(1), 
-    by = c("patient_guid", "injection_date")) %>% 
-  mutate(
-    eye = ifelse(new_eye == 1 & eye == 4, 1, eye),
-    eye = ifelse(new_eye == 2 & eye == 4, 2, eye),
-  ) %>% 
-  left_join(pts_to_remove, by = "patient_guid") %>% 
-  filter(
-    !(eye == 1 & remove1 == 1),
-    !(eye == 2 & remove2 == 1), 
-    !(removeboth == 1)
-  )  %>% 
-  left_join(all %>% dplyr::select(pt_code_name, index_date, eye), by = c("patient_guid" = "pt_code_name", "eye")) %>% 
-  # calculate days past index date of injection
-  mutate(
-    days_past_first_injection = injection_date - index_date
-  ) %>% 
-  # only keep injection data in first year
-  filter(days_past_first_injection > -1L, days_past_first_injection < 367)
-  
-# identify patients to remove that have injections too close together (implying incorrect data)
-injections_remove <-
-  injections %>% 
-  group_by(patient_guid, eye) %>% 
-  arrange(injection_date) %>% 
-  mutate(prior_date = lag(injection_date)) %>% 
-  mutate(
-    too_close = ifelse(!is.na(prior_date), ifelse(injection_date - prior_date < 22, 1, 0), 0)
-  ) %>% 
-  mutate(remove_close = ifelse(any(too_close == 1), 1, 0)) %>% 
-  ungroup() %>% 
-  select(patient_guid, eye, remove_close) %>% 
-  group_by(patient_guid, eye, remove_close) %>% 
-  sample_n(1) %>% 
+## calculate change in va over time for people in each severity group/race
+inj_race_va <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity, inj_year_1) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>%
+  filter(inj_year_1 < 13) %>% 
+  mutate(inj_year_1 = as.factor(inj_year_1)) %>% 
   ungroup()
 
-# remove patients with injections too close together (identified above)
-injections2 <-
-  injections %>% 
-  left_join(injections_remove, by = c("patient_guid", "eye")) %>% 
-  filter(remove_close == 0)
 
-# identify patients where the first injection is more than 60 days after the index date. 
-inj_rem_date <-
-  injections2 %>% 
-  group_by(patient_guid, eye) %>%
-  arrange(injection_date) %>% 
-  mutate(first_entry = ifelse(row_number() == 1, 1, 0)) %>%
-  ungroup() %>% 
-  mutate(
-    inj_index_diff = injection_date - index_date,
-    gap = ifelse(inj_index_diff > 60, 1, 0),
-    gap_first = ifelse(gap == 1 & first_entry == 1, 1, 0)
-  ) %>% 
-  group_by(patient_guid, eye) %>%
-  mutate(remove_gap = if_else(any(gap_first == 1), 1, 0)) %>% 
-  ungroup() %>% 
-  select(patient_guid, eye, remove_gap) %>% 
-  group_by(patient_guid, eye, remove_gap) %>% 
-  sample_n(1) %>% 
-  ungroup()
-
-# remove patients where the first injection is more than 60 days after the index date
-# when this is the case, it suggests that the index date might be wrong 
-injections3 <-
-  injections2 %>% 
-  left_join(inj_rem_date, by = c("patient_guid", "eye")) %>% 
-  filter(remove_gap == 0)
+str(inj_race_va)
 ```
 
-``` r
-# for each patient, number of injections in first year
-inj_per_patient3 <-
-  all %>% 
-  left_join(injections3 %>% select(patient_guid, eye, injection_date), by = c("pt_code_name" = "patient_guid", "eye")) %>% 
-  count(pt_code_name, eye) %>% 
-  arrange(desc(n))
-
-# count of patients that had each number of injections in one year
-inj_per_patient3 %>% 
-  count(n)
-```
-
-    ## # A tibble: 14 x 2
-    ##        n     nn
-    ##    <int>  <int>
-    ##  1     1 165538
-    ##  2     2  13281
-    ##  3     3  11981
-    ##  4     4   9259
-    ##  5     5   7820
-    ##  6     6   7256
-    ##  7     7   6178
-    ##  8     8   5303
-    ##  9     9   4401
-    ## 10    10   3145
-    ## 11    11   1949
-    ## 12    12   1014
-    ## 13    13    299
-    ## 14    14      5
+    ## Classes 'tbl_df', 'tbl' and 'data.frame':    108 obs. of  5 variables:
+    ##  $ race_ethnicity: chr  "Black or African American" "Black or African American" "Black or African American" "Black or African American" ...
+    ##  $ inj_year_1    : Factor w/ 12 levels "1","2","3","4",..: 1 2 3 4 5 6 7 8 9 10 ...
+    ##  $ count         : int  3300 416 399 339 265 272 258 204 194 143 ...
+    ##  $ timepoint     : chr  "baseline_va" "baseline_va" "baseline_va" "baseline_va" ...
+    ##  $ va_plot       : num  66.4 66.2 66.3 66.2 66.3 ...
 
 ``` r
-# plotting histogram of above data
-inj_per_patient3 %>% 
-  ggplot(aes(x = n)) +
-  geom_histogram(binwidth = 1) +
+inj_race_va %>%
+  filter(inj_year_1 %in% c(1, 8)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = race_ethnicity, linetype = inj_year_1)) +
+  geom_point() +
+  geom_line(aes(group = interaction(inj_year_1, race_ethnicity))) +
+  ggrepel::geom_text_repel(
+    data = inj_race_va %>% filter(timepoint == "two_year_va", inj_year_1 %in% c(1, 8)),
+    aes(label = count, hjust = -1)
+  ) +
   theme_light() + 
   labs(
-    title = "Total number of patients that received the number of injections in one year", 
-    x = "Number of injections within one year of index date", 
-    y = "Count"
-  )
+    title = "VA at baseline, one, and two years by race and number of injections"
+  ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+
+``` r
+severity_race_inj_va_quart <-
+  timeseries_analysis %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_quart, severity_score, race_ethnicity, inj_year_1) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+
+severity_race_inj_va_quart_sd <-
+  timeseries_analysis %>% 
+  # group patients by race, severity, and same baseline va data
+  group_by(baseline_va_quart, severity_score, race_ethnicity, inj_year_1) %>% 
+  summarize(baseline_va = sd(baseline_va_letter), one_year_va = sd(one_year), two_year_va = sd(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot_sd", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+
+
+severity_race_inj_va_quart %>% 
+  arrange(desc(count))
+```
+
+    ## # A tibble: 3,939 x 7
+    ##    baseline_va_qua… severity_score race_ethnicity inj_year_1 count
+    ##               <int>          <int> <chr>               <int> <int>
+    ##  1                1             73 Caucasian               1  1263
+    ##  2                1             73 Caucasian               1  1263
+    ##  3                1             73 Caucasian               1  1263
+    ##  4                4             73 Caucasian               1  1249
+    ##  5                4             73 Caucasian               1  1249
+    ##  6                4             73 Caucasian               1  1249
+    ##  7                2             73 Caucasian               1  1184
+    ##  8                2             73 Caucasian               1  1184
+    ##  9                2             73 Caucasian               1  1184
+    ## 10                3             73 Caucasian               1  1166
+    ## # … with 3,929 more rows, and 2 more variables: timepoint <chr>,
+    ## #   va_plot <dbl>
+
+``` r
+severity_race_inj_va_quart %>%
+  filter(
+    baseline_va_quart %in% c(4),
+    severity_score %in% c(73),
+    inj_year_1 %in% c(1)
+  ) %>% 
+  mutate(severity_score = as.factor(severity_score)) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, linetype = severity_score, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
+  theme_light() + 
+  ggrepel::geom_text_repel(
+    data = 
+      severity_race_inj_va_quart %>% 
+      filter(
+        timepoint %in% c("two_year_va"), 
+        baseline_va_quart %in% c(4), 
+        severity_score %in% c(73), 
+        inj_year_1 %in% c(1)) %>% 
+      mutate(severity_score = as.factor(severity_score)), 
+    aes(label = count, hjust = -1)
+  ) +
+  labs(
+    title = "VA at baseline, one, and two years by race for people at ~4th VA quart, 73 severity",
+    subtitle = "Grouped by starting severity score, race, and number of injections = 1",
+    y = "visual acuity (letter)"
+  ) 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+
+Hispanic patients with the same starting severity and baseline VA
+quartile that receive the same number of injections in the first year (1
+injection) do substantially worse than their white counterparts
 
 ## Baseline analysis
 
 #### Dataset for baseline analysis
-
-``` r
-# ensure that the same filters are applied to the top conditions dataset as in the timeseries analysis
-# NOTE TO SELF - use the updated timeseries analysis here (save top_conditions as time_series analysis to avoid confusion, or go through and replace)
-## AND MAKE SURE to set the seed here annd before!!
-top_conditions <-
-  all %>% 
-  filter(
-    # only data classified under new ICD codes or codes starting of the format 36x.xxx
-    valid_class == 1,
-    #race and gender data available for the patient
-    !is.na(race_ethnicity), 
-    !is.na(gender),
-    !is.na(severity_score),
-    # no cat eyes
-    !cat_eyes == 1
-  ) %>% 
-  # select only one eye per patient
-  group_by(pt_code_name) %>% 
-  sample_n(1) %>% 
-  ungroup() %>% 
-  # adjust insurance data to combine medicare FFS and medicare managed
-  mutate(
-    insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
-  ) %>% 
-  mutate(
-    baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
-  ) 
-```
 
 #### Severity by race
 
@@ -1208,12 +1403,12 @@ severity_race %>% kable()
 
 | race\_ethnicity           |  average | count |
 | :------------------------ | -------: | ----: |
-| Hispanic                  | 60.65419 | 20537 |
-| Other                     | 58.96791 |  3210 |
-| Unknown                   | 58.07011 | 14021 |
-| Black or African American | 57.30344 | 18218 |
-| Asian                     | 56.78601 |  3860 |
-| Caucasian                 | 55.94414 | 74042 |
+| Hispanic                  | 60.69275 | 20537 |
+| Other                     | 58.96480 |  3210 |
+| Unknown                   | 58.05050 | 14021 |
+| Black or African American | 57.30239 | 18218 |
+| Asian                     | 56.85285 |  3860 |
+| Caucasian                 | 55.94013 | 74042 |
 
 Hispanic people have the highest severity of all racial groups, nearaly
 5 points higher than White people. Black, Asian, and Caucasian people
@@ -1237,16 +1432,16 @@ severity_race_reg
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity            region    average count
     ##    <chr>                     <chr>       <dbl> <int>
-    ##  1 Hispanic                  West         62.1  7057
-    ##  2 Hispanic                  Midwest      61.1  1456
-    ##  3 Hispanic                  South        60.5  8695
-    ##  4 Other                     West         60.4  1194
-    ##  5 Unknown                   West         59.8  4700
-    ##  6 Other                     Midwest      58.6   449
-    ##  7 Other                     South        58.3  1098
-    ##  8 Unknown                   South        58.2  4723
-    ##  9 Hispanic                  Northeast    58.0  2631
-    ## 10 Black or African American South        57.8 10625
+    ##  1 Hispanic                  West         62.2  7059
+    ##  2 Hispanic                  Midwest      61.1  1454
+    ##  3 Hispanic                  South        60.5  8692
+    ##  4 Other                     West         60.5  1193
+    ##  5 Unknown                   West         59.8  4701
+    ##  6 Other                     Midwest      58.5   450
+    ##  7 Other                     South        58.2  1094
+    ##  8 Unknown                   South        58.2  4724
+    ##  9 Hispanic                  Northeast    58.0  2632
+    ## 10 Black or African American South        57.8 10628
     ## # … with 20 more rows
 
 ``` r
@@ -1263,7 +1458,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -1285,16 +1480,16 @@ severity_race_age %>% head(10) %>% kable()
 
 | race\_ethnicity           | age\_group | avg\_severity | count |
 | :------------------------ | ---------: | ------------: | ----: |
-| Other                     |         25 |      69.47368 |    19 |
-| Asian                     |         25 |      69.40909 |    22 |
-| Other                     |         35 |      68.88235 |    68 |
-| Hispanic                  |         35 |      68.29295 |   454 |
-| Other                     |         30 |      68.15217 |    46 |
-| Hispanic                  |         30 |      68.13011 |   269 |
-| Hispanic                  |         25 |      68.09910 |   111 |
-| Unknown                   |         30 |      67.94298 |   228 |
-| Black or African American |         25 |      67.71233 |    73 |
-| Other                     |         40 |      66.91176 |   136 |
+| Other                     |         35 |      69.80882 |    68 |
+| Other                     |         25 |      69.73684 |    19 |
+| Other                     |         30 |      68.69565 |    46 |
+| Hispanic                  |         35 |      68.62084 |   451 |
+| Hispanic                  |         30 |      68.22509 |   271 |
+| Hispanic                  |         25 |      68.05405 |   111 |
+| Unknown                   |         30 |      68.02193 |   228 |
+| Asian                     |         25 |      67.81818 |    22 |
+| Asian                     |         30 |      67.18182 |    44 |
+| Black or African American |         25 |      67.16438 |    73 |
 
 ``` r
 # graph severity by race and age group
@@ -1310,7 +1505,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -1339,7 +1534,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is ~1.5-2
 pts higher for Black people vs. Caucasian people, and ~3-4 pts higher
@@ -1361,11 +1556,11 @@ severity_reg %>% kable()
 
 | region    |  average |     n |
 | :-------- | -------: | ----: |
-| West      | 58.81935 | 27163 |
-| South     | 57.61926 | 53086 |
-| Midwest   | 56.05430 | 27461 |
-| Northeast | 55.76899 | 23687 |
-| NA        | 55.28462 |  2491 |
+| West      | 58.83455 | 27163 |
+| South     | 57.62474 | 53072 |
+| Midwest   | 56.06634 | 27449 |
+| Northeast | 55.76362 | 23691 |
+| NA        | 55.11819 |  2513 |
 
 Severity in the West does appear to be a few points higher than in other
 regions - perhaps due to a higher number of Hispanic people being from
@@ -1389,14 +1584,14 @@ severity_race_ins
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity insurance       average count
     ##    <chr>          <chr>             <dbl> <int>
-    ##  1 Other          Medicaid           63.0   351
-    ##  2 Other          Govt               62.7   104
-    ##  3 Hispanic       Govt               62.6   379
-    ##  4 Hispanic       Medicaid           61.7  2447
+    ##  1 Hispanic       Govt               62.7   379
+    ##  2 Other          Medicaid           62.6   351
+    ##  3 Other          Govt               62.4   104
+    ##  4 Hispanic       Medicaid           61.8  2447
     ##  5 Hispanic       Unknown/Missing    61.5  2490
     ##  6 Unknown        Medicaid           60.9  1425
     ##  7 Hispanic       Private            60.6  4905
-    ##  8 Caucasian      Medicaid           60.4  4016
+    ##  8 Caucasian      Medicaid           60.5  4016
     ##  9 Hispanic       Medicare           60.2 10200
     ## 10 Unknown        Govt               60.0   298
     ## # … with 26 more rows
@@ -1420,7 +1615,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -1442,11 +1637,11 @@ severity_race_sex %>% head(5) %>% kable()
 
 | race\_ethnicity | gender  |  average | count |
 | :-------------- | :------ | -------: | ----: |
-| Hispanic        | Male    | 61.80531 | 10766 |
-| Other           | Male    | 59.42538 |  1568 |
-| Hispanic        | Female  | 59.40363 |  9640 |
-| Unknown         | Unknown | 59.03846 |    52 |
-| Other           | Female  | 58.58075 |  1610 |
+| Hispanic        | Male    | 61.83244 | 10766 |
+| Hispanic        | Female  | 59.45187 |  9640 |
+| Other           | Male    | 59.37500 |  1568 |
+| Unknown         | Unknown | 59.13462 |    52 |
+| Other           | Female  | 58.63602 |  1610 |
 
 ``` r
 # graphing severity by race and sex
@@ -1464,7 +1659,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -1498,7 +1693,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -1519,20 +1714,20 @@ treatment_sev_race %>%
   arrange(desc(severity_score, race_ethnicity))
 ```
 
-    ## # A tibble: 245 x 5
+    ## # A tibble: 246 x 5
     ##    severity_score race_ethnicity            proc_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
     ##  1             85 Asian                     antivegf      0.75       3
     ##  2             85 Asian                     laser         0.25       1
-    ##  3             85 Black or African American antivegf      0.84      42
-    ##  4             85 Black or African American combo         0.02       1
-    ##  5             85 Black or African American laser         0.12       6
-    ##  6             85 Black or African American steroid       0.02       1
-    ##  7             85 Caucasian                 antivegf      0.903     56
-    ##  8             85 Caucasian                 laser         0.0968     6
-    ##  9             85 Hispanic                  antivegf      0.96      24
-    ## 10             85 Hispanic                  combo         0.04       1
-    ## # … with 235 more rows
+    ##  3             85 Black or African American antivegf      0.837     41
+    ##  4             85 Black or African American combo         0.0204     1
+    ##  5             85 Black or African American laser         0.122      6
+    ##  6             85 Black or African American steroid       0.0204     1
+    ##  7             85 Caucasian                 antivegf      0.905     57
+    ##  8             85 Caucasian                 laser         0.0952     6
+    ##  9             85 Hispanic                  antivegf      0.923     24
+    ## 10             85 Hispanic                  combo         0.0385     1
+    ## # … with 236 more rows
 
 ``` r
 # Graphing likelihood of first treatment type by severity and race
@@ -1550,7 +1745,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -1573,7 +1768,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -1601,20 +1796,20 @@ drug_sev_race %>%
   arrange(desc(severity_score, race_ethnicity))
 ```
 
-    ## # A tibble: 241 x 5
+    ## # A tibble: 242 x 5
     ##    severity_score race_ethnicity            vegf_group_28   prop count
     ##             <int> <chr>                     <chr>          <dbl> <int>
     ##  1             85 Asian                     Avastin       1          3
-    ##  2             85 Black or African American Avastin       0.905     38
-    ##  3             85 Black or African American Eylea         0.0714     3
-    ##  4             85 Black or African American Lucentis      0.0238     1
-    ##  5             85 Caucasian                 Avastin       0.786     44
-    ##  6             85 Caucasian                 Eylea         0.125      7
-    ##  7             85 Caucasian                 Lucentis      0.0893     5
+    ##  2             85 Black or African American Avastin       0.902     37
+    ##  3             85 Black or African American Eylea         0.0488     2
+    ##  4             85 Black or African American Lucentis      0.0488     2
+    ##  5             85 Caucasian                 Avastin       0.807     46
+    ##  6             85 Caucasian                 Eylea         0.123      7
+    ##  7             85 Caucasian                 Lucentis      0.0702     4
     ##  8             85 Hispanic                  Avastin       0.833     20
     ##  9             85 Hispanic                  Eylea         0.125      3
     ## 10             85 Hispanic                  Lucentis      0.0417     1
-    ## # … with 231 more rows
+    ## # … with 232 more rows
 
 ``` r
 # Graphing likelihood of first drug type by severity and race
@@ -1630,7 +1825,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -1648,7 +1843,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -1672,7 +1867,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Avastin as compared to their Caucasian counterparts
@@ -1702,20 +1897,20 @@ drug_sev_race_ins %>%
   arrange(desc(severity_score, race_ethnicity, insurance))
 ```
 
-    ## # A tibble: 1,108 x 6
+    ## # A tibble: 1,115 x 6
     ##    severity_score race_ethnicity     insurance   vegf_group_28   prop count
     ##             <int> <chr>              <chr>       <chr>          <dbl> <int>
     ##  1             85 Asian              Medicare    Avastin       1          1
     ##  2             85 Asian              Private     Avastin       1          1
     ##  3             85 Asian              Unknown/Mi… Avastin       1          1
-    ##  4             85 Black or African … Medicaid    Avastin       1          3
-    ##  5             85 Black or African … Medicare    Avastin       0.857     18
+    ##  4             85 Black or African … Medicaid    Avastin       0.75       3
+    ##  5             85 Black or African … Medicare    Avastin       0.895     17
     ##  6             85 Black or African … Private     Avastin       0.941     16
     ##  7             85 Black or African … Unknown/Mi… Avastin       1          1
-    ##  8             85 Black or African … Medicare    Eylea         0.143      3
-    ##  9             85 Black or African … Private     Lucentis      0.0588     1
-    ## 10             85 Caucasian          Govt        Avastin       1          2
-    ## # … with 1,098 more rows
+    ##  8             85 Black or African … Medicare    Eylea         0.105      2
+    ##  9             85 Black or African … Medicaid    Lucentis      0.25       1
+    ## 10             85 Black or African … Private     Lucentis      0.0588     1
+    ## # … with 1,105 more rows
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicare FFS  insurance
@@ -1735,7 +1930,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-68-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -1756,7 +1951,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -1777,7 +1972,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -1811,7 +2006,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-68-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -1830,21 +2025,21 @@ severity_race_vision <-
 severity_race_vision
 ```
 
-    ## # A tibble: 71 x 4
+    ## # A tibble: 73 x 4
     ## # Groups:   race_ethnicity [6]
     ##    race_ethnicity            baseline_va_letter avg_severity count
     ##    <chr>                                  <dbl>        <dbl> <int>
-    ##  1 Hispanic                                26           66.3   113
-    ##  2 Hispanic                                35           65.0  1170
-    ##  3 Hispanic                                40           64.8   444
-    ##  4 Unknown                                 35           63.6   629
-    ##  5 Hispanic                                50           63.4  1055
-    ##  6 Caucasian                               26           63.3   327
-    ##  7 Black or African American               35           62.8   875
-    ##  8 Unknown                                 40           62.7   265
-    ##  9 Caucasian                               45.0         62.7   355
-    ## 10 Hispanic                                55.          62.6   991
-    ## # … with 61 more rows
+    ##  1 Hispanic                                35           65.2  1168
+    ##  2 Hispanic                                40           64.9   463
+    ##  3 Hispanic                                26           64.5   111
+    ##  4 Hispanic                                50           63.8  1063
+    ##  5 Caucasian                               26           63.7   330
+    ##  6 Unknown                                 35           63.4   621
+    ##  7 Caucasian                               30.0         63.0   170
+    ##  8 Caucasian                               45.0         62.9   361
+    ##  9 Hispanic                                55.          62.8   964
+    ## 10 Black or African American               35           62.8   882
+    ## # … with 63 more rows
 
 ``` r
 # graph severity by race and age group
@@ -1862,7 +2057,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -1892,4 +2087,4 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
