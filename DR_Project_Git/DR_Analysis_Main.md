@@ -490,6 +490,8 @@ insurance_race_va %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
+NOTABLY: The decline in VA from 1 to 2 years seems to be larger in patients on public insurance relative to private insurance. Want to check 0 --> 1, 1 -->2 , and 0 --> 2 year differences by race and insurance status
+
 There are disparities in baseline VA that persist over time for Black
 and Hispanic patients as compared to White patients. The type of
 insurance appears to have strong correlation to the baseline VA, but
@@ -523,7 +525,7 @@ gender_race_va %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
-Female patients appear to hvae lower baseline VA as compared to their
+Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
 appears to be similar between genders within racial groups.
 
