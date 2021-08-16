@@ -874,7 +874,7 @@ gender_race_va %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
-Female patients appear to hvae lower baseline VA as compared to their
+Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
 appears to be similar between genders within racial groups.
 

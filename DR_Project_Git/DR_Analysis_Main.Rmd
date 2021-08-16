@@ -542,10 +542,7 @@ inj_per_patient3 %>%
     y = "Count"
   )
 
-
 ```
-
-
 
 
 
@@ -828,7 +825,7 @@ gender_race_va %>%
   ) 
 ```
 
-Female patients appear to hvae lower baseline VA as compared to their male counterparts of the same race. The raw gain or loss in VA over time appears to be similar between genders within racial groups.
+Female patients appear to have lower baseline VA as compared to their male counterparts of the same race. The raw gain or loss in VA over time appears to be similar between genders within racial groups.
 
 
 #### Race VA timeseries
