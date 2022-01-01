@@ -20,6 +20,7 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(knitr)
+library(googlesheets4)
 
 # Data files
 
@@ -78,7 +79,9 @@ injection_clean_path <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_cl
 
 raw_universe <- read_excel(path = universe_file, sheet = 1, col_names = TRUE, .name_repair = "universal")
 
-raw_severity <- read_excel(path = severity_file, sheet = 2, col_names = TRUE, .name_repair = "universal")
+# raw_severity <- read_excel(path = severity_file, sheet = 2, col_names = TRUE, .name_repair = "universal")
+
+raw_severity <- read_sheet("https://docs.google.com/spreadsheets/d/10L6bIxXOIw8xDi2fESXdJxE6EncNsCjm6XfVd4DtuJE/edit#gid=1224292389")
 
 raw_va <- read_csv(file = va_file)
 
@@ -112,15 +115,20 @@ universe <-
 severity <-
   raw_severity %>% 
   select(
-    diabetes_diag = Diabetes.diagnosis,
-    description = Description,
-    ICD_10_equiv = ICD.10.equivalent,
-    severity_score = Severity.Scale,
-    new_class = New_Class,
-    valid_class = Valid_Class
+    diabetes_diag,
+    description,
+    icd_10_equiv,
+    severity_score,
+    new_class,
+    valid_class,
+    vision_category,
+    vision_threatening,
+    include_given_code
   ) %>% 
   mutate(
-    severity_score = if_else(severity_score == "NA", as.integer(NA), as.integer(severity_score))
+    diabetes_diag = as.character(diabetes_diag),
+    severity_score = if_else(severity_score == "NA", as.integer(NA), as.integer(severity_score)),
+    vision_threatening = if_else(vision_threatening == "NA", as.integer(NA), as.integer(vision_threatening)),
   )
 
 ```
@@ -271,7 +279,7 @@ va_prog_test %>%
 
 all_va_prog <- 
   all %>% 
-  select(pt_code_name, eye, first_problem_code, severity_score, gender, race_ethnicity, first_dr_age, age_group, insurance, region, smoke_status, new_class, valid_class, pt_code_name, eye, index_date, baseline_va_letter, proc_group_28, proc_group_365, proc_group_any, vegf_group_28, vegf_group_365, vegf_group_any, retina_speciality, baseline_iop, pdr_group, cat_eyes) %>% 
+  select(pt_code_name, eye, first_problem_code, severity_score, gender, race_ethnicity, first_dr_age, age_group, insurance, region, smoke_status, new_class, valid_class, include_given_code, vision_category, vision_threatening, pt_code_name, eye, index_date, baseline_va_letter, proc_group_28, proc_group_365, proc_group_any, vegf_group_28, vegf_group_365, vegf_group_any, retina_speciality, baseline_iop, pdr_group, cat_eyes) %>% 
   left_join(va_progression, by = c("pt_code_name" = "patient_guid", "eye" = "va_eye", "index_date"))
 
 ```
@@ -279,7 +287,6 @@ all_va_prog <-
 
 
 ## Clean injection data
-
 
 ```{r, eval = FALSE} 
 
@@ -293,7 +300,6 @@ all %>%
   filter(pt_code_name == "0019c0027b5e409b94c5870ae902737c") %>% 
   arrange(desc(index_date))
 ```
-
 
 
 ```{r, eval = FALSE}
@@ -362,16 +368,11 @@ injection_clean <-
     )
   )
 
-
-
-
-
 #write_csv(injection_clean, path = injection_clean_path)
-
 
 ```
 
-```{r}
+```{r, eval = FALSE}
 
 # read in the clean injection file, developed in the above code
 injection_clean <- read_csv(injection_clean_file)
@@ -515,7 +516,7 @@ injections3 <-
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 
 # for each patient, number of injections in first year
 inj_per_patient3 <-
@@ -558,7 +559,7 @@ timeseries_analysis <-
   all_va_prog %>% 
   filter(
     # only data classified under new ICD codes or codes starting of the format 36x.xxx
-    valid_class == 1,
+    include_given_code == 1,
     #race is White, Black, or Hispanic, to ensure adequate numbers
     race_ethnicity %in% c("Caucasian", "Black or African American", "Hispanic"),
     #race and gender data available for the patient
@@ -567,6 +568,7 @@ timeseries_analysis <-
     !is.na(severity_score),
     # only patients with one year and two year data available
     !is.na(one_year), 
+    #!is.na(six_month),
     !is.na(two_year),
     # only patients getting antivegf treatment
     proc_group_28 == "antivegf",
@@ -583,9 +585,11 @@ timeseries_analysis <-
   ) %>% 
   mutate(
     baseline_va_r10 = plyr::round_any(baseline_va_letter, 10),
-    baseline_va_quart = ntile(baseline_va_letter, 4)
-  ) %>% 
-  left_join(inj_per_patient3 %>% dplyr::rename(inj_year_1 = n), by = c("pt_code_name", "eye"))
+    baseline_va_quart = ntile(baseline_va_letter, 4),
+    one_year_va_delta = one_year - baseline_va_letter,
+    two_year_va_delta = two_year - baseline_va_letter
+  ) 
+  # left_join(inj_per_patient3 %>% dplyr::rename(inj_year_1 = n), by = c("pt_code_name", "eye"))
 
 # timeseries_plotting <-
 #   timeseries_analysis %>% 
@@ -596,7 +600,13 @@ timeseries_analysis <-
 
 ```
 
+```{r}
+participants_by_code <-
+  timeseries_analysis %>% 
+  count(first_problem_code) %>% 
+  arrange(desc(n))
 
+```
 
 ```{r}
 # ensure that the same filters are applied to the top conditions dataset as in the timeseries analysis
@@ -637,18 +647,6 @@ top_conditions <-
 #### Distribution of VA by race
 
 ```{r}
-timeseries_analysis %>% 
-  ggplot(aes(x = baseline_va_letter)) +
-  geom_histogram(binwidth = 10, aes(fill = race_ethnicity)) +
-  theme_light() +
-  scale_x_continuous(breaks = seq(0, 100, 10)) +
-  labs(
-    title = "Histogram of eye count by race"
-  )
-
-```
-
-```{r}
 # table of percentage distribution to baseline letter va by race
 race_distribution <-
   timeseries_analysis %>% 
@@ -658,6 +656,21 @@ race_distribution <-
   group_by(race_ethnicity) %>% 
   mutate(prop = count / sum(count)) %>% 
   ungroup()
+
+race_distribution %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(total_race = sum(count))
+```
+
+```{r}
+timeseries_analysis %>% 
+  ggplot(aes(x = baseline_va_letter)) +
+  geom_histogram(binwidth = 10, aes(fill = race_ethnicity)) +
+  theme_light() +
+  scale_x_continuous(breaks = seq(0, 100, 10)) +
+  labs(
+    title = "Histogram of eye count by race"
+  )
 
 ```
 
@@ -677,8 +690,6 @@ race_distribution %>%
 ```
 
 
-
-
 #### Timeseries VA by race and severity
 
 ```{r}
@@ -693,6 +704,14 @@ severity_race_va <-
 
 
 ```{r}
+timeseries_analysis %>% 
+  count(severity_score, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(prop = n / sum(n))
+```
+
+
+```{r}
 ## density chart of distribution of severity scores, by race
 timeseries_analysis %>% 
   ggplot() +
@@ -701,6 +720,68 @@ timeseries_analysis %>%
 ```
 
 This chart shows the density of patients by severity score. There are two peaks - first at around severity scores between 40-48, and a second at severity scores betewen 73-78. These numbers are generally aligned to categorizations of moderate NPDR (with and without edema), and PDR (with and without edema).
+
+
+```{r}
+# plot change in visual acuity by race at one and two yeaars
+
+va_race <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(
+    baseline_va = mean(baseline_va_letter), 
+    one_year_va = mean(one_year), 
+    two_year_va = mean(two_year),
+    baseline_sd = sd(baseline_va_letter),
+    one_year_sd = sd(one_year),
+    two_year_sd = sd(two_year),
+    count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+  
+va_race %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = va_race %>% filter(timepoint == "two_year_va"),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA at baseline, one, and two years by race",
+    y = "Visual acuity"
+  )
+
+```
+
+```{r}
+
+va_race_diff <-
+  va_race %>% 
+  spread(key = timepoint, value = va_plot) %>% 
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  ) %>% 
+  gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
+  ungroup()
+
+va_race_diff %>% 
+  ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = race_ethnicity)) +
+  ggrepel::geom_text_repel(
+    data = va_race_diff %>% filter(time_diff == "two_year_change"),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA change from baseline, one, and two years by race",
+    y = "Visual acuity (VA) change"
+  )
+```
 
 
 ```{r}
@@ -731,6 +812,10 @@ severity_race_va %>%
   geom_point() +
   geom_line(aes(group = interaction(severity_score, race_ethnicity))) +
   theme_light() + 
+  ggrepel::geom_text_repel(
+    data = severity_race_va %>% filter(timepoint == "two_year_va", severity_score < 80),
+    aes(label = count)
+  ) +
   scale_color_viridis_c() +
   labs(
     title = "VA at baseline, one, and two years by race and severity score"
@@ -765,6 +850,212 @@ severity_race_va %>%
 
 This chart confirms our expectation that visual acuity two years after index date typically is lower for patients with a higher starting severity score. 
 
+#### Timeseries VA by insurance
+
+
+```{r}
+# plot change in visual acuity by race at one and two yeaars
+
+va_insurance <-
+  timeseries_analysis %>% 
+  group_by(insurance) %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
+  summarize(
+    baseline_va = mean(baseline_va_letter), 
+    one_year_va = mean(one_year), 
+    two_year_va = mean(two_year),
+    baseline_sd = sd(baseline_va_letter),
+    one_year_sd = sd(one_year),
+    two_year_sd = sd(two_year),
+    count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
+  ungroup()
+  
+va_insurance %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = insurance)) +
+  geom_point() +
+  geom_line(aes(group = insurance)) +
+  ggrepel::geom_text_repel(
+    data = va_insurance %>% filter(timepoint == "two_year_va"),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA at baseline, one, and two years by insurance",
+    y = "Visual acuity"
+  )
+
+```
+
+```{r}
+
+va_insurance_diff <-
+  va_insurance %>% 
+  spread(key = timepoint, value = va_plot) %>% 
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  ) %>% 
+  gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
+  ungroup()
+
+va_insurance_diff %>% 
+  ggplot(aes(x = time_diff, y = va_change, color = insurance)) +
+  geom_point() +
+  geom_line(aes(group = insurance)) +
+  ggrepel::geom_text_repel(
+    data = va_insurance_diff %>% filter(time_diff == "two_year_change"),
+    aes(label = count)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA change from baseline, one, and two years by insurance",
+    y = "Visual acuity (VA) change"
+  )
+```
+
+
+#### Percentage with 15 letter loss by race
+
+```{r}
+
+change_15 <- 
+  timeseries_analysis %>% 
+  mutate(
+    one_year_change = one_year - baseline_va_letter,
+    two_year_change = two_year - baseline_va_letter,
+    baseline_change = 0
+  ) %>% 
+  mutate(
+    one_year_15_pt_loss = if_else(one_year_change <= -15, 1, 0),
+    two_year_15_pt_loss = if_else(two_year_change <= -15, 1, 0),
+    one_year_15_pt_gain = if_else(one_year_change >= 15, 1, 0),
+    two_year_15_pt_gain = if_else(two_year_change >= 15, 1, 0),
+  ) %>% 
+  #gather(key = "time_diff", value = "va_change", baseline_change, one_year_change, two_year_change) %>% 
+  ungroup()
+
+
+# z value for p = .05 
+z = 1.96
+
+
+loss_15_race <-
+  change_15 %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(
+    one_year_loss = sum(one_year_15_pt_loss) / n(),
+    two_year_loss = sum(two_year_15_pt_loss) / n(),
+    one_year_sd = sqrt(one_year_loss * (1 - one_year_loss) / n()),
+    two_year_sd = sqrt(two_year_loss * (1 - two_year_loss) / n())
+  ) %>% 
+  gather(key = "time_diff", value = "pct_15pt_loss", one_year_loss, two_year_loss) %>% 
+  mutate(
+    sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
+    upper_bound = pct_15pt_loss + z * sd,
+    lower_bound = pct_15pt_loss - z * sd
+  )
+  
+loss_15_race %>% 
+  ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  theme_light() +
+  labs(
+    title = "Percentage of eyes that lost 15 or more pts of VA, by race"
+  )
+
+
+gain_15_race <-
+  change_15 %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(
+    one_year_gain = sum(one_year_15_pt_gain) / n(),
+    two_year_gain = sum(two_year_15_pt_gain) / n(),
+    one_year_sd = sqrt(one_year_gain * (1 - one_year_gain) / n()),
+    two_year_sd = sqrt(two_year_gain * (1 - two_year_gain) / n())
+  ) %>% 
+  gather(key = "time_diff", value = "pct_15pt_gain", one_year_gain, two_year_gain) %>% 
+  mutate(
+    sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
+    upper_bound = pct_15pt_gain + z * sd,
+    lower_bound = pct_15pt_gain - z * sd
+  )
+
+gain_15_race %>% 
+  ggplot(aes(x = time_diff, y = pct_15pt_gain, fill = race_ethnicity)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  theme_light() +
+  labs(
+    title = "Percentage of eyes that gained 15 or more pts of VA, by race"
+  )
+```
+
+
+#### Percentage with 15 letter loss by insurance
+
+```{r}
+
+# z value for p = .05 
+z = 1.96
+
+
+loss_15_insurance <-
+  change_15 %>% 
+  group_by(insurance) %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
+  summarize(
+    one_year_loss = sum(one_year_15_pt_loss) / n(),
+    two_year_loss = sum(two_year_15_pt_loss) / n(),
+    one_year_sd = sqrt(one_year_loss * (1 - one_year_loss) / n()),
+    two_year_sd = sqrt(two_year_loss * (1 - two_year_loss) / n())
+  ) %>% 
+  gather(key = "time_diff", value = "pct_15pt_loss", one_year_loss, two_year_loss) %>% 
+  mutate(
+    sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
+    upper_bound = pct_15pt_loss + z * sd,
+    lower_bound = pct_15pt_loss - z * sd
+  )
+  
+loss_15_insurance %>% 
+  ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  theme_light() +
+  labs(
+    title = "Percentage of eyes that lost 15 or more pts of VA, by insurance"
+  )
+
+
+gain_15_insurance <-
+  change_15 %>% 
+  group_by(insurance) %>% 
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
+  summarize(
+    one_year_gain = sum(one_year_15_pt_gain) / n(),
+    two_year_gain = sum(two_year_15_pt_gain) / n(),
+    one_year_sd = sqrt(one_year_gain * (1 - one_year_gain) / n()),
+    two_year_sd = sqrt(two_year_gain * (1 - two_year_gain) / n())
+  ) %>% 
+  gather(key = "time_diff", value = "pct_15pt_gain", one_year_gain, two_year_gain) %>% 
+  mutate(
+    sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
+    upper_bound = pct_15pt_gain + z * sd,
+    lower_bound = pct_15pt_gain - z * sd
+  )
+
+gain_15_insurance %>% 
+  ggplot(aes(x = time_diff, y = pct_15pt_gain, fill = insurance)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  theme_light() +
+  labs(
+    title = "Percentage of eyes that gained 15 or more pts of VA, by insurance"
+  )
+```
+
 #### Timeseries VA by insurance and race
 
 ```{r}
@@ -797,6 +1088,67 @@ insurance_race_va %>%
 
 There are disparities in baseline VA that persist over time for Black and Hispanic patients as compared to White patients. The type of insurance appears to have strong correlation to the baseline VA, but does not fully explain the difference in race. 
 
+```{r}
+
+va_insurance_race_diff <-
+  insurance_race_va %>% 
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
+  spread(key = timepoint, value = va_plot) %>% 
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  ) %>% 
+  gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
+  ungroup()
+
+va_insurance_race_diff %>% 
+  ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity, linetype = insurance)) +
+  geom_point() +
+  geom_line(aes(group = interaction(insurance, race_ethnicity))) +
+  ggrepel::geom_text_repel(
+    data = va_insurance_race_diff %>% filter(time_diff == "two_year_change", insurance %in% c("Private", "Medicaid", "Medicare")), 
+    aes(label = count, hjust = -2)
+  ) +
+  facet_grid(insurance~.) +
+  theme_light() + 
+  labs(
+    title = "VA change from baseline, one, and two years by insurance and race",
+    y = "Visual acuity (VA) change"
+  )
+```
+
+
+
+#### Timeseries VA by smoking and race
+
+```{r}
+smoking_race_va <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity, smoke_status) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
+
+```
+
+```{r}
+
+## NOTE - be sure to combine the two medicare datasets rather than eliminating one
+
+smoking_race_va %>% 
+  #filter(!smoke_status %in% c("Unknown / Unclassified")) %>% 
+  ggplot(aes(x = timepoint, y = va_plot, color = race_ethnicity, linetype = smoke_status)) +
+  geom_point() +
+  geom_line(aes(group = interaction(smoke_status, race_ethnicity))) +
+  ggrepel::geom_text_repel(
+    data = smoking_race_va %>% filter(timepoint == "two_year_va"), #!smoke_status %in% c("Unknown / Unclassified") 
+    aes(label = count, hjust = -1)
+  ) +
+  theme_light() + 
+  labs(
+    title = "VA at baseline, one, and two years by race and smoking status"
+  ) 
+```
 
 #### Timeseries VA by gender and race
 
@@ -1173,7 +1525,7 @@ severity_ins_race_va %>%
 
 ## Injections by VA analysis
 
-```{r}
+```{r, eval = FALSE}
 ## calculate change in va over time for people in each severity group/race
 inj_race_va <-
   timeseries_analysis %>% 
@@ -1189,7 +1541,7 @@ str(inj_race_va)
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 
 inj_race_va %>%
   filter(inj_year_1 %in% c(1, 8)) %>% 
@@ -1207,7 +1559,7 @@ inj_race_va %>%
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 
 severity_race_inj_va_quart <-
   timeseries_analysis %>% 
@@ -1232,7 +1584,7 @@ severity_race_inj_va_quart %>%
 
 ```
 
-```{r}
+```{r, eval = FALSE}
 severity_race_inj_va_quart %>%
   filter(
     baseline_va_quart %in% c(4),
@@ -1265,11 +1617,7 @@ severity_race_inj_va_quart %>%
 Hispanic patients with the same starting severity and baseline VA quartile that receive the same number of injections in the first year (1 injection) do substantially worse than their white counterparts
 
 
-
-
 ## Baseline analysis
-
-#### Dataset for baseline analysis
 
 #### Severity by race
 
@@ -1575,14 +1923,14 @@ We can extend this analysis by looking at which antivegf drugs patients of diffe
 
 # Calculate likelihood of drug by severity score and race (given that patient received antivegf treatment)
 drug_sev_race <-
-  top_conditions %>% 
-  filter(proc_group_28 == "antivegf") %>% 
-  count(severity_score, race_ethnicity, vegf_group_28) %>% 
+  timeseries_analysis %>% 
+  filter(proc_group_365 == "antivegf") %>% 
+  count(severity_score, race_ethnicity, vegf_group_365) %>% 
   group_by(severity_score, race_ethnicity) %>% 
   mutate(count_severity_race = sum(n)) %>% 
   mutate(prop = n / count_severity_race) %>% 
   ungroup() %>% 
-  select(severity_score, race_ethnicity, vegf_group_28, prop, count = n)
+  select(severity_score, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_sev_race %>% 
   arrange(desc(severity_score, race_ethnicity))
@@ -1594,9 +1942,10 @@ drug_sev_race %>%
 # Graphing likelihood of first drug type by severity and race
 drug_sev_race %>% 
   filter(!race_ethnicity %in% c("Unknown", "Asian", "Other")) %>% 
-  ggplot(aes(x = severity_score, y = prop, color = race_ethnicity, shape = vegf_group_28)) +
+  ggplot(aes(x = severity_score, y = prop, color = race_ethnicity)) +
   geom_point() + 
   theme_bw() +
+  facet_grid(~vegf_group_365) +
   #scale_y_continuous(labels = scales::percent, breaks = c(.70, .75, .8, .85, .9), limits = c(.7, .9)) +
   labs(
     title = "Likelihood of drug at each severity score by race",
@@ -1611,7 +1960,7 @@ drug_sev_race %>%
 drug_sev_race %>% 
   filter(!race_ethnicity %in% c("Unknown", "Other")) %>% 
   filter(severity_score > 50) %>% 
-  filter(vegf_group_28 == "Eylea") %>% 
+  filter(vegf_group_365 == "Eylea") %>% 
   ggplot(aes(x = severity_score, y = prop, color = race_ethnicity)) +
   geom_point() + 
   theme_bw() +
@@ -1632,7 +1981,7 @@ Caucasian people are 5-10% more likely to receive Eylea treatment (first) as com
 drug_sev_race %>% 
   filter(!race_ethnicity %in% c("Unknown", "Other")) %>% 
   filter(severity_score < 50) %>% 
-  filter(vegf_group_28 == "Avastin") %>% 
+  filter(vegf_group_365 == "Avastin") %>% 
   ggplot(aes(x = severity_score, y = prop, color = race_ethnicity)) +
   geom_point() + 
   geom_line() +
@@ -1646,6 +1995,126 @@ drug_sev_race %>%
 ```
 
 At lower levels of severity, Hispanic people are far more likely (15-25%) to receive Avastin as compared to their Caucasian counterparts with the same level of severity. Black and Asian people seem somewhat more likely to receive Avastin, but there is some variation. 
+
+
+#### Likelihood of drug received by severity score CATEGORY and race (given that patient recieved anti-vegf treatment)
+
+
+```{r}
+
+# Calculate likelihood of drug by severity score and race (given that patient received antivegf treatment)
+drug_sev_cat_race <-
+  timeseries_analysis %>% 
+  filter(proc_group_365 == "antivegf") %>% 
+  count(vision_category, race_ethnicity, vegf_group_365) %>% 
+  group_by(vision_category, race_ethnicity) %>% 
+  mutate(count_severity_race = sum(n)) %>% 
+  mutate(prop = n / count_severity_race) %>% 
+  ungroup() %>% 
+  select(vision_category, race_ethnicity, vegf_group_365, prop, count = n)
+
+drug_sev_cat_race %>% 
+  arrange(desc(vision_category, race_ethnicity))
+
+```
+
+```{r}
+
+# Graphing likelihood of first drug type by severity and race
+drug_sev_cat_race %>% 
+  filter(!race_ethnicity %in% c("Unknown", "Asian", "Other"), !is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  mutate(prop_round = round(prop, 2)) %>% 
+  ggplot(aes(x = vision_category, y = prop, fill = race_ethnicity)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_grid(vegf_group_365~.) +
+  scale_y_continuous(limits = c(0, 1)) +
+  geom_text(aes(label = prop_round), vjust = -0.5, position = position_dodge(width = .9))
+  #scale_x_continuous()
+  #scale_y_continuous(labels = scales::percent, breaks = c(.70, .75, .8, .85, .9), limits = c(.7, .9)) +
+  labs(
+    title = "Likelihood of drug at each severity score by race",
+    y = "Percentage of people receiving this drug"
+  )
+
+```
+
+```{r}
+
+# Graphing likelihood of Eylea as first treatment by severity and race
+drug_sev_cat_race %>% 
+  filter(!is.na(vision_category)) %>% 
+  filter(vegf_group_365 == "Eylea") %>% 
+  ggplot(aes(x = vision_category, y = prop, color = race_ethnicity)) +
+  geom_point() + 
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Eylea at higher vision_category by race",
+    y = "Percentage of people receiving Eylea"
+  )
+
+```
+
+
+```{r}
+
+# Graphing likelihood of Avastin as first treatment by severity and race
+drug_sev_cat_race %>% 
+  filter(!is.na(vision_category)) %>% 
+  filter(vegf_group_365 == "Avastin") %>% 
+  ggplot(aes(x = vision_category, y = prop, color = race_ethnicity)) +
+  geom_point() + 
+  geom_line() +
+  theme_bw() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Avastin at higher vision_category by race",
+    y = "Percentage of people receiving Avastin"
+  )
+
+```
+
+
+
+#### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
+
+```{r}
+
+# Calculate likelihood of drug by severity score and race (given that patient received antivegf treatment)
+drug_va_race <-
+  timeseries_analysis %>% 
+  filter(proc_group_365 == "antivegf") %>% 
+  count(baseline_va_r10, race_ethnicity, vegf_group_365) %>% 
+  group_by(baseline_va_r10, race_ethnicity) %>% 
+  mutate(count_va_race = sum(n)) %>% 
+  mutate(prop = n / count_va_race) %>% 
+  ungroup() %>% 
+  select(baseline_va_r10, race_ethnicity, vegf_group_365, prop, count = n)
+
+drug_va_race %>% 
+  arrange(desc(baseline_va_r10, race_ethnicity))
+
+```
+
+```{r}
+
+# Graphing likelihood of first drug type by severity and race
+drug_va_race %>% 
+  filter(baseline_va_r10 <= 80) %>% 
+  ggplot(aes(x = baseline_va_r10, y = prop, color = race_ethnicity)) +
+  geom_point() + 
+  geom_line() +
+  theme_bw() +
+  facet_grid(vegf_group_365~.) +
+  #scale_y_continuous(labels = scales::percent, breaks = c(.70, .75, .8, .85, .9), limits = c(.7, .9)) +
+  labs(
+    title = "Likelihood of drug at each baseline va (rounded) by race",
+    y = "Percentage of people receiving this drug"
+  )
+
+```
 
 
 #### Drug received by race and insurance
@@ -1830,6 +2299,61 @@ severity_race_vision_flip %>%
     x = "Severity score", 
     y = "Average Baseline VA"
   )
+
+```
+
+
+
+## Regression
+
+#### Linear regression
+
+Start with a linear regression to see what variables are initially predictive
+
+```{r}
+# basic linear regression
+one_year_va_delta_1.lm <- 
+  lm(
+    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+    data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity))
+    )
+
+summary(one_year_va_delta_1.lm)
+```
+```{r}
+# linear regression with insurance race interaction
+one_year_va_delta_2.lm <- 
+  lm(
+    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + relevel(race_ethnicity, ref = "Caucasian") * insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+    data = timeseries_analysis %>% 
+      filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
+      mutate(race_ethnicity = factor(race_ethnicity))
+  )
+
+summary(one_year_va_delta_2.lm)
+```
+
+```{r}
+# linear regression with severity score
+one_year_va_delta_3.lm <- 
+  lm(one_year_va_delta ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+     data = timeseries_analysis)
+
+summary(one_year_va_delta_3.lm)
+```
+
+```{r}
+# linear regression with race insurance interaction and severity score
+one_year_va_delta_4.lm <- 
+  lm(one_year_va_delta ~ race_ethnicity + insurance + race_ethnicity  * insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+     data = timeseries_analysis)
+
+summary(one_year_va_delta_4.lm)
+```
+
+#### Quantile regressionn
+
+```{r}
 
 ```
 
