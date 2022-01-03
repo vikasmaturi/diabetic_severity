@@ -107,11 +107,10 @@ universe <-
   mutate(
     diagnosis_date = ymd(diagnosis_date),
     index_date = ymd(index_date),
-    baseline_va_letter = (1.7 - baseline_va)*50
+    baseline_va_letter = (1.7 - baseline_va) * 50
   ) %>% 
   select(-FIND, -REPLACE, -...26, -...27, -...30, -...31)
   
-
 severity <-
   raw_severity %>% 
   select(
@@ -641,8 +640,184 @@ top_conditions <-
 
 ```
 
-## Timeseries analysis of visual acuity
 
+## Sample statistics and tables
+
+
+```{r}
+# Create dataset for basic paper tables
+tbl_data <-
+  timeseries_analysis %>% 
+  mutate(
+    insurance_tbl = if_else(
+      insurance %in% c("Private", "Medicare", "Medicaid"),
+      insurance, 
+      "Other"
+    ),
+    age_tbl = case_when(
+      first_dr_age < 53 ~ "< 53",
+      first_dr_age >= 53 & first_dr_age <= 58 ~ "53 - 58",
+      first_dr_age >= 59 & first_dr_age <= 64 ~ "59 - 64",
+      first_dr_age >= 65 & first_dr_age <= 70 ~ "65 - 70",
+      first_dr_age > 70 ~ "> 70"
+    ),
+    va_tbl = case_when(
+      baseline_va_letter > 69.95 ~ "20/40 or better",
+      baseline_va_letter >= 57.80 & baseline_va_letter <= 69.95 ~ "20/41 - 20/70",
+      baseline_va_letter >= 35 & baseline_va_letter <= 57.80 ~ "20/71 - 20/200",
+      baseline_va_letter < 35 ~ "20/201 or worse"
+    ), 
+    vegf_tbl = case_when(
+      vegf_group_365 == "Avastin" ~ "bevacizumab" ,
+      vegf_group_365 == "Lucentis" ~ "ranibizumab",
+      vegf_group_365 == "Eylea" ~ "aflibercept",
+      vegf_group_365 == "combo" ~ "combo"
+    )
+  )
+```
+
+
+#### Gender by race and insurance
+
+```{r}
+
+tbl_gender_race <-
+  tbl_data %>% 
+  count(gender, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_age_race = round(n / sum(n) * 100, 3)) %>% 
+  unite(x, "n", "pct_age_race", sep = " (") %>% 
+  spread(key = race_ethnicity, value = x )
+
+kable(tbl_gender_race)
+
+tbl_gender_insurance <-
+  tbl_data %>% 
+  count(gender, insurance_tbl) %>% 
+  group_by(insurance_tbl) %>% 
+  mutate(pct_gender_insurance = round(n / sum(n) * 100, 3)) %>%
+  unite(x, "n", "pct_gender_insurance", sep = " (") %>% 
+  spread(key = insurance_tbl, value = x )
+
+kable(tbl_gender_insurance)
+```
+
+
+#### Age by race and insurance
+
+```{r}
+tbl_age_race <-
+  tbl_data %>% 
+  count(age_tbl, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_age_race = round(n / sum(n) * 100, 3)) %>% 
+  unite(x, "n", "pct_age_race", sep = " (") %>% 
+  spread(key = race_ethnicity, value = x )
+
+kable(tbl_age_race)
+
+
+tbl_age_insurance <-
+  tbl_data %>% 
+  count(age_tbl, insurance_tbl) %>% 
+  group_by(insurance_tbl) %>% 
+  mutate(pct_age_insurance = round(n / sum(n) * 100, 3)) %>%
+  unite(x, "n", "pct_age_insurance", sep = " (") %>% 
+  spread(key = insurance_tbl, value = x )
+
+kable(tbl_age_insurance)
+
+```
+
+#### Baseline VA by race and insurance
+
+```{r}
+tbl_va_race <-
+  tbl_data %>% 
+  count(va_tbl, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_va_race = round(n / sum(n) * 100, 3)) %>% 
+  unite(x, "n", "pct_va_race", sep = " (") %>% 
+  spread(key = race_ethnicity, value = x )
+
+kable(tbl_va_race)
+
+
+tbl_va_insurance <-
+  tbl_data %>% 
+  count(va_tbl, insurance_tbl) %>% 
+  group_by(insurance_tbl) %>% 
+  mutate(pct_va_insurance = round(n / sum(n) * 100, 3)) %>%
+  unite(x, "n", "pct_va_insurance", sep = " (") %>% 
+  spread(key = insurance_tbl, value = x )
+
+kable(tbl_va_insurance)
+```
+
+#### Smoke status by race and insurance
+
+```{r}
+tbl_smoke_race <-
+  tbl_data %>% 
+  count(smoke_status, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_smoke_race = round(n / sum(n) * 100, 3)) %>% 
+  unite(x, "n", "pct_smoke_race", sep = " (") %>% 
+  spread(key = race_ethnicity, value = x )
+
+
+kable(tbl_smoke_race)
+
+tbl_smoke_insurance <-
+  tbl_data %>% 
+  count(smoke_status, insurance_tbl) %>% 
+  group_by(insurance_tbl) %>% 
+  mutate(pct_smoke_insurance = round(n / sum(n) * 100, 3)) %>%
+  unite(x, "n", "pct_smoke_insurance", sep = " (") %>% 
+  spread(key = insurance_tbl, value = x )
+
+kable(tbl_smoke_insurance)
+```
+
+#### VEGF drug by race and insurance
+
+```{r}
+tbl_vegf_race <-
+  tbl_data %>% 
+  count(vegf_tbl, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_vegf_race = round(n / sum(n) * 100, 3)) %>% 
+  unite(x, "n", "pct_vegf_race", sep = " (") %>% 
+  spread(key = race_ethnicity, value = x )
+
+kable(tbl_vegf_race)
+
+tbl_vegf_insurance <-
+  tbl_data %>% 
+  count(vegf_tbl, insurance_tbl) %>% 
+  group_by(insurance_tbl) %>% 
+  mutate(pct_vegf_insurance = round(n / sum(n) * 100, 3)) %>%
+  unite(x, "n", "pct_vegf_insurance", sep = " (") %>% 
+  spread(key = insurance_tbl, value = x )
+
+kable(tbl_vegf_insurance)
+```
+
+
+#### Insurance by race
+
+```{r}
+tbl_insurance_race <-
+  tbl_data %>% 
+  count(insurance_tbl, race_ethnicity) %>% 
+  group_by(race_ethnicity) %>% 
+  mutate(pct_insurance_race = n / sum(n) * 100)
+
+kable(tbl_insurance_race)
+```
+
+
+## Timeseries analysis of visual acuity
 
 #### Distribution of VA by race
 
@@ -2030,7 +2205,7 @@ drug_sev_cat_race %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   facet_grid(vegf_group_365~.) +
   scale_y_continuous(limits = c(0, 1)) +
-  geom_text(aes(label = prop_round), vjust = -0.5, position = position_dodge(width = .9))
+  geom_text(aes(label = prop_round), vjust = -0.5, position = position_dodge(width = .9)) +
   #scale_x_continuous()
   #scale_y_continuous(labels = scales::percent, breaks = c(.70, .75, .8, .85, .9), limits = c(.7, .9)) +
   labs(
@@ -2116,6 +2291,88 @@ drug_va_race %>%
 
 ```
 
+
+
+#### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
+
+
+```{r}
+
+# Calculate likelihood of drug by severity score and insurance (given that patient received antivegf treatment)
+drug_sev_cat_insurance <-
+  timeseries_analysis %>%
+  filter(proc_group_365 == "antivegf", insurance %in% c("Private", "Medicare", "Medicaid")) %>% 
+  count(vision_category, insurance, vegf_group_365) %>% 
+  group_by(vision_category, insurance) %>% 
+  mutate(count_severity_race = sum(n)) %>% 
+  mutate(prop = n / count_severity_race) %>% 
+  ungroup() %>% 
+  select(vision_category, insurance, vegf_group_365, prop, count = n)
+
+drug_sev_cat_insurance %>% 
+  arrange(desc(vision_category, insurance))
+
+```
+
+```{r}
+
+# Graphing likelihood of first drug type by severity and insurance
+drug_sev_cat_insurance %>% 
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  mutate(prop_round = round(prop, 2)) %>% 
+  ggplot(aes(x = vision_category, y = prop, fill = insurance)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_grid(vegf_group_365~.) +
+  scale_y_continuous(limits = c(0, 1)) +
+  #geom_text(aes(label = prop_round), vjust = -0.5, position = position_dodge(width = .9)) +
+  #scale_x_continuous()
+  #scale_y_continuous(labels = scales::percent, breaks = c(.70, .75, .8, .85, .9), limits = c(.7, .9)) +
+  labs(
+    title = "Likelihood of drug at each severity score by insurance",
+    y = "Percentage of people receiving this drug"
+  )
+
+```
+
+```{r}
+
+# Graphing likelihood of Eylea as first treatment by severity and insurance
+drug_sev_cat_insurance %>% 
+  filter(!is.na(vision_category)) %>% 
+  filter(vegf_group_365 == "Eylea") %>% 
+  ggplot(aes(x = vision_category, y = prop, color = insurance)) +
+  geom_point() + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Eylea at higher vision_category by race",
+    y = "Percentage of people receiving Eylea"
+  )
+
+```
+
+
+```{r}
+
+# Graphing likelihood of Avastin as first treatment by severity and insurance
+drug_sev_cat_insurance %>% 
+  filter(!is.na(vision_category)) %>% 
+  filter(vegf_group_365 == "Avastin") %>% 
+  ggplot(aes(x = vision_category, y = prop, color = insurance)) +
+  geom_point() + 
+  geom_line() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Likelihood of receiving Avastin at higher vision_category by race",
+    y = "Percentage of people receiving Avastin"
+  )
+
+```
 
 #### Drug received by race and insurance
 
