@@ -1505,6 +1505,16 @@ insurance appears to have strong correlation to the baseline VA, but
 does not fully explain the difference in race.
 
 ``` r
+va_insurance_race_diff_tbl <-
+  insurance_race_va %>% 
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
+  spread(key = timepoint, value = va_plot) %>% 
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  )
+
 va_insurance_race_diff <-
   insurance_race_va %>% 
   filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>% 
