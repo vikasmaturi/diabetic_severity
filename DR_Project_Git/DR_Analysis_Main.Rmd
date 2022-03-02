@@ -22,6 +22,8 @@ library(lubridate)
 library(knitr)
 library(googlesheets4)
 
+print("Hi")
+
 ```
 
 #### Data import
