@@ -1,0 +1,302 @@
+---
+title: "data_cleaning"
+author: "Vikas Maturi"
+date: 2022-03-01
+output: 
+  github_document:
+    md_extension: +gfm_auto_identifiers
+    toc: true
+    toc_depth: 6
+---
+
+```{r}
+
+# Data files
+
+# maturi universe file
+universe_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_universe_ultimate.xlsx"
+
+# severity scale file
+severity_file <- "~/Documents/R_Projects/DR Analysis/dr_data/DR_severity_scale.xlsx"
+
+# va file
+va_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_va_combine_20210508.csv"
+
+# va scale file
+va_scale_file <- "~/Documents/R_Projects/DR Analysis/dr_data/visual_acuity_conversion.xlsx"
+
+# injection file
+injection_file <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_antivegf_table_20210508.csv"
+
+# clean injection file 
+injection_clean_file <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_clean_file.csv"
+
+# va_progression_file
+va_progression_file <- "~/Documents/R_Projects/DR Analysis/dr_data/va_progression.csv"
+
+
+
+# Data output files
+
+# path for cleaned, joined data file (all data)
+all_cleaned_path <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_all_cleaned.csv"
+
+# path for cleaned, joined data file (top conditions)
+top_conditions_cleaned_path <- "~/Documents/R_Projects/DR Analysis/dr_data/maturi_top_cleaned.csv"
+
+# bottom conditions - to be coded
+bottom_codes_path <- "~/Documents/R_Projects/DR Analysis/dr_data/bottom_codes.csv"
+
+# va_basedate_by_pt 
+va_basedate_path <- "~/Documents/R_Projects/DR Analysis/dr_data/va_basedate.csv"
+
+# universe of data with timeseries added
+clean_universe_path <- "~/Documents/R_Projects/DR Analysis/dr_data/clean_universe.csv" 
+
+# va_progression
+va_progression_path <- "~/Documents/R_Projects/DR Analysis/dr_data/va_progression.csv" 
+
+# clean injection data path 
+injection_clean_path <- "~/Documents/R_Projects/DR Analysis/dr_data/injection_clean_file.csv"
+
+```
+
+```{r, results=FALSE, message=FALSE}
+# read in data
+
+raw_universe <- read_excel(path = universe_file, sheet = 1, col_names = TRUE, .name_repair = "universal")
+
+# raw_severity <- read_excel(path = severity_file, sheet = 2, col_names = TRUE, .name_repair = "universal")
+
+raw_severity <- read_sheet("https://docs.google.com/spreadsheets/d/10L6bIxXOIw8xDi2fESXdJxE6EncNsCjm6XfVd4DtuJE/edit#gid=1224292389")
+
+raw_va <- read_csv(file = va_file)
+
+raw_va_scale <- read_excel(path = va_scale_file)
+
+# read in VA progression file from desktop
+va_progression <- read_csv(va_progression_file)
+
+# raw_injection <- read_csv(injection_file)
+```
+
+## Clean main data
+
+```{r, results=FALSE, message=FALSE}
+
+# Clean the raw data and save into new datasets
+universe <-
+  raw_universe %>% 
+  rename(
+    pt_code_name = Pt.code.name,
+    eye = Eye.OD.1..OS.2,
+    diagnosis_date = DR.diag.date
+  ) %>% 
+  mutate(
+    diagnosis_date = ymd(diagnosis_date),
+    index_date = ymd(index_date),
+    baseline_va_letter = (1.7 - baseline_va) * 50
+  ) %>% 
+  select(-FIND, -REPLACE, -...26, -...27, -...30, -...31)
+  
+severity <-
+  raw_severity %>% 
+  select(
+    diabetes_diag,
+    description,
+    icd_10_equiv,
+    severity_score,
+    new_class,
+    valid_class,
+    vision_category,
+    vision_threatening,
+    include_given_code
+  ) %>% 
+  mutate(
+    diabetes_diag = as.character(diabetes_diag),
+    severity_score = if_else(severity_score == "NA", as.integer(NA), as.integer(severity_score)),
+    vision_threatening = if_else(vision_threatening == "NA", as.integer(NA), as.integer(vision_threatening)),
+  )
+
+```
+
+#### Merge Data
+
+```{r}
+# merge patient data with severity data
+all <-
+  universe %>% 
+  left_join(severity, by = c("first_problem_code" = "diabetes_diag")) %>% 
+  mutate(age_group = plyr::round_any(first_dr_age, 5))
+
+write_csv(x = all, path = all_cleaned_path)
+
+# filter out data with less common conditions (~20k entries) if keeping all code types
+# if fillter(code_type == New) is included, filter out data with less common conditions and classified under old system (~120k entries removed)
+```
+
+
+
+## Clean VA data
+
+```{r}
+# Data checks
+
+# timeseries_analysis %>% 
+#   filter(pt_code_name == "013568edf78b49659b9b277f1e1fa7e7")
+# 
+# raw_va %>% 
+#   filter(patient_guid == "013568edf78b49659b9b277f1e1fa7e7") %>% 
+#   arrange(va_result_date)
+# 
+# va_basedate %>% 
+#   filter(patient_guid == "013568edf78b49659b9b277f1e1fa7e7") %>% 
+#   arrange(va_result_date) %>% 
+#   select(patient_guid, va_eye, va_result_date, va, va_letter, one_year, two_year, index_date)
+# 
+# timeseries_analysis %>% 
+#   filter(one_year < 0 | two_year < 0) %>% 
+#   count(high_logMar = vision_category)
+```
+
+
+#### Get VA data by time of visit for each patient/eye
+
+```{r, eval = FALSE}
+va_basedate <-
+  raw_va %>% 
+  # add in the baseline date to the va data, by patient id and eye
+  left_join(all %>% select(pt_code_name, eye, index_date), by = c("patient_guid" = "pt_code_name", "va_eye" = "eye")) %>% 
+  # we find that half of the va data is not linked to the baseline patient/eye data that we have
+  # filter entries where there is not linked baseline date
+  filter(!is.na(index_date)) %>% 
+  mutate(
+    # change va to letter score
+    va_letter = (1.7-va)*50,
+    # determine if the va measurement is within 1 month +/- 3 weeks of the baseline date
+    one_month = if_else(va_result_date > (index_date %m+% months(1) %m-% weeks(3)) & va_result_date < (index_date %m+% months(1) %m+% weeks(3)), 1, 0),
+    # if the measurement is within 1 month +/- 3 weeks of the baseline date, then calculate the distance between the measurement date and 1 month past the index date
+    one_mo_diff = if_else(one_month == 1, abs(index_date %m+% months(1) - va_result_date), make_difftime(NA)),
+    six_month = if_else(va_result_date > (index_date %m+% months(6) %m-% weeks(8)) & va_result_date < (index_date %m+% months(6) %m+% weeks(8)), 1, 0),
+    six_mo_diff = if_else(six_month == 1, abs(index_date %m+% months(6) - va_result_date), make_difftime(NA)),
+    one_year = if_else(va_result_date > (index_date %m+% years(1) %m-% months(2)) & va_result_date < (index_date %m+% years(1) %m+% months(2)), 1, 0),
+    one_yr_diff = if_else(one_year == 1, abs(index_date %m+% months(12) - va_result_date), make_difftime(NA)),
+    two_year = if_else(va_result_date > (index_date %m+% years(2) %m-% months(4)) & va_result_date < (index_date %m+% years(2) %m+% months(4)), 1, 0),
+    two_yr_diff = if_else(two_year == 1, abs(index_date %m+% months(24) - va_result_date), make_difftime(NA)),
+  )
+
+#write_csv(va_basedate, path = va_basedate_path)
+
+index_date_results <-
+  va_basedate %>% 
+  summarize(
+    sum_one_mo = sum(one_month),
+    sum_six_mo = sum(six_month),
+    sum_one_yr = sum(one_year),
+    sum_two_yr = sum(two_year)
+  )
+
+```
+
+It appears that using diagnosis date and index date result in a similar amount of visits being identified, except for two-year later - ~100K more visits are identified with diagnosis data. 
+
+```{r, eval = FALSE}
+
+# create a cleaned dataset with each entry categorized as a one month, six month, one year, or two-year measurement, and the difference in days between the injection date and the "ideal' date (e.g., exactly one month after the index date for a one-month injection)
+
+va_clean <-
+  va_basedate %>% 
+  mutate(
+    # create consolidated column
+    timeframe = case_when(
+      one_month == 1 ~ "one_month",
+      six_month == 1 ~ "six_month",
+      one_year == 1 ~ "one_year",
+      two_year == 1 ~ "two_year",
+      TRUE ~ NA_character_
+    )
+  ) %>% 
+  filter(!is.na(timeframe)) %>%
+  rowwise() %>% 
+  mutate(diff = sum(one_mo_diff, six_mo_diff, one_yr_diff, two_yr_diff, na.rm = TRUE)) %>% 
+  ungroup()
+  
+```
+
+
+```{r, eval = FALSE}
+
+# if there is more than one measurement within the timeframe, select the measurement closest to the ideal date (e.g., exactly one month, six months, etc. from the index date). If more than onne measurement at the same distance, select randomly.
+
+va_to_join <-
+  va_clean %>% 
+  dplyr::select(-one_month, -one_mo_diff, -six_month, -six_mo_diff, -one_year, -one_yr_diff, -two_year, -two_yr_diff) %>% 
+  group_by(patient_guid, va_eye, timeframe) %>% 
+  top_n(n = -1, wt = diff) %>% 
+  # for ties, select one of the rows at random
+  sample_n(1) %>% 
+  ungroup()
+
+# completed va data
+va_progression <- 
+  va_to_join %>% 
+  select(patient_guid, va_eye, index_date, va_letter, timeframe) %>% 
+  spread(timeframe, va_letter) %>% 
+  select(patient_guid, va_eye, index_date, one_month, six_month, one_year, two_year) 
+
+```
+
+
+
+```{r}
+
+# va_prog_test <-
+#   va_progression %>%
+#   mutate(
+#     all_four = if_else((!is.na(six_month) & !is.na(one_year) & !is.na(two_year)), 1, 0),
+#     six_and_oneyear = if_else((!is.na(six_month) & !is.na(one_year)), 1, 0),
+#     one_two_year = if_else((!is.na(one_year) & !is.na(two_year)), 1, 0)
+#   )
+# 
+# va_prog_test %>%
+#   count(all_four) %>%
+#   mutate(prop = n / sum(n))
+# 
+# va_prog_test %>%
+#   count(six_and_oneyear) %>%
+#   mutate(prop = n / sum(n))
+# 
+# va_prog_test %>%
+#   count(one_two_year) %>%
+#   mutate(prop = n / sum(n))
+
+```
+
+
+```{r}
+# set.seed(1)
+# top_conditions <-
+#   all %>% 
+#   filter(
+#     # only data classified under new ICD codes or codes starting of the format 36x.xxx
+#     valid_class == 1,
+#     #race and gender data available for the patient
+#     !is.na(race_ethnicity), 
+#     !is.na(gender),
+#     !is.na(severity_score),
+#     # no cat eyes
+#     !cat_eyes == 1
+#   ) %>% 
+#   # select only one eye per patient
+#   group_by(pt_code_name) %>% 
+#   sample_n(1) %>% 
+#   ungroup() %>% 
+#   # adjust insurance data to combine medicare FFS and medicare managed
+#   mutate(
+#     insurance = if_else(insurance %in% c("Medicare FFS", "Medicare Managed"), "Medicare", insurance)
+#   ) %>% 
+#   mutate(
+#     baseline_va_r10 = plyr::round_any(baseline_va_letter, 10)
+#   ) 
+```
+
