@@ -15,6 +15,11 @@ output:
 #### Libraries and parameters
 
 ```{r, results=FALSE, message=FALSE}
+
+install.packages('car')
+library(car)
+
+
 # load libraries
 library(tidyverse)
 library(readxl)
@@ -293,10 +298,10 @@ timeseries_analysis %>%
   dplyr::group_by(race_ethnicity) %>% 
   dplyr::mutate(prop_category = n / sum(n)) %>% 
   ggplot() + 
-  geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = .2) +
+  geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = 1) +
   theme_light() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 30, hjust = 1)
   ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 10)) +
   labs(
@@ -323,7 +328,7 @@ drug_sev_cat_race <-
   select(vision_category, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_sev_cat_race %>% 
-  arrange(desc(vision_category, race_ethnicity))
+  arrange(desc(vision_category), race_ethnicity) #JAY changed this!! 
 
 ```
 
@@ -368,7 +373,7 @@ drug_sev_cat_insurance <-
   select(vision_category, insurance, vegf_group_365, prop, count = n)
 
 drug_sev_cat_insurance %>% 
-  arrange(desc(vision_category, insurance))
+  arrange(desc(vision_category), insurance)
 
 ```
 
@@ -401,10 +406,7 @@ drug_sev_cat_insurance %>%
 ## Regression X: Variables that influence likelihood of receiving Avastin treatment
 
 ```{r}
-
-avastin_1.lm <- 
-  lm(avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
-     data = timeseries_analysis %>% 
+data_avastin_reg = timeseries_analysis %>% 
        filter(
          insurance %in% c("Medicare", "Medicaid", "Private")
        ) %>% 
@@ -417,11 +419,22 @@ avastin_1.lm <-
          smoke_status = relevel(smoke_status, ref = "No / Never"),
          avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
        ) 
+View( data_avastin_reg)
+avastin_1.logm <- 
+  glm(avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+     data = data_avastin_reg, family = binomial
   ) 
 
-summary(avastin_1.lm)
+summary(avastin_1.logm)
 
 ```
+#Supplemental Graph: including the facet grid for Visual Acuity Change from Baseline at One and Two Years, by Race/Insurance ?? 
+```{r}
+#Need to add...
+```
+
+
+
 
 
 ## Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by Race
@@ -482,7 +495,7 @@ loss_15_race %>%
 ```
 
 ```{r}
-# plot change in visual acuity by race at one and two yeaars
+# plot change in visual acuity by race at one and two years
 
 va_race <-
   timeseries_analysis %>% 
@@ -508,6 +521,8 @@ va_race_diff <-
   ) %>% 
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
   ungroup()
+
+View(va_race_diff)
 
 va_race_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
@@ -552,6 +567,7 @@ loss_15_insurance <-
     lower_bound = pct_15pt_loss - z * sd
   )
   
+View(loss_15_insurance)
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
   geom_col(position = "dodge") +
@@ -626,6 +642,8 @@ va_insurance_diff <-
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
   ungroup()
 
+View(va_insurance_diff)
+
 va_insurance_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = insurance)) +
   geom_point() +
@@ -665,6 +683,7 @@ one_year_va_delta_4.lm <-
 
 summary(one_year_va_delta_4.lm)
 
+vif(one_year_va_delta_4.lm)
 ```
 
 ## Figure 5: Average severity score at each baseline VA (rounded to nearest 5) by race
