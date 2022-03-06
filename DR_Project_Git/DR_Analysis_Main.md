@@ -3,10 +3,10 @@ DR_Analysis_Main
 Vikas Maturi
 2021-07-07
 
--   [Setup & import](#setup--import)
-    -   [Libraries and parameters](#libraries-and-parameters)
-    -   [Data import](#data-import)
-    -   [Join the two datasets](#join-the-two-datasets)
+-   [Setup](#setup)
+    -   [Libraries and data import](#libraries-and-data-import)
+    -   [Join severity and timeseries patient/visit
+        data](#join-severity-and-timeseries-patientvisit-data)
 -   [Cleaned datasets for analysis](#cleaned-datasets-for-analysis)
 -   [Table 1: Patient Demographics](#table-1-patient-demographics)
     -   [Construct dataset to generate data
@@ -24,12 +24,15 @@ Vikas Maturi
     -   [Table: Insurance by race](#table-insurance-by-race)
 -   [Figure 1: Baseline Differences in Severity Score by
     Race](#figure-1-baseline-differences-in-severity-score-by-race)
--   [Figure 2A and 2B: Differences in Rates of Aflibercept and
-    Bevacizumab Injection by Severity Score, Race and Insurance
-    Status](#figure-2a-and-2b-differences-in-rates-of-aflibercept-and-bevacizumab-injection-by-severity-score-race-and-insurance-status)
+-   [Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by
+    Severity Category, Race and Insurance
+    Status](#figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status)
 -   [Regression X: Variables that influence likelihood of receiving
-    Avastin
-    treatment](#regression-x-variables-that-influence-likelihood-of-receiving-avastin-treatment)
+    Bevacizumab
+    treatment](#regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment)
+-   [Supplement: Differences in Rates of Bevacizumab, Aflibercept, and
+    Ranibizumab Injection by Severity Category, Race and Insurance
+    Status](#supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status)
 -   [Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two
     Years, by
     Race](#figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race)
@@ -96,9 +99,9 @@ Vikas Maturi
     -   [Linear regression](#linear-regression)
     -   [Quantile regressionn](#quantile-regressionn)
 
-## Setup & import
+## Setup
 
-#### Libraries and parameters
+#### Libraries and data import
 
 ``` r
 # load libraries
@@ -107,9 +110,15 @@ library(readxl)
 library(lubridate)
 library(knitr)
 library(googlesheets4)
-```
+library(car)
 
-#### Data import
+
+# parameters
+
+race_colors <- c("#54AE55", "#189CD9", "#A167A5")
+
+insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
+```
 
 ``` r
 # read in cleaned, combined data on visits and severity
@@ -119,7 +128,7 @@ visits_severity <- read_csv(file = "data_clean/maturi_all_cleaned.csv")
 va_progression <- read_csv(file = "data_clean/va_progression.csv")
 ```
 
-#### Join the two datasets
+#### Join severity and timeseries patient/visit data
 
 ``` r
 joined_data <- 
@@ -131,7 +140,7 @@ joined_data <-
 
 ## Cleaned datasets for analysis
 
-The ‘timeseries_analysis’ dataset will be the basis of future analyses
+The ‘timeseries_analysis’ dataset will be the basis of all analyses
 
 ``` r
 # set seed to ensure that we randomly sample the same set of folks in each round
@@ -169,7 +178,15 @@ timeseries_analysis <-
     baseline_va_r10 = plyr::round_any(baseline_va_letter, 10),
     baseline_va_quart = ntile(baseline_va_letter, 4),
     one_year_va_delta = one_year - baseline_va_letter,
-    two_year_va_delta = two_year - baseline_va_letter
+    two_year_va_delta = two_year - baseline_va_letter,
+    #turn race into a factor and rename races
+    race_ethnicity = dplyr::case_when(
+      race_ethnicity == "Caucasian" ~ "White",
+      race_ethnicity == "Black or African American" ~ "Black",
+      TRUE ~ race_ethnicity
+    ),
+    race_ethnicity = factor(race_ethnicity, ordered = TRUE, levels = c("White", "Black", "Hispanic")),
+    insurance = factor(insurance, ordered = TRUE, levels = c("Private", "Medicare","Medicaid","Govt","Military","Unknown/Missing"))
   ) 
 ```
 
@@ -182,6 +199,8 @@ timeseries_analysis <-
 tbl_data <-
   timeseries_analysis %>% 
   mutate(
+    # unorder insurance to permit grouping
+    insurance = as.character(insurance),
     insurance_tbl = if_else(
       insurance %in% c("Private", "Medicare", "Medicaid"),
       insurance, 
@@ -213,17 +232,17 @@ tbl_data
 
     ## # A tibble: 43,274 × 40
     ##    pt_code_name   eye first_problem_c… severity_score gender race_ethnicity
-    ##    <chr>        <dbl> <chr>                     <dbl> <chr>  <chr>         
-    ##  1 00022808cb4…     1 362.02                       73 Male   Caucasian     
+    ##    <chr>        <dbl> <chr>                     <dbl> <chr>  <ord>         
+    ##  1 00022808cb4…     1 362.02                       73 Male   White         
     ##  2 0002d4cc5f7…     1 362.02                       73 Male   Hispanic      
-    ##  3 000340244d4…     1 E11.3411                     58 Male   Caucasian     
-    ##  4 0003859ca8d…     1 E11.351                      78 Female Caucasian     
-    ##  5 000406a5939…     1 362.05                       44 Male   Caucasian     
-    ##  6 0007e418646…     1 362.02                       73 Female Black or Afri…
-    ##  7 000944c41d8…     1 362.05                       44 Male   Caucasian     
-    ##  8 00096924cfb…     1 E11.3211                     40 Male   Caucasian     
-    ##  9 000aadb4949…     2 362.02                       73 Female Caucasian     
-    ## 10 000b59b304e…     2 362.04                       35 Male   Caucasian     
+    ##  3 000340244d4…     1 E11.3411                     58 Male   White         
+    ##  4 0003859ca8d…     1 E11.351                      78 Female White         
+    ##  5 000406a5939…     1 362.05                       44 Male   White         
+    ##  6 0007e418646…     1 362.02                       73 Female Black         
+    ##  7 000944c41d8…     1 362.05                       44 Male   White         
+    ##  8 00096924cfb…     1 E11.3211                     40 Male   White         
+    ##  9 000aadb4949…     2 362.02                       73 Female White         
+    ## 10 000b59b304e…     2 362.04                       35 Male   White         
     ## # … with 43,264 more rows, and 34 more variables: first_dr_age <dbl>,
     ## #   age_group <dbl>, insurance <chr>, region <chr>, smoke_status <chr>,
     ## #   new_class <dbl>, valid_class <dbl>, include_given_code <dbl>,
@@ -246,13 +265,13 @@ tbl_age_race <-
 kable(tbl_age_race)
 ```
 
-| age_tbl | Black or African American | Caucasian    | Hispanic     |
-|:--------|:--------------------------|:-------------|:-------------|
-| \< 53   | 1258 (21.243              | 5856 (18.897 | 1705 (26.796 |
-| \> 70   | 1148 (19.385              | 6508 (21.001 | 911 (14.317  |
-| 53 - 58 | 996 (16.819               | 4986 (16.09  | 1191 (18.718 |
-| 59 - 64 | 1260 (21.277              | 6591 (21.269 | 1381 (21.704 |
-| 65 - 70 | 1260 (21.277              | 7048 (22.744 | 1175 (18.466 |
+| age_tbl | White        | Black        | Hispanic     |
+|:--------|:-------------|:-------------|:-------------|
+| \< 53   | 5856 (18.897 | 1258 (21.243 | 1705 (26.796 |
+| \> 70   | 6508 (21.001 | 1148 (19.385 | 911 (14.317  |
+| 53 - 58 | 4986 (16.09  | 996 (16.819  | 1191 (18.718 |
+| 59 - 64 | 6591 (21.269 | 1260 (21.277 | 1381 (21.704 |
+| 65 - 70 | 7048 (22.744 | 1260 (21.277 | 1175 (18.466 |
 
 ``` r
 tbl_age_insurance <-
@@ -288,11 +307,11 @@ tbl_gender_race <-
 kable(tbl_gender_race)
 ```
 
-| gender  | Black or African American | Caucasian     | Hispanic     |
-|:--------|:--------------------------|:--------------|:-------------|
-| Female  | 3455 (58.342              | 13715 (44.258 | 2928 (46.016 |
-| Male    | 2441 (41.219              | 17160 (55.374 | 3389 (53.261 |
-| Unknown | 26 (0.439                 | 114 (0.368    | 46 (0.723    |
+| gender  | White         | Black        | Hispanic     |
+|:--------|:--------------|:-------------|:-------------|
+| Female  | 13715 (44.258 | 3455 (58.342 | 2928 (46.016 |
+| Male    | 17160 (55.374 | 2441 (41.219 | 3389 (53.261 |
+| Unknown | 114 (0.368    | 26 (0.439    | 46 (0.723    |
 
 ``` r
 tbl_gender_insurance <-
@@ -326,12 +345,12 @@ tbl_va_race <-
 kable(tbl_va_race)
 ```
 
-| va_tbl          | Black or African American | Caucasian     | Hispanic     |
-|:----------------|:--------------------------|:--------------|:-------------|
-| 20/201 or worse | 53 (0.895                 | 221 (0.713    | 64 (1.006    |
-| 20/40 or better | 3164 (53.428              | 17545 (56.617 | 3128 (49.159 |
-| 20/41 - 20/70   | 1650 (27.862              | 8471 (27.336  | 1899 (29.844 |
-| 20/71 - 20/200  | 1055 (17.815              | 4752 (15.334  | 1272 (19.991 |
+| va_tbl          | White         | Black        | Hispanic     |
+|:----------------|:--------------|:-------------|:-------------|
+| 20/201 or worse | 221 (0.713    | 53 (0.895    | 64 (1.006    |
+| 20/40 or better | 17545 (56.617 | 3164 (53.428 | 3128 (49.159 |
+| 20/41 - 20/70   | 8471 (27.336  | 1650 (27.862 | 1899 (29.844 |
+| 20/71 - 20/200  | 4752 (15.334  | 1055 (17.815 | 1272 (19.991 |
 
 ``` r
 tbl_va_insurance <-
@@ -366,12 +385,12 @@ tbl_vegf_race <-
 kable(tbl_vegf_race)
 ```
 
-| vegf_tbl    | Black or African American | Caucasian     | Hispanic     |
-|:------------|:--------------------------|:--------------|:-------------|
-| aflibercept | 984 (16.616               | 6241 (20.139  | 673 (10.577  |
-| bevacizumab | 3078 (51.976              | 14036 (45.293 | 4175 (65.614 |
-| combo       | 1157 (19.537              | 6408 (20.678  | 1051 (16.517 |
-| ranibizumab | 703 (11.871               | 4304 (13.889  | 464 (7.292   |
+| vegf_tbl    | White         | Black        | Hispanic     |
+|:------------|:--------------|:-------------|:-------------|
+| aflibercept | 6241 (20.139  | 984 (16.616  | 673 (10.577  |
+| bevacizumab | 14036 (45.293 | 3078 (51.976 | 4175 (65.614 |
+| combo       | 6408 (20.678  | 1157 (19.537 | 1051 (16.517 |
+| ranibizumab | 4304 (13.889  | 703 (11.871  | 464 (7.292   |
 
 ``` r
 tbl_vegf_insurance <-
@@ -407,12 +426,12 @@ tbl_smoke_race <-
 kable(tbl_smoke_race)
 ```
 
-| smoke_status                                    | Black or African American | Caucasian     | Hispanic     |
-|:------------------------------------------------|:--------------------------|:--------------|:-------------|
-| Former / No longer active / Past History / Quit | 1434 (24.215              | 8753 (28.246  | 1386 (21.782 |
-| No / Never                                      | 3846 (64.944              | 18345 (59.198 | 4341 (68.223 |
-| Unknown / Unclassified                          | 60 (1.013                 | 352 (1.136    | 67 (1.053    |
-| Yes / Active                                    | 582 (9.828                | 3539 (11.42   | 569 (8.942   |
+| smoke_status                                    | White         | Black        | Hispanic     |
+|:------------------------------------------------|:--------------|:-------------|:-------------|
+| Former / No longer active / Past History / Quit | 8753 (28.246  | 1434 (24.215 | 1386 (21.782 |
+| No / Never                                      | 18345 (59.198 | 3846 (64.944 | 4341 (68.223 |
+| Unknown / Unclassified                          | 352 (1.136    | 60 (1.013    | 67 (1.053    |
+| Yes / Active                                    | 3539 (11.42   | 582 (9.828   | 569 (8.942   |
 
 ``` r
 tbl_smoke_insurance <-
@@ -445,20 +464,20 @@ tbl_insurance_race <-
 kable(tbl_insurance_race)
 ```
 
-| insurance_tbl | race_ethnicity            |     n | pct_insurance_race |
-|:--------------|:--------------------------|------:|-------------------:|
-| Medicaid      | Black or African American |   371 |           6.264775 |
-| Medicaid      | Caucasian                 |  1392 |           4.491917 |
-| Medicaid      | Hispanic                  |   712 |          11.189690 |
-| Medicare      | Black or African American |  3803 |          64.218170 |
-| Medicare      | Caucasian                 | 19551 |          63.090129 |
-| Medicare      | Hispanic                  |  3305 |          51.940908 |
-| Other         | Black or African American |   482 |           8.139142 |
-| Other         | Caucasian                 |  2091 |           6.747556 |
-| Other         | Hispanic                  |   793 |          12.462675 |
-| Private       | Black or African American |  1266 |          21.377913 |
-| Private       | Caucasian                 |  7955 |          25.670399 |
-| Private       | Hispanic                  |  1553 |          24.406726 |
+| insurance_tbl | race_ethnicity |     n | pct_insurance_race |
+|:--------------|:---------------|------:|-------------------:|
+| Medicaid      | White          |  1392 |           4.491917 |
+| Medicaid      | Black          |   371 |           6.264775 |
+| Medicaid      | Hispanic       |   712 |          11.189690 |
+| Medicare      | White          | 19551 |          63.090129 |
+| Medicare      | Black          |  3803 |          64.218170 |
+| Medicare      | Hispanic       |  3305 |          51.940908 |
+| Other         | White          |  2091 |           6.747556 |
+| Other         | Black          |   482 |           8.139142 |
+| Other         | Hispanic       |   793 |          12.462675 |
+| Private       | White          |  7955 |          25.670399 |
+| Private       | Black          |  1266 |          21.377913 |
+| Private       | Hispanic       |  1553 |          24.406726 |
 
 ## Figure 1: Baseline Differences in Severity Score by Race
 
@@ -474,12 +493,15 @@ timeseries_analysis %>%
   dplyr::group_by(race_ethnicity) %>% 
   dplyr::mutate(prop_category = n / sum(n)) %>% 
   ggplot() + 
-  geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = .2) +
+  geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = 1) +
   theme_light() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
   ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 10)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity Category",
     y = "Percentage ",
@@ -489,7 +511,7 @@ timeseries_analysis %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
-## Figure 2A and 2B: Differences in Rates of Aflibercept and Bevacizumab Injection by Severity Score, Race and Insurance Status
+## Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by Severity Category, Race and Insurance Status
 
 ``` r
 # Calculate likelihood of drug by severity score and race (given that patient received antivegf treatment)
@@ -504,26 +526,26 @@ drug_sev_cat_race <-
   select(vision_category, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_sev_cat_race %>% 
-  arrange(desc(vision_category, race_ethnicity))
+  arrange(desc(vision_category), race_ethnicity) #JAY changed this!! 
 ```
 
     ## # A tibble: 108 × 5
-    ##    vision_category    race_ethnicity            vegf_group_365   prop count
-    ##    <chr>              <chr>                     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Black or African American Avastin        0.588    446
-    ##  2 8 - PDR with edema Black or African American combo          0.182    138
-    ##  3 8 - PDR with edema Black or African American Eylea          0.146    111
-    ##  4 8 - PDR with edema Black or African American Lucentis       0.0831    63
-    ##  5 8 - PDR with edema Caucasian                 Avastin        0.506   1848
-    ##  6 8 - PDR with edema Caucasian                 combo          0.191    699
-    ##  7 8 - PDR with edema Caucasian                 Eylea          0.209    762
-    ##  8 8 - PDR with edema Caucasian                 Lucentis       0.0939   343
-    ##  9 8 - PDR with edema Hispanic                  Avastin        0.678    729
-    ## 10 8 - PDR with edema Hispanic                  combo          0.156    168
+    ##    vision_category    race_ethnicity vegf_group_365   prop count
+    ##    <chr>              <ord>          <chr>           <dbl> <int>
+    ##  1 8 - PDR with edema White          Avastin        0.506   1848
+    ##  2 8 - PDR with edema White          combo          0.191    699
+    ##  3 8 - PDR with edema White          Eylea          0.209    762
+    ##  4 8 - PDR with edema White          Lucentis       0.0939   343
+    ##  5 8 - PDR with edema Black          Avastin        0.588    446
+    ##  6 8 - PDR with edema Black          combo          0.182    138
+    ##  7 8 - PDR with edema Black          Eylea          0.146    111
+    ##  8 8 - PDR with edema Black          Lucentis       0.0831    63
+    ##  9 8 - PDR with edema Hispanic       Avastin        0.678    729
+    ## 10 8 - PDR with edema Hispanic       combo          0.156    168
     ## # … with 98 more rows
 
 ``` r
-# Graphing likelihood of first drug type by severity and race
+# Graphing likelihood of Avastin by severity and race
 drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
@@ -533,12 +555,17 @@ drug_sev_cat_race %>%
   mutate(pct_round = round(prop, 2)) %>% 
   ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_grid(vegf_group_365 ~ .) +
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  #facet_grid(vegf_group_365 ~ .) +
   #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
   #scale_x_continuous()
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
     y = "Percentage of people receiving Avastin",
@@ -561,22 +588,22 @@ drug_sev_cat_insurance <-
   select(vision_category, insurance, vegf_group_365, prop, count = n)
 
 drug_sev_cat_insurance %>% 
-  arrange(desc(vision_category, insurance))
+  arrange(desc(vision_category), insurance)
 ```
 
     ## # A tibble: 107 × 5
     ##    vision_category    insurance vegf_group_365   prop count
-    ##    <chr>              <chr>     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Medicaid  Avastin        0.680    329
-    ##  2 8 - PDR with edema Medicaid  combo          0.151     73
-    ##  3 8 - PDR with edema Medicaid  Eylea          0.118     57
-    ##  4 8 - PDR with edema Medicaid  Lucentis       0.0517    25
+    ##    <chr>              <ord>     <chr>           <dbl> <int>
+    ##  1 8 - PDR with edema Private   Avastin        0.535    824
+    ##  2 8 - PDR with edema Private   combo          0.192    296
+    ##  3 8 - PDR with edema Private   Eylea          0.182    281
+    ##  4 8 - PDR with edema Private   Lucentis       0.0909   140
     ##  5 8 - PDR with edema Medicare  Avastin        0.528   1561
     ##  6 8 - PDR with edema Medicare  combo          0.185    547
     ##  7 8 - PDR with edema Medicare  Eylea          0.197    583
     ##  8 8 - PDR with edema Medicare  Lucentis       0.0890   263
-    ##  9 8 - PDR with edema Private   Avastin        0.535    824
-    ## 10 8 - PDR with edema Private   combo          0.192    296
+    ##  9 8 - PDR with edema Medicaid  Avastin        0.680    329
+    ## 10 8 - PDR with edema Medicaid  combo          0.151     73
     ## # … with 97 more rows
 
 ``` r
@@ -590,12 +617,17 @@ drug_sev_cat_insurance %>%
   mutate(pct_round = round(prop, 2)) %>%
   ggplot(aes(x = vision_category, y = prop, fill = insurance)) +
   geom_col(position = "dodge") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
-  facet_grid(vegf_group_365~.) +
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  #facet_grid(vegf_group_365~.) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
   # different colors for insurance
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
     y = "Percentage of people receiving Avastin",
@@ -605,124 +637,191 @@ drug_sev_cat_insurance %>%
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
-## Regression X: Variables that influence likelihood of receiving Avastin treatment
+## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
 
 ``` r
-avastin_1.lm <- 
-  lm(avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
-     data = timeseries_analysis %>% 
-       filter(
-         insurance %in% c("Medicare", "Medicaid", "Private")
-       ) %>% 
-       mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
-         insurance = relevel(insurance, ref = "Private"),
-         smoke_status = factor(smoke_status),
-         smoke_status = relevel(smoke_status, ref = "No / Never"),
-         avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
-       ) 
+# create dataset for regression
+data_avastin_reg <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
   ) 
 
-summary(avastin_1.lm)
+# glm for logistic regression
+avastin_1.logm <- 
+  glm(
+    avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg, 
+    family = binomial
+  ) 
+
+summary(avastin_1.logm)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = avastin ~ race_ethnicity + insurance + race_ethnicity * 
+    ## glm(formula = avastin ~ race_ethnicity + insurance + race_ethnicity * 
     ##     insurance + gender + first_dr_age + smoke_status + baseline_va_letter + 
-    ##     severity_score, data = timeseries_analysis %>% filter(insurance %in% 
-    ##     c("Medicare", "Medicaid", "Private")) %>% mutate(race_ethnicity = factor(race_ethnicity), 
-    ##     race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"), 
-    ##     insurance = factor(insurance), insurance = relevel(insurance, 
-    ##         ref = "Private"), smoke_status = factor(smoke_status), 
-    ##     smoke_status = relevel(smoke_status, ref = "No / Never"), 
-    ##     avastin = if_else(vegf_group_365 == "Avastin", 1, 0)))
+    ##     severity_score, family = binomial, data = data_avastin_reg)
     ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -0.8783 -0.4540 -0.3376  0.4985  0.7298 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.9075  -1.0986  -0.9093   1.1740   1.5986  
     ## 
     ## Coefficients:
     ##                                                               Estimate
-    ## (Intercept)                                                  0.2975053
-    ## race_ethnicityBlack or African American                      0.0287778
-    ## race_ethnicityHispanic                                       0.1489780
-    ## insuranceMedicaid                                            0.1058042
-    ## insuranceMedicare                                            0.0233615
-    ## genderMale                                                  -0.0226201
-    ## genderUnknown                                               -0.0239314
-    ## first_dr_age                                                -0.0023127
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0048371
-    ## smoke_statusUnknown / Unclassified                           0.0246780
-    ## smoke_statusYes / Active                                     0.0329755
-    ## baseline_va_letter                                           0.0012265
-    ## severity_score                                               0.0034629
-    ## race_ethnicityBlack or African American:insuranceMedicaid    0.0425301
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.0210238
-    ## race_ethnicityBlack or African American:insuranceMedicare    0.0437979
-    ## race_ethnicityHispanic:insuranceMedicare                     0.0293485
+    ## (Intercept)                                                 -0.8304549
+    ## race_ethnicityBlack                                          0.1180342
+    ## race_ethnicityHispanic                                       0.6143160
+    ## insuranceMedicare                                            0.0985570
+    ## insuranceMedicaid                                            0.4330683
+    ## genderMale                                                  -0.0942642
+    ## genderUnknown                                               -0.0997580
+    ## first_dr_age                                                -0.0096645
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0202601
+    ## smoke_statusUnknown / Unclassified                           0.1026341
+    ## smoke_statusYes / Active                                     0.1370671
+    ## baseline_va_letter                                           0.0051258
+    ## severity_score                                               0.0142757
+    ## race_ethnicityBlack:insuranceMedicare                        0.1777931
+    ## race_ethnicityHispanic:insuranceMedicare                     0.1260080
+    ## race_ethnicityBlack:insuranceMedicaid                        0.1872070
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.1661550
     ##                                                             Std. Error
-    ## (Intercept)                                                  0.0252844
-    ## race_ethnicityBlack or African American                      0.0148308
-    ## race_ethnicityHispanic                                       0.0136050
-    ## insuranceMedicaid                                            0.0143058
-    ## insuranceMedicare                                            0.0072044
-    ## genderMale                                                   0.0050211
-    ## genderUnknown                                                0.0374106
-    ## first_dr_age                                                 0.0002556
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0057660
-    ## smoke_statusUnknown / Unclassified                           0.0242382
-    ## smoke_statusYes / Active                                     0.0081407
-    ## baseline_va_letter                                           0.0001950
-    ## severity_score                                               0.0001672
-    ## race_ethnicityBlack or African American:insuranceMedicaid    0.0322196
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.0263531
-    ## race_ethnicityBlack or African American:insuranceMedicare    0.0171868
-    ## race_ethnicityHispanic:insuranceMedicare                     0.0164391
-    ##                                                             t value
-    ## (Intercept)                                                  11.766
-    ## race_ethnicityBlack or African American                       1.940
-    ## race_ethnicityHispanic                                       10.950
-    ## insuranceMedicaid                                             7.396
-    ## insuranceMedicare                                             3.243
-    ## genderMale                                                   -4.505
-    ## genderUnknown                                                -0.640
-    ## first_dr_age                                                 -9.049
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.839
+    ## (Intercept)                                                  0.1055185
+    ## race_ethnicityBlack                                          0.0611981
+    ## race_ethnicityHispanic                                       0.0573083
+    ## insuranceMedicare                                            0.0299273
+    ## insuranceMedicaid                                            0.0596638
+    ## genderMale                                                   0.0209544
+    ## genderUnknown                                                0.1565012
+    ## first_dr_age                                                 0.0010703
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0240504
+    ## smoke_statusUnknown / Unclassified                           0.1008541
+    ## smoke_statusYes / Active                                     0.0339618
+    ## baseline_va_letter                                           0.0008153
+    ## severity_score                                               0.0006960
+    ## race_ethnicityBlack:insuranceMedicare                        0.0709378
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0695434
+    ## race_ethnicityBlack:insuranceMedicaid                        0.1368319
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.1173484
+    ##                                                             z value
+    ## (Intercept)                                                  -7.870
+    ## race_ethnicityBlack                                           1.929
+    ## race_ethnicityHispanic                                       10.720
+    ## insuranceMedicare                                             3.293
+    ## insuranceMedicaid                                             7.258
+    ## genderMale                                                   -4.499
+    ## genderUnknown                                                -0.637
+    ## first_dr_age                                                 -9.030
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.842
     ## smoke_statusUnknown / Unclassified                            1.018
-    ## smoke_statusYes / Active                                      4.051
-    ## baseline_va_letter                                            6.288
-    ## severity_score                                               20.711
-    ## race_ethnicityBlack or African American:insuranceMedicaid     1.320
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.798
-    ## race_ethnicityBlack or African American:insuranceMedicare     2.548
-    ## race_ethnicityHispanic:insuranceMedicare                      1.785
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack or African American                      0.05234 .  
+    ## smoke_statusYes / Active                                      4.036
+    ## baseline_va_letter                                            6.287
+    ## severity_score                                               20.511
+    ## race_ethnicityBlack:insuranceMedicare                         2.506
+    ## race_ethnicityHispanic:insuranceMedicare                      1.812
+    ## race_ethnicityBlack:insuranceMedicaid                         1.368
+    ## race_ethnicityHispanic:insuranceMedicaid                      1.416
+    ##                                                             Pr(>|z|)    
+    ## (Intercept)                                                 3.54e-15 ***
+    ## race_ethnicityBlack                                          0.05377 .  
     ## race_ethnicityHispanic                                       < 2e-16 ***
-    ## insuranceMedicaid                                           1.43e-13 ***
-    ## insuranceMedicare                                            0.00119 ** 
-    ## genderMale                                                  6.65e-06 ***
-    ## genderUnknown                                                0.52237    
+    ## insuranceMedicare                                            0.00099 ***
+    ## insuranceMedicaid                                           3.91e-13 ***
+    ## genderMale                                                  6.84e-06 ***
+    ## genderUnknown                                                0.52385    
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.40152    
-    ## smoke_statusUnknown / Unclassified                           0.30862    
-    ## smoke_statusYes / Active                                    5.12e-05 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.39956    
+    ## smoke_statusUnknown / Unclassified                           0.30884    
+    ## smoke_statusYes / Active                                    5.44e-05 ***
     ## baseline_va_letter                                          3.24e-10 ***
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack or African American:insuranceMedicaid    0.18684    
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.42501    
-    ## race_ethnicityBlack or African American:insuranceMedicare    0.01083 *  
-    ## race_ethnicityHispanic:insuranceMedicare                     0.07422 .  
+    ## race_ethnicityBlack:insuranceMedicare                        0.01220 *  
+    ## race_ethnicityHispanic:insuranceMedicare                     0.07000 .  
+    ## race_ethnicityBlack:insuranceMedicaid                        0.17126    
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.15680    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 0.4896 on 39891 degrees of freedom
-    ## Multiple R-squared:  0.04078,    Adjusted R-squared:  0.0404 
-    ## F-statistic:   106 on 16 and 39891 DF,  p-value: < 2.2e-16
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 55288  on 39907  degrees of freedom
+    ## Residual deviance: 53629  on 39891  degrees of freedom
+    ## AIC: 53663
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
+
+``` r
+# Graphing likelihood of Avastin by severity and race
+drug_sev_cat_race %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2)) %>% 
+  ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +  facet_grid(vegf_group_365 ~ .) +
+  #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
+  #scale_x_continuous()
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values = race_colors) +
+  labs(
+    x = "Severity category",
+    y = "Percentage of people receiving Avastin",
+    fill = "Race"
+  )
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+# Graphing likelihood of first drug type by severity and insurance
+drug_sev_cat_insurance %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2)) %>%
+  ggplot(aes(x = vision_category, y = prop, fill = insurance)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +  facet_grid(vegf_group_365 ~ .) +
+  facet_grid(vegf_group_365~.) +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  # different colors for insurance
+  scale_fill_manual(values = insurance_colors) +
+  labs(
+    x = "Severity category",
+    y = "Percentage of people receiving Avastin",
+    fill = "Insurance"
+  )
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 ## Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by Race
 
@@ -767,9 +866,14 @@ loss_15_race <-
 loss_15_race %>%
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .3) +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Time after baseline VA measurement",
     y = "Percentage of eyes that lost 15 or more pts of VA",
@@ -777,10 +881,10 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
-# plot change in visual acuity by race at one and two yeaars
+# plot change in visual acuity by race at one and two years
 
 va_race <-
   timeseries_analysis %>% 
@@ -815,7 +919,8 @@ va_race_diff %>%
   #   data = va_race_diff %>% filter(time_diff == "two_year_change"),
   #   aes(label = count)
   # ) +
-  theme_light() + 
+  theme_light() +
+  scale_color_manual(values = race_colors) +
   labs(
     x = "Time point",
     y = "Change in visual acuity",
@@ -823,7 +928,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ## Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by Insurance and Race
 
@@ -851,65 +956,18 @@ loss_15_insurance <-
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
   geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .4) +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Time after baseline VA measurement",
     y = "Percentage of eyes that lost 15 or more points of VA",
     fill = "Insurance"
-  )
-```
-
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
-
-``` r
-#calculate severity by race and age
-
-severity_race_vision <-
-  timeseries_analysis %>% 
-  group_by(race_ethnicity, baseline_va_letter) %>%
-  summarize(avg_severity = mean(severity_score), count = n()) %>% 
-  filter(count > 100) %>% 
-  arrange(desc(avg_severity))
-```
-
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
-
-``` r
-severity_race_vision
-```
-
-    ## # A tibble: 36 × 4
-    ## # Groups:   race_ethnicity [3]
-    ##    race_ethnicity            baseline_va_letter avg_severity count
-    ##    <chr>                                  <dbl>        <dbl> <int>
-    ##  1 Hispanic                                  40         65.6   140
-    ##  2 Hispanic                                  35         64.1   373
-    ##  3 Hispanic                                  50         64.0   348
-    ##  4 Hispanic                                  55         63.9   355
-    ##  5 Hispanic                                  61         63.3   616
-    ##  6 Hispanic                                  85         62.5   374
-    ##  7 Caucasian                                 45         62.4   161
-    ##  8 Hispanic                                  65         62.3   847
-    ##  9 Black or African American                 35         62.2   317
-    ## 10 Hispanic                                  58         62.1   381
-    ## # … with 26 more rows
-
-``` r
-# graph severity by race and age group
-
-severity_race_vision %>%
-  filter(race_ethnicity %in% c("Caucasian", "Black or African American", "Hispanic", "Asian")) %>% 
-  ggplot(aes(x = baseline_va_letter, y = avg_severity, color = race_ethnicity)) +
-  geom_line() +
-  geom_point() +
-  theme_light() +
-  labs(
-    title = "Severity by race and baseline VA", 
-    y = "Average severity score", 
-    x = "Baseline VA"
   )
 ```
 
@@ -951,7 +1009,11 @@ va_insurance_diff %>%
   #   aes(label = count)
   # ) +
   theme_light() + 
-  scale_color_viridis_d() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = insurance_colors) +
   labs(
     x = "Time point",
     y = "Change in visual acuity",
@@ -960,6 +1022,85 @@ va_insurance_diff %>%
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+insurance_race_va <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity, insurance) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
+```
+
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+
+``` r
+va_insurance_race_diff_tbl <-
+  insurance_race_va %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>%
+  spread(key = timepoint, value = va_plot) %>%
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  )
+
+va_insurance_race_diff <-
+  insurance_race_va %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>%
+  spread(key = timepoint, value = va_plot) %>%
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  ) %>%
+  gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>%
+  ungroup()
+
+va_insurance_race_diff_ci <-
+  timeseries_analysis %>%
+  mutate(
+    one_year_change = one_year - baseline_va_letter,
+    two_year_change = two_year - baseline_va_letter,
+    baseline = 0
+  ) %>%
+  group_by(race_ethnicity, insurance) %>%
+  summarize(
+    mean_one_year_change = mean(one_year_change),
+    mean_two_year_change = mean(two_year_change),
+    sd_one_year_change = sd(one_year_change),
+    sd_two_year_change = sd(two_year_change)
+  )
+```
+
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+
+``` r
+va_insurance_race_diff %>%
+  ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(insurance, race_ethnicity))) +
+  # to display counts
+  # ggrepel::geom_text_repel(
+  #   data = va_insurance_race_diff %>% filter(time_diff == "two_year_change", insurance %in% c("Private", "Medicaid", "Medicare")),
+  #   aes(label = count, hjust = -2)
+  # ) +
+  facet_grid(.~insurance) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = race_colors) +
+  labs(
+    x = "Time point",
+    y = "Visual acuity (VA) change",
+    color = "Race"
+  )
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ## Regression X: Variables that influence change in vision after one year
 
@@ -972,9 +1113,9 @@ one_year_va_delta_4.lm <-
          insurance %in% c("Medicare", "Medicaid", "Private")
        ) %>% 
        mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         insurance = factor(insurance, ordered = FALSE), 
          insurance = relevel(insurance, ref = "Private"),
          smoke_status = factor(smoke_status),
          smoke_status = relevel(smoke_status, ref = "No / Never")
@@ -990,9 +1131,10 @@ summary(one_year_va_delta_4.lm)
     ##     race_ethnicity * insurance + gender + first_dr_age + smoke_status + 
     ##     baseline_va_letter + vegf_group_365 + severity_score, data = timeseries_analysis %>% 
     ##     filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-    ##     mutate(race_ethnicity = factor(race_ethnicity), race_ethnicity = relevel(race_ethnicity, 
-    ##         ref = "Caucasian"), insurance = factor(insurance), insurance = relevel(insurance, 
-    ##         ref = "Private"), smoke_status = factor(smoke_status), 
+    ##     mutate(race_ethnicity = factor(race_ethnicity, ordered = FALSE), 
+    ##         race_ethnicity = relevel(race_ethnicity, ref = "White"), 
+    ##         insurance = factor(insurance, ordered = FALSE), insurance = relevel(insurance, 
+    ##             ref = "Private"), smoke_status = factor(smoke_status), 
     ##         smoke_status = relevel(smoke_status, ref = "No / Never")))
     ## 
     ## Residuals:
@@ -1002,10 +1144,10 @@ summary(one_year_va_delta_4.lm)
     ## Coefficients:
     ##                                                              Estimate
     ## (Intercept)                                                 36.411416
-    ## race_ethnicityBlack or African American                     -1.456907
+    ## race_ethnicityBlack                                         -1.456907
     ## race_ethnicityHispanic                                      -1.316521
-    ## insuranceMedicaid                                           -2.128057
     ## insuranceMedicare                                           -1.780485
+    ## insuranceMedicaid                                           -2.128057
     ## genderMale                                                   0.405336
     ## genderUnknown                                               -1.214586
     ## first_dr_age                                                -0.057780
@@ -1017,16 +1159,16 @@ summary(one_year_va_delta_4.lm)
     ## vegf_group_365Eylea                                          0.561849
     ## vegf_group_365Lucentis                                       0.767506
     ## severity_score                                              -0.063302
-    ## race_ethnicityBlack or African American:insuranceMedicaid   -0.067253
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.602269
-    ## race_ethnicityBlack or African American:insuranceMedicare    1.348333
+    ## race_ethnicityBlack:insuranceMedicare                        1.348333
     ## race_ethnicityHispanic:insuranceMedicare                    -0.078540
+    ## race_ethnicityBlack:insuranceMedicaid                       -0.067253
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.602269
     ##                                                             Std. Error
     ## (Intercept)                                                   0.634959
-    ## race_ethnicityBlack or African American                       0.368723
+    ## race_ethnicityBlack                                           0.368723
     ## race_ethnicityHispanic                                        0.338773
-    ## insuranceMedicaid                                             0.355968
     ## insuranceMedicare                                             0.179176
+    ## insuranceMedicaid                                             0.355968
     ## genderMale                                                    0.124870
     ## genderUnknown                                                 0.930065
     ## first_dr_age                                                  0.006362
@@ -1038,16 +1180,16 @@ summary(one_year_va_delta_4.lm)
     ## vegf_group_365Eylea                                           0.169126
     ## vegf_group_365Lucentis                                        0.192941
     ## severity_score                                                0.004181
-    ## race_ethnicityBlack or African American:insuranceMedicaid     0.801029
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.655178
-    ## race_ethnicityBlack or African American:insuranceMedicare     0.427327
+    ## race_ethnicityBlack:insuranceMedicare                         0.427327
     ## race_ethnicityHispanic:insuranceMedicare                      0.408718
+    ## race_ethnicityBlack:insuranceMedicaid                         0.801029
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.655178
     ##                                                             t value
     ## (Intercept)                                                  57.345
-    ## race_ethnicityBlack or African American                      -3.951
+    ## race_ethnicityBlack                                          -3.951
     ## race_ethnicityHispanic                                       -3.886
-    ## insuranceMedicaid                                            -5.978
     ## insuranceMedicare                                            -9.937
+    ## insuranceMedicaid                                            -5.978
     ## genderMale                                                    3.246
     ## genderUnknown                                                -1.306
     ## first_dr_age                                                 -9.082
@@ -1059,16 +1201,16 @@ summary(one_year_va_delta_4.lm)
     ## vegf_group_365Eylea                                           3.322
     ## vegf_group_365Lucentis                                        3.978
     ## severity_score                                              -15.142
-    ## race_ethnicityBlack or African American:insuranceMedicaid    -0.084
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.919
-    ## race_ethnicityBlack or African American:insuranceMedicare     3.155
+    ## race_ethnicityBlack:insuranceMedicare                         3.155
     ## race_ethnicityHispanic:insuranceMedicare                     -0.192
+    ## race_ethnicityBlack:insuranceMedicaid                        -0.084
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.919
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack or African American                     7.79e-05 ***
+    ## race_ethnicityBlack                                         7.79e-05 ***
     ## race_ethnicityHispanic                                      0.000102 ***
-    ## insuranceMedicaid                                           2.27e-09 ***
     ## insuranceMedicare                                            < 2e-16 ***
+    ## insuranceMedicaid                                           2.27e-09 ***
     ## genderMale                                                  0.001171 ** 
     ## genderUnknown                                               0.191589    
     ## first_dr_age                                                 < 2e-16 ***
@@ -1080,16 +1222,31 @@ summary(one_year_va_delta_4.lm)
     ## vegf_group_365Eylea                                         0.000894 ***
     ## vegf_group_365Lucentis                                      6.96e-05 ***
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack or African American:insuranceMedicaid   0.933090    
-    ## race_ethnicityHispanic:insuranceMedicaid                    0.357973    
-    ## race_ethnicityBlack or African American:insuranceMedicare   0.001605 ** 
+    ## race_ethnicityBlack:insuranceMedicare                       0.001605 ** 
     ## race_ethnicityHispanic:insuranceMedicare                    0.847617    
+    ## race_ethnicityBlack:insuranceMedicaid                       0.933090    
+    ## race_ethnicityHispanic:insuranceMedicaid                    0.357973    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## Residual standard error: 12.17 on 39888 degrees of freedom
     ## Multiple R-squared:  0.1459, Adjusted R-squared:  0.1455 
     ## F-statistic: 358.6 on 19 and 39888 DF,  p-value: < 2.2e-16
+
+``` r
+vif(one_year_va_delta_4.lm)
+```
+
+    ##                               GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity           15.244230  2        1.975952
+    ## insurance                 3.059205  2        1.322520
+    ## gender                    1.042914  2        1.010560
+    ## first_dr_age              1.464462  1        1.210150
+    ## smoke_status              1.059461  3        1.009673
+    ## baseline_va_letter        1.037146  1        1.018404
+    ## vegf_group_365            1.050078  3        1.008177
+    ## severity_score            1.136036  1        1.065850
+    ## race_ethnicity:insurance 29.006857  4        1.523395
 
 ## Figure 5: Average severity score at each baseline VA (rounded to nearest 5) by race
 
@@ -1113,38 +1270,42 @@ severity_race_vision
 
     ## # A tibble: 31 × 4
     ## # Groups:   race_ethnicity [3]
-    ##    race_ethnicity            baseline_va_r5 avg_severity count
-    ##    <chr>                              <dbl>        <dbl> <int>
-    ##  1 Hispanic                              40         65.9   144
-    ##  2 Hispanic                              35         64.1   373
-    ##  3 Hispanic                              50         64.0   359
-    ##  4 Hispanic                              55         63.8   361
-    ##  5 Hispanic                              60         62.9  1024
-    ##  6 Caucasian                             25         62.6   147
-    ##  7 Hispanic                              85         62.5   374
-    ##  8 Caucasian                             45         62.3   175
-    ##  9 Black or African American             35         62.2   317
-    ## 10 Hispanic                              65         62.2   866
+    ##    race_ethnicity baseline_va_r5 avg_severity count
+    ##    <ord>                   <dbl>        <dbl> <int>
+    ##  1 Hispanic                   40         65.9   144
+    ##  2 Hispanic                   35         64.1   373
+    ##  3 Hispanic                   50         64.0   359
+    ##  4 Hispanic                   55         63.8   361
+    ##  5 Hispanic                   60         62.9  1024
+    ##  6 White                      25         62.6   147
+    ##  7 Hispanic                   85         62.5   374
+    ##  8 White                      45         62.3   175
+    ##  9 Black                      35         62.2   317
+    ## 10 Hispanic                   65         62.2   866
     ## # … with 21 more rows
 
 ``` r
 # graph severity by race and age group
 
 severity_race_vision %>%
-  filter(race_ethnicity %in% c("Caucasian", "Black or African American", "Hispanic")) %>% 
+  filter(race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = race_ethnicity)) +
   geom_line() +
   geom_point() +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = race_colors) +
   labs(
-    title = "Severity by race and baseline VA", 
     y = "Average severity score", 
     x = "Baseline VA", 
     color = "Race"
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ## Figure 6: Average severity score at each baseline VA (rounded to nearest 5) by insurance
 
@@ -1169,7 +1330,7 @@ severity_insurance_vision
     ## # A tibble: 44 × 4
     ## # Groups:   insurance [6]
     ##    insurance       baseline_va_r5 avg_severity count
-    ##    <chr>                    <dbl>        <dbl> <int>
+    ##    <ord>                    <dbl>        <dbl> <int>
     ##  1 Medicaid                    35         65.9   133
     ##  2 Medicaid                    50         65.8   132
     ##  3 Medicaid                    55         63.4   103
@@ -1191,6 +1352,11 @@ severity_insurance_vision %>%
   geom_line() +
   geom_point() +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = insurance_colors) +
   labs(
     title = "Severity by insurance and baseline VA", 
     y = "Average severity score", 
@@ -1199,7 +1365,7 @@ severity_insurance_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ## Timeseries analysis of visual acuity
 
@@ -1226,11 +1392,11 @@ race_distribution %>%
 ```
 
     ## # A tibble: 3 × 2
-    ##   race_ethnicity            total_race
-    ##   <chr>                          <int>
-    ## 1 Black or African American       5922
-    ## 2 Caucasian                      30989
-    ## 3 Hispanic                        6363
+    ##   race_ethnicity total_race
+    ##   <ord>               <int>
+    ## 1 White               30989
+    ## 2 Black                5922
+    ## 3 Hispanic             6363
 
 ``` r
 timeseries_analysis %>% 
@@ -1243,7 +1409,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 race_distribution %>% 
@@ -1259,7 +1425,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -1283,18 +1449,18 @@ timeseries_analysis %>%
 
     ## # A tibble: 33 × 4
     ## # Groups:   race_ethnicity [3]
-    ##    severity_score race_ethnicity                n   prop
-    ##             <dbl> <chr>                     <int>  <dbl>
-    ##  1             35 Black or African American   596 0.101 
-    ##  2             35 Caucasian                  3349 0.108 
-    ##  3             35 Hispanic                    442 0.0695
-    ##  4             40 Black or African American   323 0.0545
-    ##  5             40 Caucasian                  1887 0.0609
-    ##  6             40 Hispanic                    226 0.0355
-    ##  7             43 Black or African American   148 0.0250
-    ##  8             43 Caucasian                   840 0.0271
-    ##  9             43 Hispanic                    141 0.0222
-    ## 10             44 Black or African American   817 0.138 
+    ##    severity_score race_ethnicity     n   prop
+    ##             <dbl> <ord>          <int>  <dbl>
+    ##  1             35 White           3349 0.108 
+    ##  2             35 Black            596 0.101 
+    ##  3             35 Hispanic         442 0.0695
+    ##  4             40 White           1887 0.0609
+    ##  5             40 Black            323 0.0545
+    ##  6             40 Hispanic         226 0.0355
+    ##  7             43 White            840 0.0271
+    ##  8             43 Black            148 0.0250
+    ##  9             43 Hispanic         141 0.0222
+    ## 10             44 White           4545 0.147 
     ## # … with 23 more rows
 
 ``` r
@@ -1305,7 +1471,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -1347,7 +1513,7 @@ va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
 va_race_diff <-
@@ -1376,7 +1542,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
 ``` r
 # plot change in visual acuity by race at one and two yeaars
@@ -1396,7 +1562,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -1421,7 +1587,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -1445,7 +1611,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -1486,7 +1652,7 @@ va_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
 ``` r
 va_insurance_diff <-
@@ -1515,7 +1681,7 @@ va_insurance_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 #### Percentage with 15 letter loss by race
 
@@ -1567,7 +1733,7 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
 
 ``` r
 gain_15_race <-
@@ -1596,7 +1762,7 @@ gain_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-2.png)<!-- -->
 
 #### Percentage with 15 letter loss by insurance
 
@@ -1632,7 +1798,7 @@ loss_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
 
 ``` r
 gain_15_insurance <-
@@ -1662,7 +1828,7 @@ gain_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-2.png)<!-- -->
 
 #### Timeseries VA by insurance and race
 
@@ -1774,7 +1940,7 @@ smoking_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 #### Timeseries VA by gender and race
 
@@ -1804,7 +1970,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-50-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -1853,7 +2019,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -1885,7 +2051,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with \~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -1916,7 +2082,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -1947,7 +2113,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -1983,7 +2149,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -2016,17 +2182,17 @@ severity_race_va_10 %>%
 
     ## # A tibble: 669 × 6
     ##    baseline_va_r10 severity_score race_ethnicity count timepoint   va_plot
-    ##              <dbl>          <dbl> <chr>          <int> <chr>         <dbl>
-    ##  1              80             73 Caucasian       2863 baseline_va    79.3
-    ##  2              80             73 Caucasian       2863 one_year_va    76.2
-    ##  3              80             73 Caucasian       2863 two_year_va    74.8
-    ##  4              60             73 Caucasian       2648 baseline_va    61.1
-    ##  5              60             73 Caucasian       2648 one_year_va    64.0
-    ##  6              60             73 Caucasian       2648 two_year_va    64.1
-    ##  7              80             44 Caucasian       1729 baseline_va    78.9
-    ##  8              80             44 Caucasian       1729 one_year_va    76.9
-    ##  9              80             44 Caucasian       1729 two_year_va    75.4
-    ## 10              70             73 Caucasian       1532 baseline_va    70.0
+    ##              <dbl>          <dbl> <ord>          <int> <chr>         <dbl>
+    ##  1              80             73 White           2863 baseline_va    79.3
+    ##  2              80             73 White           2863 one_year_va    76.2
+    ##  3              80             73 White           2863 two_year_va    74.8
+    ##  4              60             73 White           2648 baseline_va    61.1
+    ##  5              60             73 White           2648 one_year_va    64.0
+    ##  6              60             73 White           2648 two_year_va    64.1
+    ##  7              80             44 White           1729 baseline_va    78.9
+    ##  8              80             44 White           1729 one_year_va    76.9
+    ##  9              80             44 White           1729 two_year_va    75.4
+    ## 10              70             73 White           1532 baseline_va    70.0
     ## # … with 659 more rows
 
 ``` r
@@ -2053,7 +2219,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -2096,7 +2262,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -2141,7 +2307,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -2181,7 +2347,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -2224,7 +2390,7 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 ## Injections by VA analysis
 
@@ -2332,11 +2498,11 @@ severity_race <-
 severity_race %>% kable()
 ```
 
-| race_ethnicity            |  average | count |
-|:--------------------------|---------:|------:|
-| Hispanic                  | 62.39353 |  6363 |
-| Black or African American | 58.56974 |  5922 |
-| Caucasian                 | 57.03453 | 30989 |
+| race_ethnicity |  average | count |
+|:---------------|---------:|------:|
+| Hispanic       | 62.39353 |  6363 |
+| Black          | 58.56974 |  5922 |
+| White          | 57.03453 | 30989 |
 
 Hispanic people have the highest severity of all racial groups, nearaly
 5 points higher than White people. Black, Asian, and Caucasian people
@@ -2362,23 +2528,23 @@ severity_race_reg
 
     ## # A tibble: 15 × 4
     ## # Groups:   race_ethnicity [3]
-    ##    race_ethnicity            region    average count
-    ##    <chr>                     <chr>       <dbl> <int>
-    ##  1 Hispanic                  <NA>         68.3    98
-    ##  2 Hispanic                  Midwest      63.7   491
-    ##  3 Hispanic                  West         63.1  2269
-    ##  4 Hispanic                  South        62.3  2633
-    ##  5 Hispanic                  Northeast    59.6   872
-    ##  6 Black or African American South        58.8  3409
-    ##  7 Black or African American Northeast    58.4  1125
-    ##  8 Black or African American Midwest      58.1   981
-    ##  9 Black or African American West         58.0   339
-    ## 10 Caucasian                 South        57.8 10792
-    ## 11 Caucasian                 West         57.3  5058
-    ## 12 Black or African American <NA>         56.8    68
-    ## 13 Caucasian                 Midwest      56.5  8652
-    ## 14 Caucasian                 <NA>         56.4   334
-    ## 15 Caucasian                 Northeast    56.3  6153
+    ##    race_ethnicity region    average count
+    ##    <ord>          <chr>       <dbl> <int>
+    ##  1 Hispanic       <NA>         68.3    98
+    ##  2 Hispanic       Midwest      63.7   491
+    ##  3 Hispanic       West         63.1  2269
+    ##  4 Hispanic       South        62.3  2633
+    ##  5 Hispanic       Northeast    59.6   872
+    ##  6 Black          South        58.8  3409
+    ##  7 Black          Northeast    58.4  1125
+    ##  8 Black          Midwest      58.1   981
+    ##  9 Black          West         58.0   339
+    ## 10 White          South        57.8 10792
+    ## 11 White          West         57.3  5058
+    ## 12 Black          <NA>         56.8    68
+    ## 13 White          Midwest      56.5  8652
+    ## 14 White          <NA>         56.4   334
+    ## 15 White          Northeast    56.3  6153
 
 ``` r
 # graph severity by race and region
@@ -2394,7 +2560,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -2418,18 +2584,18 @@ severity_race_age <-
 severity_race_age %>% head(10) %>% kable()
 ```
 
-| race_ethnicity            | age_group | avg_severity | count |
-|:--------------------------|----------:|-------------:|------:|
-| Black or African American |        25 |     72.25926 |    27 |
-| Hispanic                  |        35 |     68.89744 |   156 |
-| Caucasian                 |        35 |     68.50963 |   571 |
-| Caucasian                 |        20 |     68.33333 |    33 |
-| Hispanic                  |        45 |     68.32414 |   435 |
-| Hispanic                  |        25 |     68.27273 |    33 |
-| Hispanic                  |        40 |     68.19355 |   279 |
-| Black or African American |        20 |     68.00000 |     3 |
-| Hispanic                  |        20 |     68.00000 |     7 |
-| Caucasian                 |        30 |     67.95183 |   436 |
+| race_ethnicity | age_group | avg_severity | count |
+|:---------------|----------:|-------------:|------:|
+| Black          |        25 |     72.25926 |    27 |
+| Hispanic       |        35 |     68.89744 |   156 |
+| White          |        35 |     68.50963 |   571 |
+| White          |        20 |     68.33333 |    33 |
+| Hispanic       |        45 |     68.32414 |   435 |
+| Hispanic       |        25 |     68.27273 |    33 |
+| Hispanic       |        40 |     68.19355 |   279 |
+| Black          |        20 |     68.00000 |     3 |
+| Hispanic       |        20 |     68.00000 |     7 |
+| White          |        30 |     67.95183 |   436 |
 
 ``` r
 # graph severity by race and age group
@@ -2445,7 +2611,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -2474,7 +2640,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is \~1.5-2
 pts higher for Black people vs. Caucasian people, and \~3-4 pts higher
@@ -2526,26 +2692,26 @@ severity_race_ins
 
     ## # A tibble: 18 × 4
     ## # Groups:   race_ethnicity [3]
-    ##    race_ethnicity            insurance       average count
-    ##    <chr>                     <chr>             <dbl> <int>
-    ##  1 Hispanic                  Govt               65.2   123
-    ##  2 Hispanic                  Unknown/Missing    63.3   640
-    ##  3 Hispanic                  Medicaid           63.2   712
-    ##  4 Hispanic                  Private            62.5  1553
-    ##  5 Caucasian                 Medicaid           61.9  1392
-    ##  6 Hispanic                  Medicare           61.9  3305
-    ##  7 Black or African American Medicaid           61.6   371
-    ##  8 Caucasian                 Unknown/Missing    60.5   794
-    ##  9 Black or African American Unknown/Missing    60.1   229
-    ## 10 Hispanic                  Military           59.3    30
-    ## 11 Caucasian                 Govt               59.2   862
-    ## 12 Black or African American Private            59.0  1266
-    ## 13 Caucasian                 Private            58.9  7955
-    ## 14 Black or African American Govt               58.7   180
-    ## 15 Black or African American Medicare           58.0  3803
-    ## 16 Black or African American Military           57.3    73
-    ## 17 Caucasian                 Military           55.9   435
-    ## 18 Caucasian                 Medicare           55.7 19551
+    ##    race_ethnicity insurance       average count
+    ##    <ord>          <ord>             <dbl> <int>
+    ##  1 Hispanic       Govt               65.2   123
+    ##  2 Hispanic       Unknown/Missing    63.3   640
+    ##  3 Hispanic       Medicaid           63.2   712
+    ##  4 Hispanic       Private            62.5  1553
+    ##  5 White          Medicaid           61.9  1392
+    ##  6 Hispanic       Medicare           61.9  3305
+    ##  7 Black          Medicaid           61.6   371
+    ##  8 White          Unknown/Missing    60.5   794
+    ##  9 Black          Unknown/Missing    60.1   229
+    ## 10 Hispanic       Military           59.3    30
+    ## 11 White          Govt               59.2   862
+    ## 12 Black          Private            59.0  1266
+    ## 13 White          Private            58.9  7955
+    ## 14 Black          Govt               58.7   180
+    ## 15 Black          Medicare           58.0  3803
+    ## 16 Black          Military           57.3    73
+    ## 17 White          Military           55.9   435
+    ## 18 White          Medicare           55.7 19551
 
 ``` r
 # graph severity by race and insurance 
@@ -2566,7 +2732,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -2590,13 +2756,13 @@ severity_race_sex <-
 severity_race_sex %>% head(5) %>% kable()
 ```
 
-| race_ethnicity            | gender  |  average | count |
-|:--------------------------|:--------|---------:|------:|
-| Hispanic                  | Unknown | 64.34783 |    46 |
-| Hispanic                  | Male    | 63.22544 |  3389 |
-| Hispanic                  | Female  | 61.39993 |  2928 |
-| Caucasian                 | Unknown | 59.69298 |   114 |
-| Black or African American | Male    | 59.69193 |  2441 |
+| race_ethnicity | gender  |  average | count |
+|:---------------|:--------|---------:|------:|
+| Hispanic       | Unknown | 64.34783 |    46 |
+| Hispanic       | Male    | 63.22544 |  3389 |
+| Hispanic       | Female  | 61.39993 |  2928 |
+| White          | Unknown | 59.69298 |   114 |
+| Black          | Male    | 59.69193 |  2441 |
 
 ``` r
 # graphing severity by race and sex
@@ -2614,7 +2780,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-80-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-81-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -2652,7 +2818,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-83-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -2674,18 +2840,18 @@ treatment_sev_race %>%
 ```
 
     ## # A tibble: 33 × 5
-    ##    severity_score race_ethnicity            proc_group_28  prop count
-    ##             <dbl> <chr>                     <chr>         <dbl> <int>
-    ##  1             85 Black or African American antivegf          1    13
-    ##  2             85 Caucasian                 antivegf          1    16
-    ##  3             85 Hispanic                  antivegf          1     9
-    ##  4             81 Black or African American antivegf          1    16
-    ##  5             81 Caucasian                 antivegf          1    34
-    ##  6             81 Hispanic                  antivegf          1    11
-    ##  7             78 Black or African American antivegf          1   863
-    ##  8             78 Caucasian                 antivegf          1  4075
-    ##  9             78 Hispanic                  antivegf          1  1276
-    ## 10             73 Black or African American antivegf          1  1795
+    ##    severity_score race_ethnicity proc_group_28  prop count
+    ##             <dbl> <ord>          <chr>         <dbl> <int>
+    ##  1             85 White          antivegf          1    16
+    ##  2             85 Black          antivegf          1    13
+    ##  3             85 Hispanic       antivegf          1     9
+    ##  4             81 White          antivegf          1    34
+    ##  5             81 Black          antivegf          1    16
+    ##  6             81 Hispanic       antivegf          1    11
+    ##  7             78 White          antivegf          1  4075
+    ##  8             78 Black          antivegf          1   863
+    ##  9             78 Hispanic       antivegf          1  1276
+    ## 10             73 White          antivegf          1  8274
     ## # … with 23 more rows
 
 ``` r
@@ -2704,7 +2870,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-84-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-85-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -2727,7 +2893,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-85-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-86-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -2755,18 +2921,18 @@ drug_sev_race %>%
 ```
 
     ## # A tibble: 129 × 5
-    ##    severity_score race_ethnicity            vegf_group_365   prop count
-    ##             <dbl> <chr>                     <chr>           <dbl> <int>
-    ##  1             85 Black or African American Avastin        0.8        8
-    ##  2             85 Black or African American combo          0.2        2
-    ##  3             85 Caucasian                 Avastin        0.6        9
-    ##  4             85 Caucasian                 combo          0.2        3
-    ##  5             85 Caucasian                 Eylea          0.133      2
-    ##  6             85 Caucasian                 Lucentis       0.0667     1
-    ##  7             85 Hispanic                  Avastin        0.333      3
-    ##  8             85 Hispanic                  combo          0.333      3
-    ##  9             85 Hispanic                  Eylea          0.333      3
-    ## 10             81 Black or African American Avastin        0.533      8
+    ##    severity_score race_ethnicity vegf_group_365   prop count
+    ##             <dbl> <ord>          <chr>           <dbl> <int>
+    ##  1             85 White          Avastin        0.6        9
+    ##  2             85 White          combo          0.2        3
+    ##  3             85 White          Eylea          0.133      2
+    ##  4             85 White          Lucentis       0.0667     1
+    ##  5             85 Black          Avastin        0.8        8
+    ##  6             85 Black          combo          0.2        2
+    ##  7             85 Hispanic       Avastin        0.333      3
+    ##  8             85 Hispanic       combo          0.333      3
+    ##  9             85 Hispanic       Eylea          0.333      3
+    ## 10             81 White          Avastin        0.727     24
     ## # … with 119 more rows
 
 ``` r
@@ -2784,7 +2950,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-87-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -2802,7 +2968,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -2826,7 +2992,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Avastin as compared to their Caucasian counterparts
@@ -2852,18 +3018,18 @@ drug_sev_cat_race %>%
 ```
 
     ## # A tibble: 108 × 5
-    ##    vision_category    race_ethnicity            vegf_group_365   prop count
-    ##    <chr>              <chr>                     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Black or African American Avastin        0.588    446
-    ##  2 8 - PDR with edema Black or African American combo          0.182    138
-    ##  3 8 - PDR with edema Black or African American Eylea          0.146    111
-    ##  4 8 - PDR with edema Black or African American Lucentis       0.0831    63
-    ##  5 8 - PDR with edema Caucasian                 Avastin        0.506   1848
-    ##  6 8 - PDR with edema Caucasian                 combo          0.191    699
-    ##  7 8 - PDR with edema Caucasian                 Eylea          0.209    762
-    ##  8 8 - PDR with edema Caucasian                 Lucentis       0.0939   343
-    ##  9 8 - PDR with edema Hispanic                  Avastin        0.678    729
-    ## 10 8 - PDR with edema Hispanic                  combo          0.156    168
+    ##    vision_category    race_ethnicity vegf_group_365   prop count
+    ##    <chr>              <ord>          <chr>           <dbl> <int>
+    ##  1 8 - PDR with edema White          Avastin        0.506   1848
+    ##  2 8 - PDR with edema White          combo          0.191    699
+    ##  3 8 - PDR with edema White          Eylea          0.209    762
+    ##  4 8 - PDR with edema White          Lucentis       0.0939   343
+    ##  5 8 - PDR with edema Black          Avastin        0.588    446
+    ##  6 8 - PDR with edema Black          combo          0.182    138
+    ##  7 8 - PDR with edema Black          Eylea          0.146    111
+    ##  8 8 - PDR with edema Black          Lucentis       0.0831    63
+    ##  9 8 - PDR with edema Hispanic       Avastin        0.678    729
+    ## 10 8 - PDR with edema Hispanic       combo          0.156    168
     ## # … with 98 more rows
 
 ``` r
@@ -2886,7 +3052,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -2903,7 +3069,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Avastin as first treatment by severity and race
@@ -2924,7 +3090,7 @@ drug_sev_cat_race %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-94-1.png)<!-- -->
 
 #### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
 
@@ -2945,18 +3111,18 @@ drug_va_race %>%
 ```
 
     ## # A tibble: 94 × 5
-    ##    baseline_va_r10 race_ethnicity            vegf_group_365   prop count
-    ##              <dbl> <chr>                     <chr>           <dbl> <int>
-    ##  1             100 Black or African American Eylea          1          2
-    ##  2             100 Hispanic                  Avastin        1          1
-    ##  3              90 Black or African American Avastin        0.4        2
-    ##  4              90 Black or African American combo          0.2        1
-    ##  5              90 Black or African American Eylea          0.2        1
-    ##  6              90 Black or African American Lucentis       0.2        1
-    ##  7              90 Caucasian                 Avastin        0.452     19
-    ##  8              90 Caucasian                 combo          0.0952     4
-    ##  9              90 Caucasian                 Eylea          0.238     10
-    ## 10              90 Caucasian                 Lucentis       0.214      9
+    ##    baseline_va_r10 race_ethnicity vegf_group_365   prop count
+    ##              <dbl> <ord>          <chr>           <dbl> <int>
+    ##  1             100 Black          Eylea          1          2
+    ##  2             100 Hispanic       Avastin        1          1
+    ##  3              90 White          Avastin        0.452     19
+    ##  4              90 White          combo          0.0952     4
+    ##  5              90 White          Eylea          0.238     10
+    ##  6              90 White          Lucentis       0.214      9
+    ##  7              90 Black          Avastin        0.4        2
+    ##  8              90 Black          combo          0.2        1
+    ##  9              90 Black          Eylea          0.2        1
+    ## 10              90 Black          Lucentis       0.2        1
     ## # … with 84 more rows
 
 ``` r
@@ -2975,7 +3141,7 @@ drug_va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-95-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
 
 #### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
 
@@ -2997,17 +3163,17 @@ drug_sev_cat_insurance %>%
 
     ## # A tibble: 107 × 5
     ##    vision_category    insurance vegf_group_365   prop count
-    ##    <chr>              <chr>     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Medicaid  Avastin        0.680    329
-    ##  2 8 - PDR with edema Medicaid  combo          0.151     73
-    ##  3 8 - PDR with edema Medicaid  Eylea          0.118     57
-    ##  4 8 - PDR with edema Medicaid  Lucentis       0.0517    25
+    ##    <chr>              <ord>     <chr>           <dbl> <int>
+    ##  1 8 - PDR with edema Private   Avastin        0.535    824
+    ##  2 8 - PDR with edema Private   combo          0.192    296
+    ##  3 8 - PDR with edema Private   Eylea          0.182    281
+    ##  4 8 - PDR with edema Private   Lucentis       0.0909   140
     ##  5 8 - PDR with edema Medicare  Avastin        0.528   1561
     ##  6 8 - PDR with edema Medicare  combo          0.185    547
     ##  7 8 - PDR with edema Medicare  Eylea          0.197    583
     ##  8 8 - PDR with edema Medicare  Lucentis       0.0890   263
-    ##  9 8 - PDR with edema Private   Avastin        0.535    824
-    ## 10 8 - PDR with edema Private   combo          0.192    296
+    ##  9 8 - PDR with edema Medicaid  Avastin        0.680    329
+    ## 10 8 - PDR with edema Medicaid  combo          0.151     73
     ## # … with 97 more rows
 
 ``` r
@@ -3030,7 +3196,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-97-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and insurance
@@ -3048,7 +3214,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Avastin as first treatment by severity and insurance
@@ -3070,7 +3236,7 @@ drug_sev_cat_insurance %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-100-1.png)<!-- -->
 
 #### Drug received by race and insurance
 
@@ -3096,18 +3262,18 @@ drug_sev_race_ins %>%
 ```
 
     ## # A tibble: 563 × 6
-    ##    severity_score race_ethnicity      insurance   vegf_group_28  prop count
-    ##             <dbl> <chr>               <chr>       <chr>         <dbl> <int>
-    ##  1             85 Black or African A… Medicare    Avastin       1         6
-    ##  2             85 Black or African A… Private     Avastin       1         6
-    ##  3             85 Black or African A… Medicaid    Lucentis      1         1
-    ##  4             85 Caucasian           Medicaid    Avastin       1         1
-    ##  5             85 Caucasian           Medicare    Avastin       0.571     4
-    ##  6             85 Caucasian           Private     Avastin       1         7
-    ##  7             85 Caucasian           Unknown/Mi… Avastin       1         1
-    ##  8             85 Caucasian           Medicare    Eylea         0.286     2
-    ##  9             85 Caucasian           Medicare    Lucentis      0.143     1
-    ## 10             85 Hispanic            Medicare    Avastin       0.6       3
+    ##    severity_score race_ethnicity insurance       vegf_group_28  prop count
+    ##             <dbl> <ord>          <ord>           <chr>         <dbl> <int>
+    ##  1             85 White          Private         Avastin       1         7
+    ##  2             85 White          Medicare        Avastin       0.571     4
+    ##  3             85 White          Medicaid        Avastin       1         1
+    ##  4             85 White          Unknown/Missing Avastin       1         1
+    ##  5             85 White          Medicare        Eylea         0.286     2
+    ##  6             85 White          Medicare        Lucentis      0.143     1
+    ##  7             85 Black          Private         Avastin       1         6
+    ##  8             85 Black          Medicare        Avastin       1         6
+    ##  9             85 Black          Medicaid        Lucentis      1         1
+    ## 10             85 Hispanic       Private         Avastin       0.5       1
     ## # … with 553 more rows
 
 ``` r
@@ -3128,7 +3294,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -3149,7 +3315,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -3170,7 +3336,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -3204,7 +3370,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -3229,18 +3395,18 @@ severity_race_vision
 
     ## # A tibble: 36 × 4
     ## # Groups:   race_ethnicity [3]
-    ##    race_ethnicity            baseline_va_letter avg_severity count
-    ##    <chr>                                  <dbl>        <dbl> <int>
-    ##  1 Hispanic                                  40         65.6   140
-    ##  2 Hispanic                                  35         64.1   373
-    ##  3 Hispanic                                  50         64.0   348
-    ##  4 Hispanic                                  55         63.9   355
-    ##  5 Hispanic                                  61         63.3   616
-    ##  6 Hispanic                                  85         62.5   374
-    ##  7 Caucasian                                 45         62.4   161
-    ##  8 Hispanic                                  65         62.3   847
-    ##  9 Black or African American                 35         62.2   317
-    ## 10 Hispanic                                  58         62.1   381
+    ##    race_ethnicity baseline_va_letter avg_severity count
+    ##    <ord>                       <dbl>        <dbl> <int>
+    ##  1 Hispanic                       40         65.6   140
+    ##  2 Hispanic                       35         64.1   373
+    ##  3 Hispanic                       50         64.0   348
+    ##  4 Hispanic                       55         63.9   355
+    ##  5 Hispanic                       61         63.3   616
+    ##  6 Hispanic                       85         62.5   374
+    ##  7 White                          45         62.4   161
+    ##  8 Hispanic                       65         62.3   847
+    ##  9 Black                          35         62.2   317
+    ## 10 Hispanic                       58         62.1   381
     ## # … with 26 more rows
 
 ``` r
@@ -3259,7 +3425,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-107-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -3292,7 +3458,7 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
 
 ## Regression
 
@@ -3303,401 +3469,52 @@ predictive
 
 ``` r
 # basic linear regression
-one_year_va_delta_1.lm <- 
-  lm(
-    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity))
-    )
-
-summary(one_year_va_delta_1.lm)
+# one_year_va_delta_1.lm <- 
+#   lm(
+#     one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+#     data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity))
+#     )
+# 
+# summary(one_year_va_delta_1.lm)
 ```
-
-    ## 
-    ## Call:
-    ## lm(formula = one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + 
-    ##     insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    ##     data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity)))
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -98.372  -4.407   1.660   6.413  43.423 
-    ## 
-    ## Coefficients:
-    ##                                                                      Estimate
-    ## (Intercept)                                                         30.978618
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American -0.720649
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                  -1.520637
-    ## insuranceMedicaid                                                   -2.000904
-    ## insuranceMedicare                                                   -1.593007
-    ## insuranceMilitary                                                   -1.292300
-    ## insurancePrivate                                                     0.137909
-    ## insuranceUnknown/Missing                                            -0.488881
-    ## genderMale                                                           0.358964
-    ## genderUnknown                                                       -1.832205
-    ## first_dr_age                                                        -0.031519
-    ## smoke_statusNo / Never                                              -0.185306
-    ## smoke_statusUnknown / Unclassified                                   0.111446
-    ## smoke_statusYes / Active                                            -0.825105
-    ## baseline_va_letter                                                  -0.389425
-    ##                                                                     Std. Error
-    ## (Intercept)                                                           0.601645
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American   0.173870
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                    0.171204
-    ## insuranceMedicaid                                                     0.434615
-    ## insuranceMedicare                                                     0.371103
-    ## insuranceMilitary                                                     0.637384
-    ## insurancePrivate                                                      0.375842
-    ## insuranceUnknown/Missing                                              0.468436
-    ## genderMale                                                            0.120059
-    ## genderUnknown                                                         0.897739
-    ## first_dr_age                                                          0.005833
-    ## smoke_statusNo / Never                                                0.138248
-    ## smoke_statusUnknown / Unclassified                                    0.568850
-    ## smoke_statusYes / Active                                              0.213192
-    ## baseline_va_letter                                                    0.004617
-    ##                                                                     t value
-    ## (Intercept)                                                          51.490
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American  -4.145
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                   -8.882
-    ## insuranceMedicaid                                                    -4.604
-    ## insuranceMedicare                                                    -4.293
-    ## insuranceMilitary                                                    -2.028
-    ## insurancePrivate                                                      0.367
-    ## insuranceUnknown/Missing                                             -1.044
-    ## genderMale                                                            2.990
-    ## genderUnknown                                                        -2.041
-    ## first_dr_age                                                         -5.404
-    ## smoke_statusNo / Never                                               -1.340
-    ## smoke_statusUnknown / Unclassified                                    0.196
-    ## smoke_statusYes / Active                                             -3.870
-    ## baseline_va_letter                                                  -84.339
-    ##                                                                     Pr(>|t|)
-    ## (Intercept)                                                          < 2e-16
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American 3.41e-05
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                   < 2e-16
-    ## insuranceMedicaid                                                   4.16e-06
-    ## insuranceMedicare                                                   1.77e-05
-    ## insuranceMilitary                                                   0.042617
-    ## insurancePrivate                                                    0.713670
-    ## insuranceUnknown/Missing                                            0.296655
-    ## genderMale                                                          0.002792
-    ## genderUnknown                                                       0.041266
-    ## first_dr_age                                                        6.56e-08
-    ## smoke_statusNo / Never                                              0.180124
-    ## smoke_statusUnknown / Unclassified                                  0.844678
-    ## smoke_statusYes / Active                                            0.000109
-    ## baseline_va_letter                                                   < 2e-16
-    ##                                                                        
-    ## (Intercept)                                                         ***
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American ***
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                  ***
-    ## insuranceMedicaid                                                   ***
-    ## insuranceMedicare                                                   ***
-    ## insuranceMilitary                                                   *  
-    ## insurancePrivate                                                       
-    ## insuranceUnknown/Missing                                               
-    ## genderMale                                                          ** 
-    ## genderUnknown                                                       *  
-    ## first_dr_age                                                        ***
-    ## smoke_statusNo / Never                                                 
-    ## smoke_statusUnknown / Unclassified                                     
-    ## smoke_statusYes / Active                                            ***
-    ## baseline_va_letter                                                  ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 12.18 on 43259 degrees of freedom
-    ## Multiple R-squared:  0.1428, Adjusted R-squared:  0.1425 
-    ## F-statistic: 514.5 on 14 and 43259 DF,  p-value: < 2.2e-16
 
 ``` r
 # linear regression with insurance race interaction
-one_year_va_delta_2.lm <- 
-  lm(
-    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + relevel(race_ethnicity, ref = "Caucasian") * insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    data = timeseries_analysis %>% 
-      filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-      mutate(race_ethnicity = factor(race_ethnicity))
-  )
-
-summary(one_year_va_delta_2.lm)
+# one_year_va_delta_2.lm <- 
+#   lm(
+#     one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + relevel(race_ethnicity, ref = "Caucasian") * insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+#     data = timeseries_analysis %>% 
+#       filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
+#       mutate(race_ethnicity = factor(race_ethnicity))
+#   )
+# 
+# summary(one_year_va_delta_2.lm)
 ```
-
-    ## 
-    ## Call:
-    ## lm(formula = one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + 
-    ##     insurance + relevel(race_ethnicity, ref = "Caucasian") * 
-    ##     insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
-    ##         "Medicaid", "Private")) %>% mutate(race_ethnicity = factor(race_ethnicity)))
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -98.378  -4.366   1.701   6.384  43.829 
-    ## 
-    ## Coefficients:
-    ##                                                                                        Estimate
-    ## (Intercept)                                                                           28.663963
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American                   -1.589816
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                                    -0.947951
-    ## insuranceMedicare                                                                      0.386078
-    ## insurancePrivate                                                                       2.265171
-    ## genderMale                                                                             0.354700
-    ## genderUnknown                                                                         -1.359469
-    ## first_dr_age                                                                          -0.030101
-    ## smoke_statusNo / Never                                                                -0.160607
-    ## smoke_statusUnknown / Unclassified                                                     0.326253
-    ## smoke_statusYes / Active                                                              -0.864808
-    ## baseline_va_letter                                                                    -0.386455
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insuranceMedicare  1.336430
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insuranceMedicare                  -0.833595
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insurancePrivate   0.076244
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insurancePrivate                   -0.679177
-    ##                                                                                       Std. Error
-    ## (Intercept)                                                                             0.581578
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American                     0.714091
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                                      0.563650
-    ## insuranceMedicare                                                                       0.353305
-    ## insurancePrivate                                                                        0.356792
-    ## genderMale                                                                              0.125189
-    ## genderUnknown                                                                           0.933057
-    ## first_dr_age                                                                            0.006139
-    ## smoke_statusNo / Never                                                                  0.143800
-    ## smoke_statusUnknown / Unclassified                                                      0.610762
-    ## smoke_statusYes / Active                                                                0.221782
-    ## baseline_va_letter                                                                      0.004828
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insuranceMedicare   0.746228
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insuranceMedicare                    0.609335
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insurancePrivate    0.803628
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insurancePrivate                     0.657290
-    ##                                                                                       t value
-    ## (Intercept)                                                                            49.287
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American                    -2.226
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                                     -1.682
-    ## insuranceMedicare                                                                       1.093
-    ## insurancePrivate                                                                        6.349
-    ## genderMale                                                                              2.833
-    ## genderUnknown                                                                          -1.457
-    ## first_dr_age                                                                           -4.903
-    ## smoke_statusNo / Never                                                                 -1.117
-    ## smoke_statusUnknown / Unclassified                                                      0.534
-    ## smoke_statusYes / Active                                                               -3.899
-    ## baseline_va_letter                                                                    -80.046
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insuranceMedicare   1.791
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insuranceMedicare                   -1.368
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insurancePrivate    0.095
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insurancePrivate                    -1.033
-    ##                                                                                       Pr(>|t|)
-    ## (Intercept)                                                                            < 2e-16
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American                    0.02600
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                                     0.09261
-    ## insuranceMedicare                                                                      0.27451
-    ## insurancePrivate                                                                      2.19e-10
-    ## genderMale                                                                             0.00461
-    ## genderUnknown                                                                          0.14512
-    ## first_dr_age                                                                          9.46e-07
-    ## smoke_statusNo / Never                                                                 0.26405
-    ## smoke_statusUnknown / Unclassified                                                     0.59322
-    ## smoke_statusYes / Active                                                              9.66e-05
-    ## baseline_va_letter                                                                     < 2e-16
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insuranceMedicare  0.07331
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insuranceMedicare                   0.17131
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insurancePrivate   0.92441
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insurancePrivate                    0.30147
-    ##                                                                                          
-    ## (Intercept)                                                                           ***
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American                   *  
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic                                    .  
-    ## insuranceMedicare                                                                        
-    ## insurancePrivate                                                                      ***
-    ## genderMale                                                                            ** 
-    ## genderUnknown                                                                            
-    ## first_dr_age                                                                          ***
-    ## smoke_statusNo / Never                                                                   
-    ## smoke_statusUnknown / Unclassified                                                       
-    ## smoke_statusYes / Active                                                              ***
-    ## baseline_va_letter                                                                    ***
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insuranceMedicare .  
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insuranceMedicare                     
-    ## relevel(race_ethnicity, ref = "Caucasian")Black or African American:insurancePrivate     
-    ## relevel(race_ethnicity, ref = "Caucasian")Hispanic:insurancePrivate                      
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 12.21 on 39892 degrees of freedom
-    ## Multiple R-squared:  0.1402, Adjusted R-squared:  0.1399 
-    ## F-statistic: 433.6 on 15 and 39892 DF,  p-value: < 2.2e-16
 
 ``` r
 # linear regression with severity score
-one_year_va_delta_3.lm <- 
-  lm(one_year_va_delta ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
-     data = timeseries_analysis)
-
-summary(one_year_va_delta_3.lm)
+# one_year_va_delta_3.lm <- 
+#   lm(one_year_va_delta ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+#      data = timeseries_analysis)
+# 
+# summary(one_year_va_delta_3.lm)
 ```
-
-    ## 
-    ## Call:
-    ## lm(formula = one_year_va_delta ~ race_ethnicity + insurance + 
-    ##     gender + first_dr_age + smoke_status + baseline_va_letter + 
-    ##     severity_score, data = timeseries_analysis)
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -97.096  -4.373   1.688   6.458  42.065 
-    ## 
-    ## Coefficients:
-    ##                                     Estimate Std. Error t value Pr(>|t|)
-    ## (Intercept)                        36.153163   0.712027  50.775  < 2e-16
-    ## race_ethnicityCaucasian             0.640607   0.173422   3.694 0.000221
-    ## race_ethnicityHispanic             -0.626518   0.221681  -2.826 0.004712
-    ## insuranceMedicaid                  -1.977758   0.433320  -4.564 5.03e-06
-    ## insuranceMedicare                  -1.497899   0.370042  -4.048 5.18e-05
-    ## insuranceMilitary                  -1.310894   0.635482  -2.063 0.039134
-    ## insurancePrivate                    0.115201   0.374722   0.307 0.758517
-    ## insuranceUnknown/Missing           -0.386531   0.467080  -0.828 0.407932
-    ## genderMale                          0.406688   0.119737   3.396 0.000683
-    ## genderUnknown                      -1.695073   0.895100  -1.894 0.058268
-    ## first_dr_age                       -0.058077   0.006044  -9.609  < 2e-16
-    ## smoke_statusNo / Never             -0.153169   0.137849  -1.111 0.266517
-    ## smoke_statusUnknown / Unclassified  0.219453   0.567191   0.387 0.698823
-    ## smoke_statusYes / Active           -0.763172   0.212590  -3.590 0.000331
-    ## baseline_va_letter                 -0.398650   0.004639 -85.935  < 2e-16
-    ## severity_score                     -0.064347   0.003987 -16.138  < 2e-16
-    ##                                       
-    ## (Intercept)                        ***
-    ## race_ethnicityCaucasian            ***
-    ## race_ethnicityHispanic             ** 
-    ## insuranceMedicaid                  ***
-    ## insuranceMedicare                  ***
-    ## insuranceMilitary                  *  
-    ## insurancePrivate                      
-    ## insuranceUnknown/Missing              
-    ## genderMale                         ***
-    ## genderUnknown                      .  
-    ## first_dr_age                       ***
-    ## smoke_statusNo / Never                
-    ## smoke_statusUnknown / Unclassified    
-    ## smoke_statusYes / Active           ***
-    ## baseline_va_letter                 ***
-    ## severity_score                     ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 12.15 on 43258 degrees of freedom
-    ## Multiple R-squared:  0.1479, Adjusted R-squared:  0.1476 
-    ## F-statistic: 500.5 on 15 and 43258 DF,  p-value: < 2.2e-16
 
 ``` r
 # linear regression with race insurance interaction and severity score
-one_year_va_delta_4.lm <- 
-  lm(one_year_va_delta ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
-     data = timeseries_analysis %>% 
-       filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-       mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
-         insurance = relevel(insurance, ref = "Private")
-       )
-  ) 
-
-summary(one_year_va_delta_4.lm)
+# one_year_va_delta_4.lm <- 
+#   lm(one_year_va_delta ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+#      data = timeseries_analysis %>% 
+#        filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
+#        mutate(
+#          race_ethnicity = factor(race_ethnicity),
+#          race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
+#          insurance = factor(insurance), 
+#          insurance = relevel(insurance, ref = "Private")
+#        )
+#   ) 
+# 
+# summary(one_year_va_delta_4.lm)
 ```
-
-    ## 
-    ## Call:
-    ## lm(formula = one_year_va_delta ~ race_ethnicity + insurance + 
-    ##     race_ethnicity * insurance + gender + first_dr_age + smoke_status + 
-    ##     baseline_va_letter + severity_score, data = timeseries_analysis %>% 
-    ##     filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-    ##     mutate(race_ethnicity = factor(race_ethnicity), race_ethnicity = relevel(race_ethnicity, 
-    ##         ref = "Caucasian"), insurance = factor(insurance), insurance = relevel(insurance, 
-    ##         ref = "Private")))
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -97.086  -4.384   1.686   6.462  42.440 
-    ## 
-    ## Coefficients:
-    ##                                                            Estimate
-    ## (Intercept)                                               36.732480
-    ## race_ethnicityBlack or African American                   -1.468444
-    ## race_ethnicityHispanic                                    -1.390592
-    ## insuranceMedicaid                                         -2.196106
-    ## insuranceMedicare                                         -1.775398
-    ## genderMale                                                 0.408028
-    ## genderUnknown                                             -1.213175
-    ## first_dr_age                                              -0.056661
-    ## smoke_statusNo / Never                                    -0.127497
-    ## smoke_statusUnknown / Unclassified                         0.472311
-    ## smoke_statusYes / Active                                  -0.799874
-    ## baseline_va_letter                                        -0.395687
-    ## severity_score                                            -0.064491
-    ## race_ethnicityBlack or African American:insuranceMedicaid -0.070026
-    ## race_ethnicityHispanic:insuranceMedicaid                   0.611111
-    ## race_ethnicityBlack or African American:insuranceMedicare  1.318884
-    ## race_ethnicityHispanic:insuranceMedicare                  -0.101821
-    ##                                                           Std. Error
-    ## (Intercept)                                                 0.643648
-    ## race_ethnicityBlack or African American                     0.368807
-    ## race_ethnicityHispanic                                      0.338326
-    ## insuranceMedicaid                                           0.355753
-    ## insuranceMedicare                                           0.179157
-    ## genderMale                                                  0.124862
-    ## genderUnknown                                               0.930315
-    ## first_dr_age                                                0.006356
-    ## smoke_statusNo / Never                                      0.143386
-    ## smoke_statusUnknown / Unclassified                          0.609009
-    ## smoke_statusYes / Active                                    0.221158
-    ## baseline_va_letter                                          0.004850
-    ## severity_score                                              0.004158
-    ## race_ethnicityBlack or African American:insuranceMedicaid   0.801226
-    ## race_ethnicityHispanic:insuranceMedicaid                    0.655340
-    ## race_ethnicityBlack or African American:insuranceMedicare   0.427397
-    ## race_ethnicityHispanic:insuranceMedicare                    0.408802
-    ##                                                           t value Pr(>|t|)
-    ## (Intercept)                                                57.069  < 2e-16
-    ## race_ethnicityBlack or African American                    -3.982 6.86e-05
-    ## race_ethnicityHispanic                                     -4.110 3.96e-05
-    ## insuranceMedicaid                                          -6.173 6.76e-10
-    ## insuranceMedicare                                          -9.910  < 2e-16
-    ## genderMale                                                  3.268 0.001085
-    ## genderUnknown                                              -1.304 0.192225
-    ## first_dr_age                                               -8.915  < 2e-16
-    ## smoke_statusNo / Never                                     -0.889 0.373910
-    ## smoke_statusUnknown / Unclassified                          0.776 0.438025
-    ## smoke_statusYes / Active                                   -3.617 0.000299
-    ## baseline_va_letter                                        -81.583  < 2e-16
-    ## severity_score                                            -15.511  < 2e-16
-    ## race_ethnicityBlack or African American:insuranceMedicaid  -0.087 0.930356
-    ## race_ethnicityHispanic:insuranceMedicaid                    0.933 0.351079
-    ## race_ethnicityBlack or African American:insuranceMedicare   3.086 0.002031
-    ## race_ethnicityHispanic:insuranceMedicare                   -0.249 0.803307
-    ##                                                              
-    ## (Intercept)                                               ***
-    ## race_ethnicityBlack or African American                   ***
-    ## race_ethnicityHispanic                                    ***
-    ## insuranceMedicaid                                         ***
-    ## insuranceMedicare                                         ***
-    ## genderMale                                                ** 
-    ## genderUnknown                                                
-    ## first_dr_age                                              ***
-    ## smoke_statusNo / Never                                       
-    ## smoke_statusUnknown / Unclassified                           
-    ## smoke_statusYes / Active                                  ***
-    ## baseline_va_letter                                        ***
-    ## severity_score                                            ***
-    ## race_ethnicityBlack or African American:insuranceMedicaid    
-    ## race_ethnicityHispanic:insuranceMedicaid                     
-    ## race_ethnicityBlack or African American:insuranceMedicare ** 
-    ## race_ethnicityHispanic:insuranceMedicare                     
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 12.17 on 39891 degrees of freedom
-    ## Multiple R-squared:  0.1453, Adjusted R-squared:  0.145 
-    ## F-statistic:   424 on 16 and 39891 DF,  p-value: < 2.2e-16
 
 #### Quantile regressionn
