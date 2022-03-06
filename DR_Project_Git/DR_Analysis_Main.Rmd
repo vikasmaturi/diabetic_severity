@@ -10,15 +10,11 @@ output:
 ---
 
 
-## Setup & import
+## Setup
 
-#### Libraries and parameters
+#### Libraries and data import
 
 ```{r, results=FALSE, message=FALSE}
-
-install.packages('car')
-library(car)
-
 
 # load libraries
 library(tidyverse)
@@ -26,12 +22,16 @@ library(readxl)
 library(lubridate)
 library(knitr)
 library(googlesheets4)
+library(car)
 
-print("Hi")
-print("Updated")
+
+# parameters
+
+race_colors <- c("#54AE55", "#189CD9", "#A167A5")
+
+insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
+
 ```
-
-#### Data import
 
 ```{r, results = FALSE, message = FALSE, warning = FALSE}
 
@@ -43,8 +43,7 @@ va_progression <- read_csv(file = "data_clean/va_progression.csv")
 
 ```
 
-
-#### Join the two datasets
+#### Join severity and timeseries patient/visit data
 
 ```{r}
 
@@ -59,7 +58,7 @@ joined_data <-
 
 ## Cleaned datasets for analysis
 
-The 'timeseries_analysis' dataset will be the basis of future analyses
+The 'timeseries_analysis' dataset will be the basis of all analyses
 ```{r}
 
 # set seed to ensure that we randomly sample the same set of folks in each round
@@ -97,8 +96,17 @@ timeseries_analysis <-
     baseline_va_r10 = plyr::round_any(baseline_va_letter, 10),
     baseline_va_quart = ntile(baseline_va_letter, 4),
     one_year_va_delta = one_year - baseline_va_letter,
-    two_year_va_delta = two_year - baseline_va_letter
+    two_year_va_delta = two_year - baseline_va_letter,
+    #turn race into a factor and rename races
+    race_ethnicity = dplyr::case_when(
+      race_ethnicity == "Caucasian" ~ "White",
+      race_ethnicity == "Black or African American" ~ "Black",
+      TRUE ~ race_ethnicity
+    ),
+    race_ethnicity = factor(race_ethnicity, ordered = TRUE, levels = c("White", "Black", "Hispanic")),
+    insurance = factor(insurance, ordered = TRUE, levels = c("Private", "Medicare","Medicaid","Govt","Military","Unknown/Missing"))
   ) 
+
 ```
 
 
@@ -107,10 +115,13 @@ timeseries_analysis <-
 #### Construct dataset to generate data tables
 
 ```{r}
+
 # Create dataset for basic paper tables
 tbl_data <-
   timeseries_analysis %>% 
   mutate(
+    # unorder insurance to permit grouping
+    insurance = as.character(insurance),
     insurance_tbl = if_else(
       insurance %in% c("Private", "Medicare", "Medicaid"),
       insurance, 
@@ -284,9 +295,6 @@ kable(tbl_insurance_race)
 ```
 
 
-
-
-
 ## Figure 1: Baseline Differences in Severity Score by Race
 
 To consider here: how do we want to respond to the NAs in this graph? One option I could see is creating four new categories: (mild NPDR unknown edema, moderate NPDR unknown edema, severe NPDR unknown edema, PDR unknown edema)
@@ -301,9 +309,12 @@ timeseries_analysis %>%
   geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = 1) +
   theme_light() +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1)
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
   ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 10)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity Category",
     y = "Percentage ",
@@ -312,7 +323,7 @@ timeseries_analysis %>%
 ```
 
 
-## Figure 2A and 2B: Differences in Rates of Aflibercept and Bevacizumab Injection by Severity Score, Race and Insurance Status
+## Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by Severity Category, Race and Insurance Status
 
 ```{r}
 
@@ -334,7 +345,7 @@ drug_sev_cat_race %>%
 
 ```{r}
 
-# Graphing likelihood of first drug type by severity and race
+# Graphing likelihood of Avastin by severity and race
 drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
@@ -344,12 +355,17 @@ drug_sev_cat_race %>%
   mutate(pct_round = round(prop, 2)) %>% 
   ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  facet_grid(vegf_group_365 ~ .) +
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  #facet_grid(vegf_group_365 ~ .) +
   #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
   #scale_x_continuous()
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
     y = "Percentage of people receiving Avastin",
@@ -375,6 +391,7 @@ drug_sev_cat_insurance <-
 drug_sev_cat_insurance %>% 
   arrange(desc(vision_category), insurance)
 
+
 ```
 
 ```{r}
@@ -389,12 +406,17 @@ drug_sev_cat_insurance %>%
   mutate(pct_round = round(prop, 2)) %>%
   ggplot(aes(x = vision_category, y = prop, fill = insurance)) +
   geom_col(position = "dodge") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
-  facet_grid(vegf_group_365~.) +
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  #facet_grid(vegf_group_365~.) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
   # different colors for insurance
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
     y = "Percentage of people receiving Avastin",
@@ -403,36 +425,101 @@ drug_sev_cat_insurance %>%
 
 ```
 
-## Regression X: Variables that influence likelihood of receiving Avastin treatment
+## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
 
 ```{r}
-data_avastin_reg = timeseries_analysis %>% 
-       filter(
-         insurance %in% c("Medicare", "Medicaid", "Private")
-       ) %>% 
-       mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
-         insurance = relevel(insurance, ref = "Private"),
-         smoke_status = factor(smoke_status),
-         smoke_status = relevel(smoke_status, ref = "No / Never"),
-         avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
-       ) 
-View( data_avastin_reg)
+
+# create dataset for regression
+data_avastin_reg <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+  ) 
+
+# glm for logistic regression
 avastin_1.logm <- 
-  glm(avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
-     data = data_avastin_reg, family = binomial
+  glm(
+    avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg, 
+    family = binomial
   ) 
 
 summary(avastin_1.logm)
 
 ```
-#Supplemental Graph: including the facet grid for Visual Acuity Change from Baseline at One and Two Years, by Race/Insurance ?? 
+
+## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
+
 ```{r}
-#Need to add...
+
+# Graphing likelihood of Avastin by severity and race
+drug_sev_cat_race %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2)) %>% 
+  ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +  facet_grid(vegf_group_365 ~ .) +
+  #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
+  #scale_x_continuous()
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  scale_fill_manual(values = race_colors) +
+  labs(
+    x = "Severity category",
+    y = "Percentage of people receiving Avastin",
+    fill = "Race"
+  )
+
+
 ```
 
+
+```{r}
+
+# Graphing likelihood of first drug type by severity and insurance
+drug_sev_cat_insurance %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2)) %>%
+  ggplot(aes(x = vision_category, y = prop, fill = insurance)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +  facet_grid(vegf_group_365 ~ .) +
+  facet_grid(vegf_group_365~.) +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
+  # different colors for insurance
+  scale_fill_manual(values = insurance_colors) +
+  labs(
+    x = "Severity category",
+    y = "Percentage of people receiving Avastin",
+    fill = "Insurance"
+  )
+
+```
 
 
 
@@ -483,9 +570,14 @@ loss_15_race <-
 loss_15_race %>%
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .3) +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1)) +
+  scale_fill_manual(values = race_colors) +
   labs(
     x = "Time after baseline VA measurement",
     y = "Percentage of eyes that lost 15 or more pts of VA",
@@ -522,8 +614,6 @@ va_race_diff <-
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
   ungroup()
 
-View(va_race_diff)
-
 va_race_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
   geom_point() +
@@ -532,7 +622,8 @@ va_race_diff %>%
   #   data = va_race_diff %>% filter(time_diff == "two_year_change"),
   #   aes(label = count)
   # ) +
-  theme_light() + 
+  theme_light() +
+  scale_color_manual(values = race_colors) +
   labs(
     x = "Time point",
     y = "Change in visual acuity",
@@ -541,9 +632,6 @@ va_race_diff %>%
 ```
 
 ## Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by Insurance and Race
-
-
-
 
 ```{r}
 
@@ -567,50 +655,21 @@ loss_15_insurance <-
     lower_bound = pct_15pt_loss - z * sd
   )
   
-View(loss_15_insurance)
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
   geom_col(position = "dodge") +
-  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .6) +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), position = position_dodge(width = .9), width = .4) +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1)) +
-  scale_fill_viridis_d() +
+  scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Time after baseline VA measurement",
     y = "Percentage of eyes that lost 15 or more points of VA",
     fill = "Insurance"
-  )
-```
-
-
-```{r}
-
-#calculate severity by race and age
-
-severity_race_vision <-
-  timeseries_analysis %>% 
-  group_by(race_ethnicity, baseline_va_letter) %>%
-  summarize(avg_severity = mean(severity_score), count = n()) %>% 
-  filter(count > 100) %>% 
-  arrange(desc(avg_severity))
-
-severity_race_vision
-
-```
-
-```{r}
-# graph severity by race and age group
-
-severity_race_vision %>%
-  filter(race_ethnicity %in% c("Caucasian", "Black or African American", "Hispanic", "Asian")) %>% 
-  ggplot(aes(x = baseline_va_letter, y = avg_severity, color = race_ethnicity)) +
-  geom_line() +
-  geom_point() +
-  theme_light() +
-  labs(
-    title = "Severity by race and baseline VA", 
-    y = "Average severity score", 
-    x = "Baseline VA"
   )
 ```
 
@@ -642,8 +701,6 @@ va_insurance_diff <-
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
   ungroup()
 
-View(va_insurance_diff)
-
 va_insurance_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = insurance)) +
   geom_point() +
@@ -653,12 +710,88 @@ va_insurance_diff %>%
   #   aes(label = count)
   # ) +
   theme_light() + 
-  scale_color_viridis_d() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = insurance_colors) +
   labs(
     x = "Time point",
     y = "Change in visual acuity",
     color = "Insurance"
   )
+```
+
+
+```{r}
+
+insurance_race_va <-
+  timeseries_analysis %>% 
+  group_by(race_ethnicity, insurance) %>% 
+  summarize(baseline_va = mean(baseline_va_letter), one_year_va = mean(one_year), two_year_va = mean(two_year), count = n()) %>% 
+  gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
+
+va_insurance_race_diff_tbl <-
+  insurance_race_va %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>%
+  spread(key = timepoint, value = va_plot) %>%
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  )
+
+va_insurance_race_diff <-
+  insurance_race_va %>%
+  filter(!insurance %in% c("Unknown/Missing", "Military", "Govt")) %>%
+  spread(key = timepoint, value = va_plot) %>%
+  mutate(
+    one_year_change = one_year_va - baseline_va,
+    two_year_change = two_year_va - baseline_va,
+    baseline = 0
+  ) %>%
+  gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>%
+  ungroup()
+
+va_insurance_race_diff_ci <-
+  timeseries_analysis %>%
+  mutate(
+    one_year_change = one_year - baseline_va_letter,
+    two_year_change = two_year - baseline_va_letter,
+    baseline = 0
+  ) %>%
+  group_by(race_ethnicity, insurance) %>%
+  summarize(
+    mean_one_year_change = mean(one_year_change),
+    mean_two_year_change = mean(two_year_change),
+    sd_one_year_change = sd(one_year_change),
+    sd_two_year_change = sd(two_year_change)
+  )
+
+va_insurance_race_diff %>%
+  ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
+  geom_point() +
+  geom_line(aes(group = interaction(insurance, race_ethnicity))) +
+  # to display counts
+  # ggrepel::geom_text_repel(
+  #   data = va_insurance_race_diff %>% filter(time_diff == "two_year_change", insurance %in% c("Private", "Medicaid", "Medicare")),
+  #   aes(label = count, hjust = -2)
+  # ) +
+  facet_grid(.~insurance) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust=1),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = race_colors) +
+  labs(
+    x = "Time point",
+    y = "Visual acuity (VA) change",
+    color = "Race"
+  )
+
 ```
 
 ## Regression X: Variables that influence change in vision after one year
@@ -672,9 +805,9 @@ one_year_va_delta_4.lm <-
          insurance %in% c("Medicare", "Medicaid", "Private")
        ) %>% 
        mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         insurance = factor(insurance, ordered = FALSE), 
          insurance = relevel(insurance, ref = "Private"),
          smoke_status = factor(smoke_status),
          smoke_status = relevel(smoke_status, ref = "No / Never")
@@ -685,6 +818,7 @@ summary(one_year_va_delta_4.lm)
 
 vif(one_year_va_delta_4.lm)
 ```
+
 
 ## Figure 5: Average severity score at each baseline VA (rounded to nearest 5) by race
 
@@ -708,13 +842,17 @@ severity_race_vision
 # graph severity by race and age group
 
 severity_race_vision %>%
-  filter(race_ethnicity %in% c("Caucasian", "Black or African American", "Hispanic")) %>% 
+  filter(race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = race_ethnicity)) +
   geom_line() +
   geom_point() +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = race_colors) +
   labs(
-    title = "Severity by race and baseline VA", 
     y = "Average severity score", 
     x = "Baseline VA", 
     color = "Race"
@@ -749,6 +887,11 @@ severity_insurance_vision %>%
   geom_line() +
   geom_point() +
   theme_light() +
+  theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank()
+  ) +
+  scale_color_manual(values = insurance_colors) +
   labs(
     title = "Severity by insurance and baseline VA", 
     y = "Average severity score", 
@@ -2544,51 +2687,52 @@ Start with a linear regression to see what variables are initially predictive
 
 ```{r}
 # basic linear regression
-one_year_va_delta_1.lm <- 
-  lm(
-    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity))
-    )
-
-summary(one_year_va_delta_1.lm)
+# one_year_va_delta_1.lm <- 
+#   lm(
+#     one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+#     data = timeseries_analysis %>% mutate(race_ethnicity = factor(race_ethnicity))
+#     )
+# 
+# summary(one_year_va_delta_1.lm)
 ```
+
 ```{r}
 # linear regression with insurance race interaction
-one_year_va_delta_2.lm <- 
-  lm(
-    one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + relevel(race_ethnicity, ref = "Caucasian") * insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
-    data = timeseries_analysis %>% 
-      filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-      mutate(race_ethnicity = factor(race_ethnicity))
-  )
-
-summary(one_year_va_delta_2.lm)
+# one_year_va_delta_2.lm <- 
+#   lm(
+#     one_year_va_delta ~ relevel(race_ethnicity, ref = "Caucasian") + insurance + relevel(race_ethnicity, ref = "Caucasian") * insurance + gender + first_dr_age + smoke_status + baseline_va_letter, 
+#     data = timeseries_analysis %>% 
+#       filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
+#       mutate(race_ethnicity = factor(race_ethnicity))
+#   )
+# 
+# summary(one_year_va_delta_2.lm)
 ```
 
 ```{r}
 # linear regression with severity score
-one_year_va_delta_3.lm <- 
-  lm(one_year_va_delta ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
-     data = timeseries_analysis)
-
-summary(one_year_va_delta_3.lm)
+# one_year_va_delta_3.lm <- 
+#   lm(one_year_va_delta ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+#      data = timeseries_analysis)
+# 
+# summary(one_year_va_delta_3.lm)
 ```
 
 ```{r}
 # linear regression with race insurance interaction and severity score
-one_year_va_delta_4.lm <- 
-  lm(one_year_va_delta ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
-     data = timeseries_analysis %>% 
-       filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
-       mutate(
-         race_ethnicity = factor(race_ethnicity),
-         race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
-         insurance = factor(insurance), 
-         insurance = relevel(insurance, ref = "Private")
-       )
-  ) 
-
-summary(one_year_va_delta_4.lm)
+# one_year_va_delta_4.lm <- 
+#   lm(one_year_va_delta ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+#      data = timeseries_analysis %>% 
+#        filter(insurance %in% c("Medicare", "Medicaid", "Private")) %>% 
+#        mutate(
+#          race_ethnicity = factor(race_ethnicity),
+#          race_ethnicity = relevel(race_ethnicity, ref = "Caucasian"),
+#          insurance = factor(insurance), 
+#          insurance = relevel(insurance, ref = "Private")
+#        )
+#   ) 
+# 
+# summary(one_year_va_delta_4.lm)
 
 ```
 
