@@ -545,8 +545,9 @@ drug_sev_cat_race %>%
     ## # … with 98 more rows
 
 ``` r
-# Graphing likelihood of Avastin by severity and race
-drug_sev_cat_race %>% 
+# Graphing likelihood of Bevacizumab by severity and race
+plot_drug_sev_cat_race <-
+  drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
   # remove combo, Eylea, and Lucentis for this graph
@@ -568,12 +569,18 @@ drug_sev_cat_race %>%
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Avastin",
+    y = "Percentage of eyes receiving Bevacizumab",
     fill = "Race"
   )
+
+plot_drug_sev_cat_race
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+```
 
 ``` r
 # Calculate likelihood of drug by severity score and insurance (given that patient received antivegf treatment)
@@ -630,7 +637,7 @@ drug_sev_cat_insurance %>%
   scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Avastin",
+    y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
 ```
@@ -766,7 +773,7 @@ summary(avastin_1.logm)
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
 
 ``` r
-# Graphing likelihood of Avastin by severity and race
+# Graphing likelihood of Bevacizumab by severity and race
 drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
@@ -787,7 +794,7 @@ drug_sev_cat_race %>%
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Avastin",
+    y = "Percentage of people receiving Bevacizumab",
     fill = "Race"
   )
 ```
@@ -816,7 +823,7 @@ drug_sev_cat_insurance %>%
   scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Avastin",
+    y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
 ```
@@ -909,9 +916,17 @@ va_race_diff <-
     baseline = 0
   ) %>% 
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
+  mutate(
+    time_diff = case_when(
+      time_diff == "baseline" ~ "Baseline",
+      time_diff == "one_year_change" ~ "One year",
+      time_diff == "two_year_change" ~ "Two years"
+    )
+  ) %>% 
   ungroup()
 
-va_race_diff %>% 
+plot_va_race_diff <- 
+  va_race_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
   geom_point() +
   geom_line(aes(group = race_ethnicity)) +
@@ -920,15 +935,35 @@ va_race_diff %>%
   #   aes(label = count)
   # ) +
   theme_light() +
+  theme(
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    legend.position = "bottom",
+    #legend.spacing.x = unit(1.0, "cm")
+    legend.margin = margin(c(5, 5, 5, 0)),
+    legend.text = element_text(margin = margin(r = 10, unit = "pt"))
+  ) +
   scale_color_manual(values = race_colors) +
   labs(
-    x = "Time point",
-    y = "Change in visual acuity",
+    x = "",
+    y = "Change in visual acuity (VA)",
     color = "Race"
-  )
+  ) 
+  # guides(
+  #   fill = guide_legend(
+  #     label.position = "top",
+  #     #title.position = "left", 
+  #   )
+  # )
+
+plot_va_race_diff
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
+```
 
 ## Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by Insurance and Race
 
@@ -998,6 +1033,13 @@ va_insurance_diff <-
     baseline = 0
   ) %>% 
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>% 
+  mutate(
+    time_diff = case_when(
+      time_diff == "baseline" ~ "Baseline",
+      time_diff == "one_year_change" ~ "One year",
+      time_diff == "two_year_change" ~ "Two years"
+    )
+  ) %>% 
   ungroup()
 
 va_insurance_diff %>% 
@@ -1010,7 +1052,7 @@ va_insurance_diff %>%
   # ) +
   theme_light() + 
   theme(
-    panel.grid.minor = element_blank(),
+    panel.grid.minor.x = element_blank(),
     panel.grid.major.x = element_blank()
   ) +
   scale_color_manual(values = insurance_colors) +
@@ -2976,7 +3018,7 @@ and 2-5% more likely to receive Eylea treatment (first) as compared to
 Black people at the same level of severity.
 
 ``` r
-# Graphing likelihood of Avastin as first treatment by severity and race
+# Graphing likelihood of Bevacizumab as first treatment by severity and race
 drug_sev_race %>% 
   filter(!race_ethnicity %in% c("Unknown", "Other")) %>% 
   filter(severity_score < 50) %>% 
@@ -2987,17 +3029,18 @@ drug_sev_race %>%
   theme_bw() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Likelihood of receiving Avastin at higher severity score by race",
-    y = "Percentage of people receiving Avastin"
+    title = "Likelihood of receiving Bevacizumab at higher severity score by race",
+    y = "Percentage of people receiving Bevacizumab"
   )
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
-(15-25%) to receive Avastin as compared to their Caucasian counterparts
-with the same level of severity. Black and Asian people seem somewhat
-more likely to receive Avastin, but there is some variation.
+(15-25%) to receive Bevacizumab as compared to their Caucasian
+counterparts with the same level of severity. Black and Asian people
+seem somewhat more likely to receive Bevacizumab, but there is some
+variation.
 
 #### Likelihood of drug received by severity score CATEGORY and race (given that patient recieved anti-vegf treatment)
 
@@ -3072,7 +3115,7 @@ drug_sev_cat_race %>%
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
 
 ``` r
-# Graphing likelihood of Avastin as first treatment by severity and race
+# Graphing likelihood of Bevacizumab as first treatment by severity and race
 drug_sev_cat_race %>% 
   filter(!is.na(vision_category)) %>% 
   filter(vegf_group_365 == "Avastin") %>% 
@@ -3082,8 +3125,8 @@ drug_sev_cat_race %>%
   theme_bw() +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Likelihood of receiving Avastin at higher vision_category by race",
-    y = "Percentage of people receiving Avastin"
+    title = "Likelihood of receiving Bevacizumab at higher vision_category by race",
+    y = "Percentage of people receiving Bevacizumab"
   )
 ```
 
@@ -3217,7 +3260,7 @@ drug_sev_cat_insurance %>%
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
 
 ``` r
-# Graphing likelihood of Avastin as first treatment by severity and insurance
+# Graphing likelihood of Bevacizumab as first treatment by severity and insurance
 drug_sev_cat_insurance %>% 
   filter(!is.na(vision_category)) %>% 
   filter(vegf_group_365 == "Avastin") %>% 
@@ -3228,8 +3271,8 @@ drug_sev_cat_insurance %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
   scale_y_continuous(labels = scales::percent) +
   labs(
-    title = "Likelihood of receiving Avastin at higher vision_category by race",
-    y = "Percentage of people receiving Avastin"
+    title = "Likelihood of receiving Bevacizumab at higher vision_category by race",
+    y = "Percentage of people receiving Bevacizumab"
   )
 ```
 
