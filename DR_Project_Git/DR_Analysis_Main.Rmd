@@ -295,6 +295,46 @@ kable(tbl_insurance_race)
 ```
 
 
+## Calculation X: Mean VA and SD of VA and at baseline
+
+```{r}
+
+mean_va_race <-
+  tbl_data %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(
+    mean_baseline_va_letter = mean(baseline_va_letter),
+    sd = sd(baseline_va_letter)
+  )
+
+kable(mean_va_race)
+
+
+mean_va_insurance <-
+  tbl_data %>% 
+  group_by(insurance) %>% 
+  summarize(
+    mean_baseline_va_letter = mean(baseline_va_letter),
+    sd = sd(baseline_va_letter),
+    n = n()
+  )
+
+kable(mean_va_insurance)
+```
+
+
+## Calculation X: N after eliminating ICD-10 diagnostic codes
+
+```{r}
+
+tbl_data %>% 
+  filter(!is.na(vision_category)) %>% 
+  count()
+  
+```
+
+
+
 ## Figure 1: Baseline Differences in Severity Score by Race
 
 To consider here: how do we want to respond to the NAs in this graph? One option I could see is creating four new categories: (mild NPDR unknown edema, moderate NPDR unknown edema, severe NPDR unknown edema, PDR unknown edema)
@@ -375,7 +415,7 @@ plot_drug_sev_cat_race <-
 
 plot_drug_sev_cat_race
 
-#ggsave("graphs/plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+#ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 
 ```
 
@@ -401,6 +441,7 @@ drug_sev_cat_insurance %>%
 
 ```{r}
 
+plot_drug_sev_cat_insurance <-
 # Graphing likelihood of first drug type by severity and insurance
 drug_sev_cat_insurance %>% 
   # remove individuals with no vision category
@@ -427,6 +468,11 @@ drug_sev_cat_insurance %>%
     y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
+
+plot_drug_sev_cat_insurance
+
+#ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+
 
 ```
 
@@ -468,6 +514,7 @@ summary(avastin_1.logm)
 
 ```{r}
 
+plot_drug_sev_cat_race_all <- 
 # Graphing likelihood of Bevacizumab by severity and race
 drug_sev_cat_race %>% 
   # remove individuals with no vision category
@@ -493,12 +540,16 @@ drug_sev_cat_race %>%
     fill = "Race"
   )
 
+plot_drug_sev_cat_race_all
+
+#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
+
 
 ```
 
 
 ```{r}
-
+plot_drug_sev_cat_insurance_all <-
 # Graphing likelihood of first drug type by severity and insurance
 drug_sev_cat_insurance %>% 
   # remove individuals with no vision category
@@ -523,6 +574,10 @@ drug_sev_cat_insurance %>%
     y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
+
+plot_drug_sev_cat_insurance_all
+
+#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
 
 ```
 
@@ -570,8 +625,15 @@ loss_15_race <-
     sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
     upper_bound = pct_15pt_loss + z * sd,
     lower_bound = pct_15pt_loss - z * sd
+  ) %>%
+  mutate(
+    time_diff = case_when(
+      time_diff == "one_year_loss" ~ "One year",
+      time_diff == "two_year_loss" ~ "Two year"
+    )
   )
-  
+
+plot_loss_15_race <-
 loss_15_race %>%
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
@@ -589,6 +651,11 @@ loss_15_race %>%
     fill = "Race"
   )
 
+plot_loss_15_race
+
+ggsave("graphs/3A_plot_loss_15_race.png", plot_loss_15_race, width = 7, height = 5)
+
+
 ```
 
 ```{r}
@@ -597,6 +664,10 @@ loss_15_race %>%
 va_race <-
   timeseries_analysis %>% 
   group_by(race_ethnicity) %>% 
+  mutate(
+    one_year_change_new = one_year - baseline_va_letter,
+    two_year_change_new = two_year - baseline_va_letter
+  ) %>% 
   summarize(
     baseline_va = mean(baseline_va_letter), 
     one_year_va = mean(one_year), 
@@ -604,6 +675,8 @@ va_race <-
     baseline_sd = sd(baseline_va_letter),
     one_year_sd = sd(one_year),
     two_year_sd = sd(two_year),
+    one_year_change_sd = sd(one_year_change_new),
+    two_year_change_sd= sd(two_year_change_new),
     count = n()) %>% 
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
   ungroup()
@@ -659,7 +732,7 @@ plot_va_race_diff <-
 
 plot_va_race_diff
 
-#ggsave("graphs/plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
+#ggsave("graphs/3B_plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
 ```
 
 ## Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by Insurance and Race
@@ -684,8 +757,15 @@ loss_15_insurance <-
     sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
     upper_bound = pct_15pt_loss + z * sd,
     lower_bound = pct_15pt_loss - z * sd
+  ) %>% 
+  mutate(
+    time_diff = case_when(
+      time_diff == "one_year_loss" ~ "One year",
+      time_diff == "two_year_loss" ~ "Two year"
+    )
   )
-  
+
+plot_loss_15_insurance <-
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
   geom_col(position = "dodge") +
@@ -702,6 +782,10 @@ loss_15_insurance %>%
     y = "Percentage of eyes that lost 15 or more points of VA",
     fill = "Insurance"
   )
+
+plot_loss_15_insurance
+
+ggsave("graphs/4A_plot_loss_15_insurance.png", plot_loss_15_insurance, width = 7, height = 5)
 ```
 
 ```{r}
@@ -739,6 +823,7 @@ va_insurance_diff <-
   ) %>% 
   ungroup()
 
+plot_va_insurance_diff <-
 va_insurance_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = insurance)) +
   geom_point() +
@@ -758,6 +843,11 @@ va_insurance_diff %>%
     y = "Change in visual acuity",
     color = "Insurance"
   )
+
+plot_va_insurance_diff
+
+#ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
+
 ```
 
 
@@ -789,6 +879,13 @@ va_insurance_race_diff <-
     baseline = 0
   ) %>%
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>%
+  mutate(
+    time_diff = case_when(
+      time_diff == "baseline" ~ "Baseline",
+      time_diff == "one_year_change" ~ "One year",
+      time_diff == "two_year_change" ~ "Two years"
+    )
+  ) %>% 
   ungroup()
 
 va_insurance_race_diff_ci <-
@@ -806,6 +903,7 @@ va_insurance_race_diff_ci <-
     sd_two_year_change = sd(two_year_change)
   )
 
+plot_va_insurance_race_diff <-
 va_insurance_race_diff %>%
   ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
   geom_point() +
@@ -829,6 +927,11 @@ va_insurance_race_diff %>%
     y = "Visual acuity (VA) change",
     color = "Race"
   )
+
+plot_va_insurance_race_diff
+
+#ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
+
 
 ```
 
@@ -857,6 +960,24 @@ summary(one_year_va_delta_4.lm)
 vif(one_year_va_delta_4.lm)
 ```
 
+## Calculation X: Number of patients including the multivariate linear regresison
+
+```{r}
+timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>% 
+  mutate(
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    insurance = factor(insurance, ordered = FALSE), 
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never")
+  ) %>% 
+  count()
+```
+
 
 ## Figure 5: Average severity score at each baseline VA (rounded to nearest 5) by race
 
@@ -879,7 +1000,8 @@ severity_race_vision
 ```{r}
 # graph severity by race and age group
 
-severity_race_vision %>%
+plot_sev_race_va <-
+  severity_race_vision %>%
   filter(race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = race_ethnicity)) +
   geom_line() +
@@ -895,6 +1017,11 @@ severity_race_vision %>%
     x = "Baseline VA", 
     color = "Race"
   )
+
+plot_sev_race_va
+
+#ggsave("graphs/5_plot_sev_race_va.png", plot_sev_race_va, width = 7, height = 5)
+
 ```
 
 
@@ -918,8 +1045,8 @@ severity_insurance_vision
 
 ```{r}
 # graph severity by race and age group
-
-severity_insurance_vision %>%
+plot_sev_insurance_va <-
+  severity_insurance_vision %>%
   filter(insurance %in% c("Medicaid", "Medicare", "Private")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = insurance)) +
   geom_line() +
@@ -936,6 +1063,11 @@ severity_insurance_vision %>%
     x = "Baseline VA", 
     color = "Insurance"
   )
+
+plot_sev_insurance_va
+
+#ggsave("graphs/6_plot_sev_insurance_va.png", plot_sev_insurance_va, width = 7, height = 5)
+
 ```
 
 
