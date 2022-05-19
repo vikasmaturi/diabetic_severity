@@ -22,6 +22,10 @@ Vikas Maturi
     -   [Table: Smoke status by race and
         insurance](#table-smoke-status-by-race-and-insurance)
     -   [Table: Insurance by race](#table-insurance-by-race)
+-   [Calculation X: Mean VA and SD of VA and at
+    baseline](#calculation-x-mean-va-and-sd-of-va-and-at-baseline)
+-   [Calculation X: N after eliminating ICD-10 diagnostic
+    codes](#calculation-x-n-after-eliminating-icd-10-diagnostic-codes)
 -   [Figure 1: Baseline Differences in Severity Score by
     Race](#figure-1-baseline-differences-in-severity-score-by-race)
 -   [Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by
@@ -41,6 +45,8 @@ Vikas Maturi
     Race](#figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race)
 -   [Regression X: Variables that influence change in vision after one
     year](#regression-x-variables-that-influence-change-in-vision-after-one-year)
+-   [Calculation X: Number of patients including the multivariate linear
+    regresison](#calculation-x-number-of-patients-including-the-multivariate-linear-regresison)
 -   [Figure 5: Average severity score at each baseline VA (rounded to
     nearest 5) by
     race](#figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race)
@@ -479,6 +485,61 @@ kable(tbl_insurance_race)
 | Private       | Black          |  1266 |          21.377913 |
 | Private       | Hispanic       |  1553 |          24.406726 |
 
+## Calculation X: Mean VA and SD of VA and at baseline
+
+``` r
+mean_va_race <-
+  tbl_data %>% 
+  group_by(race_ethnicity) %>% 
+  summarize(
+    mean_baseline_va_letter = mean(baseline_va_letter),
+    sd = sd(baseline_va_letter)
+  )
+
+kable(mean_va_race)
+```
+
+| race_ethnicity | mean_baseline_va_letter |       sd |
+|:---------------|------------------------:|---------:|
+| White          |                67.33531 | 12.61341 |
+| Black          |                66.34541 | 13.06954 |
+| Hispanic       |                65.21539 | 13.27573 |
+
+``` r
+mean_va_insurance <-
+  tbl_data %>% 
+  group_by(insurance) %>% 
+  summarize(
+    mean_baseline_va_letter = mean(baseline_va_letter),
+    sd = sd(baseline_va_letter),
+    n = n()
+  )
+
+kable(mean_va_insurance)
+```
+
+| insurance       | mean_baseline_va_letter |       sd |     n |
+|:----------------|------------------------:|---------:|------:|
+| Govt            |                68.75708 | 12.69992 |  1165 |
+| Medicaid        |                66.39798 | 13.39400 |  2475 |
+| Medicare        |                65.99012 | 12.72689 | 26659 |
+| Military        |                68.27509 | 12.66333 |   538 |
+| Private         |                68.99995 | 12.49771 | 10774 |
+| Unknown/Missing |                66.57366 | 13.32002 |  1663 |
+
+## Calculation X: N after eliminating ICD-10 diagnostic codes
+
+``` r
+tbl_data %>% 
+  filter(!is.na(vision_category)) %>% 
+  count()
+```
+
+    ## # A tibble: 1 × 1
+    ##       n
+    ##   <int>
+    ## 1 20787
+
 ## Figure 1: Baseline Differences in Severity Score by Race
 
 To consider here: how do we want to respond to the NAs in this graph?
@@ -509,7 +570,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ## Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by Severity Category, Race and Insurance Status
 
@@ -576,10 +637,10 @@ plot_drug_sev_cat_race <-
 plot_drug_sev_cat_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+#ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 ```
 
 ``` r
@@ -614,6 +675,7 @@ drug_sev_cat_insurance %>%
     ## # … with 97 more rows
 
 ``` r
+plot_drug_sev_cat_insurance <-
 # Graphing likelihood of first drug type by severity and insurance
 drug_sev_cat_insurance %>% 
   # remove individuals with no vision category
@@ -640,9 +702,15 @@ drug_sev_cat_insurance %>%
     y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
+
+plot_drug_sev_cat_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+```
 
 ## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
 
@@ -773,6 +841,7 @@ summary(avastin_1.logm)
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
 
 ``` r
+plot_drug_sev_cat_race_all <- 
 # Graphing likelihood of Bevacizumab by severity and race
 drug_sev_cat_race %>% 
   # remove individuals with no vision category
@@ -797,11 +866,18 @@ drug_sev_cat_race %>%
     y = "Percentage of people receiving Bevacizumab",
     fill = "Race"
   )
+
+plot_drug_sev_cat_race_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
+#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
+```
+
+``` r
+plot_drug_sev_cat_insurance_all <-
 # Graphing likelihood of first drug type by severity and insurance
 drug_sev_cat_insurance %>% 
   # remove individuals with no vision category
@@ -826,9 +902,15 @@ drug_sev_cat_insurance %>%
     y = "Percentage of people receiving Bevacizumab",
     fill = "Insurance"
   )
+
+plot_drug_sev_cat_insurance_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
+```
 
 ## Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by Race
 
@@ -868,8 +950,15 @@ loss_15_race <-
     sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
     upper_bound = pct_15pt_loss + z * sd,
     lower_bound = pct_15pt_loss - z * sd
+  ) %>%
+  mutate(
+    time_diff = case_when(
+      time_diff == "one_year_loss" ~ "One year",
+      time_diff == "two_year_loss" ~ "Two year"
+    )
   )
-  
+
+plot_loss_15_race <-
 loss_15_race %>%
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
@@ -886,9 +975,15 @@ loss_15_race %>%
     y = "Percentage of eyes that lost 15 or more pts of VA",
     fill = "Race"
   )
+
+plot_loss_15_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+``` r
+ggsave("graphs/3A_plot_loss_15_race.png", plot_loss_15_race, width = 7, height = 5)
+```
 
 ``` r
 # plot change in visual acuity by race at one and two years
@@ -896,6 +991,10 @@ loss_15_race %>%
 va_race <-
   timeseries_analysis %>% 
   group_by(race_ethnicity) %>% 
+  mutate(
+    one_year_change_new = one_year - baseline_va_letter,
+    two_year_change_new = two_year - baseline_va_letter
+  ) %>% 
   summarize(
     baseline_va = mean(baseline_va_letter), 
     one_year_va = mean(one_year), 
@@ -903,6 +1002,8 @@ va_race <-
     baseline_sd = sd(baseline_va_letter),
     one_year_sd = sd(one_year),
     two_year_sd = sd(two_year),
+    one_year_change_sd = sd(one_year_change_new),
+    two_year_change_sd= sd(two_year_change_new),
     count = n()) %>% 
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va) %>% 
   ungroup()
@@ -959,10 +1060,10 @@ plot_va_race_diff <-
 plot_va_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
+#ggsave("graphs/3B_plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
 ```
 
 ## Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by Insurance and Race
@@ -986,8 +1087,15 @@ loss_15_insurance <-
     sd = if_else(str_detect(string = time_diff, pattern = "one_year"), one_year_sd, two_year_sd),
     upper_bound = pct_15pt_loss + z * sd,
     lower_bound = pct_15pt_loss - z * sd
+  ) %>% 
+  mutate(
+    time_diff = case_when(
+      time_diff == "one_year_loss" ~ "One year",
+      time_diff == "two_year_loss" ~ "Two year"
+    )
   )
-  
+
+plot_loss_15_insurance <-
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
   geom_col(position = "dodge") +
@@ -1004,9 +1112,15 @@ loss_15_insurance %>%
     y = "Percentage of eyes that lost 15 or more points of VA",
     fill = "Insurance"
   )
+
+plot_loss_15_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+ggsave("graphs/4A_plot_loss_15_insurance.png", plot_loss_15_insurance, width = 7, height = 5)
+```
 
 ``` r
 va_insurance <-
@@ -1042,6 +1156,7 @@ va_insurance_diff <-
   ) %>% 
   ungroup()
 
+plot_va_insurance_diff <-
 va_insurance_diff %>% 
   ggplot(aes(x = time_diff, y = va_change, color = insurance)) +
   geom_point() +
@@ -1061,9 +1176,15 @@ va_insurance_diff %>%
     y = "Change in visual acuity",
     color = "Insurance"
   )
+
+plot_va_insurance_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
+```
 
 ``` r
 insurance_race_va <-
@@ -1096,6 +1217,13 @@ va_insurance_race_diff <-
     baseline = 0
   ) %>%
   gather(key = "time_diff", value = "va_change", baseline, one_year_change, two_year_change) %>%
+  mutate(
+    time_diff = case_when(
+      time_diff == "baseline" ~ "Baseline",
+      time_diff == "one_year_change" ~ "One year",
+      time_diff == "two_year_change" ~ "Two years"
+    )
+  ) %>% 
   ungroup()
 
 va_insurance_race_diff_ci <-
@@ -1117,6 +1245,7 @@ va_insurance_race_diff_ci <-
     ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
 
 ``` r
+plot_va_insurance_race_diff <-
 va_insurance_race_diff %>%
   ggplot(aes(x = time_diff, y = va_change, color = race_ethnicity)) +
   geom_point() +
@@ -1140,9 +1269,15 @@ va_insurance_race_diff %>%
     y = "Visual acuity (VA) change",
     color = "Race"
   )
+
+plot_va_insurance_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
+```
 
 ## Regression X: Variables that influence change in vision after one year
 
@@ -1290,6 +1425,29 @@ vif(one_year_va_delta_4.lm)
     ## severity_score            1.136036  1        1.065850
     ## race_ethnicity:insurance 29.006857  4        1.523395
 
+## Calculation X: Number of patients including the multivariate linear regresison
+
+``` r
+timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>% 
+  mutate(
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    insurance = factor(insurance, ordered = FALSE), 
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never")
+  ) %>% 
+  count()
+```
+
+    ## # A tibble: 1 × 1
+    ##       n
+    ##   <int>
+    ## 1 39908
+
 ## Figure 5: Average severity score at each baseline VA (rounded to nearest 5) by race
 
 ``` r
@@ -1329,7 +1487,8 @@ severity_race_vision
 ``` r
 # graph severity by race and age group
 
-severity_race_vision %>%
+plot_sev_race_va <-
+  severity_race_vision %>%
   filter(race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = race_ethnicity)) +
   geom_line() +
@@ -1345,9 +1504,15 @@ severity_race_vision %>%
     x = "Baseline VA", 
     color = "Race"
   )
+
+plot_sev_race_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/5_plot_sev_race_va.png", plot_sev_race_va, width = 7, height = 5)
+```
 
 ## Figure 6: Average severity score at each baseline VA (rounded to nearest 5) by insurance
 
@@ -1387,8 +1552,8 @@ severity_insurance_vision
 
 ``` r
 # graph severity by race and age group
-
-severity_insurance_vision %>%
+plot_sev_insurance_va <-
+  severity_insurance_vision %>%
   filter(insurance %in% c("Medicaid", "Medicare", "Private")) %>% 
   ggplot(aes(x = baseline_va_r5, y = avg_severity, color = insurance)) +
   geom_line() +
@@ -1405,9 +1570,15 @@ severity_insurance_vision %>%
     x = "Baseline VA", 
     color = "Insurance"
   )
+
+plot_sev_insurance_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/6_plot_sev_insurance_va.png", plot_sev_insurance_va, width = 7, height = 5)
+```
 
 ## Timeseries analysis of visual acuity
 
@@ -1451,7 +1622,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 race_distribution %>% 
@@ -1467,7 +1638,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -1513,7 +1684,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -1555,7 +1726,7 @@ va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ``` r
 va_race_diff <-
@@ -1584,7 +1755,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ``` r
 # plot change in visual acuity by race at one and two yeaars
@@ -1604,7 +1775,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -1629,7 +1800,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -1653,7 +1824,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -1694,7 +1865,7 @@ va_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
 
 ``` r
 va_insurance_diff <-
@@ -1723,7 +1894,7 @@ va_insurance_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 #### Percentage with 15 letter loss by race
 
@@ -1775,7 +1946,7 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
 
 ``` r
 gain_15_race <-
@@ -1804,7 +1975,7 @@ gain_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-2.png)<!-- -->
 
 #### Percentage with 15 letter loss by insurance
 
@@ -1840,7 +2011,7 @@ loss_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 ``` r
 gain_15_insurance <-
@@ -1870,7 +2041,7 @@ gain_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-2.png)<!-- -->
 
 #### Timeseries VA by insurance and race
 
@@ -1982,7 +2153,7 @@ smoking_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 #### Timeseries VA by gender and race
 
@@ -2012,7 +2183,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -2061,7 +2232,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -2093,7 +2264,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with \~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -2124,7 +2295,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -2155,7 +2326,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -2191,7 +2362,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -2261,7 +2432,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -2304,7 +2475,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -2349,7 +2520,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -2389,7 +2560,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -2432,7 +2603,7 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
 
 ## Injections by VA analysis
 
@@ -2602,7 +2773,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -2653,7 +2824,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -2682,7 +2853,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is \~1.5-2
 pts higher for Black people vs. Caucasian people, and \~3-4 pts higher
@@ -2774,7 +2945,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -2822,7 +2993,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-81-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-84-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -2860,7 +3031,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-83-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-86-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -2912,7 +3083,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-85-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -2935,7 +3106,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-86-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -2992,7 +3163,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -3010,7 +3181,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -3034,7 +3205,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Bevacizumab as compared to their Caucasian
@@ -3095,7 +3266,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-95-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -3112,7 +3283,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and race
@@ -3133,7 +3304,7 @@ drug_sev_cat_race %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-94-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-97-1.png)<!-- -->
 
 #### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
 
@@ -3184,7 +3355,7 @@ drug_va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
 
 #### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
 
@@ -3239,7 +3410,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and insurance
@@ -3257,7 +3428,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and insurance
@@ -3279,7 +3450,7 @@ drug_sev_cat_insurance %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-100-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
 
 #### Drug received by race and insurance
 
@@ -3337,7 +3508,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -3358,7 +3529,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -3379,7 +3550,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-107-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -3413,7 +3584,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -3468,7 +3639,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -3501,7 +3672,7 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-112-1.png)<!-- -->
 
 ## Regression
 
