@@ -23,7 +23,7 @@ library(lubridate)
 library(knitr)
 library(googlesheets4)
 library(car)
-
+library(lsmeans)
 
 # parameters
 
@@ -334,13 +334,13 @@ tbl_data %>%
 ```
 
 
-
-## Figure 1: Baseline Differences in Severity Score by Race
+## Figure 1A: Baseline Differences in Severity Score by Race
 
 To consider here: how do we want to respond to the NAs in this graph? One option I could see is creating four new categories: (mild NPDR unknown edema, moderate NPDR unknown edema, severe NPDR unknown edema, PDR unknown edema)
 
 ```{r}
 timeseries_analysis %>% 
+  dplyr::filter(!is.na(vision_category)) %>% 
   dplyr::count(vision_category, race_ethnicity) %>%
   dplyr::ungroup() %>% 
   dplyr::group_by(race_ethnicity) %>% 
@@ -349,7 +349,7 @@ timeseries_analysis %>%
   geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = 1) +
   theme_light() +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1),
+    axis.text.x = element_text(angle = 55, hjust = 1),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
   ) +
@@ -360,6 +360,8 @@ timeseries_analysis %>%
     y = "Percentage ",
     fill = "Race"
   )
+
+ggsave("figure1A.pdf")
 ```
 
 
@@ -409,13 +411,13 @@ plot_drug_sev_cat_race <-
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of eyes receiving Bevacizumab",
+    y = "Percentage of patients receiving Bevacizumab",
     fill = "Race"
   )
 
 plot_drug_sev_cat_race
 
-#ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+ggsave("graphs_6_28/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 
 ```
 
@@ -465,13 +467,13 @@ drug_sev_cat_insurance %>%
   scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Bevacizumab",
+    y = "Percentage of patients receiving Bevacizumab",
     fill = "Insurance"
   )
 
 plot_drug_sev_cat_insurance
 
-#ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+ggsave("graphs_6_28/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
 
 
 ```
@@ -479,7 +481,6 @@ plot_drug_sev_cat_insurance
 ## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
 
 ```{r}
-
 # create dataset for regression
 data_avastin_reg <- 
   timeseries_analysis %>% 
@@ -509,6 +510,372 @@ avastin_1.logm <-
 summary(avastin_1.logm)
 
 ```
+
+## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
+```{r}
+no_intercept_regression_avastin_data <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private"),
+    race_ethnicity %in% c("White", "Black", "Hispanic")
+  ) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+  ) 
+
+# glm for logistic regression
+no_intercept_avastin <- 
+  glm(avastin ~ 0 + gender + race_ethnicity + insurance + race_ethnicity * insurance + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = no_intercept_regression_avastin_data, family = binomial(link = "probit"))
+
+
+summary(no_intercept_avastin)
+matrix_coef <- summary(no_intercept_avastin)$coefficients[,2]
+matrix_coef
+inv.logit(matrix_coef)
+
+```
+
+
+#Forest Plot Representing Effect of Race on Bevacizumab Administration by Insurance Status
+```{r}
+#FOREST PLOT DEMONSTRATING EFFECT OF RACE, SPLIT BY INSURANCE STATUS
+Private_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Private"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+
+
+Medicare_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+Medicaid_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicaid"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+#Extract values from regression output
+bev_private <- summary(Private_avastin_logreg)$coefficients[1:9,]
+
+#Convert values into data frame
+bev_private = as.data.frame(bev_private)
+bev_private <- tibble::rownames_to_column(bev_private, "FACTOR")
+
+#Create limits for values
+bev_private$up_error = bev_private$Estimate + 1.96*bev_private$`Std. Error`
+bev_private$down_error = bev_private$Estimate - 1.96*bev_private$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_private$odds <- exp(bev_private$Estimate)
+
+bev_private$upper_limit = exp(bev_private$up_error)
+bev_private$lower_limit = exp(bev_private$down_error)
+bev_private
+
+#Add a group name
+bev_private$group <- "private"
+bev_private$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+View(bev_private)
+
+#MEDICARE DATA ASSEMBLY
+
+bev_medicare <- summary(Medicare_avastin_logreg)$coefficients[1:9,]
+bev_medicare = as.data.frame(bev_medicare)
+bev_medicare <- tibble::rownames_to_column(bev_medicare, "FACTOR")
+
+#Create limits for values
+bev_medicare$up_error = bev_medicare$Estimate + 1.96*bev_medicare$`Std. Error`
+bev_medicare$down_error = bev_medicare$Estimate - 1.96*bev_medicare$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_medicare$odds <- exp(bev_medicare$Estimate)
+
+bev_medicare$upper_limit = exp(bev_medicare$up_error)
+bev_medicare$lower_limit = exp(bev_medicare$down_error)
+bev_private
+
+#Add a group name
+bev_medicare$group <- "medicare"
+bev_medicare$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+View(bev_medicare)
+
+#MEDICAID DATA ASSEMBLY
+bev_medicaid <- summary(Medicaid_avastin_logreg)$coefficients[1:9,]
+bev_medicaid = as.data.frame(bev_medicaid)
+bev_medicaid <- tibble::rownames_to_column(bev_medicaid, "FACTOR")
+
+#Create limits for values
+bev_medicaid$up_error = bev_medicaid$Estimate + 1.96*bev_medicaid$`Std. Error`
+bev_medicaid$down_error = bev_medicaid$Estimate - 1.96*bev_medicaid$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_medicaid$odds <- exp(bev_medicaid$Estimate)
+
+bev_medicaid$upper_limit = exp(bev_medicaid$up_error)
+bev_medicaid$lower_limit = exp(bev_medicaid$down_error)
+View(bev_private)
+View(bev_medicare)
+View(bev_medicaid)
+
+
+#Add a group name
+bev_medicaid$group <- "medicaid"
+bev_medicaid$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+#Combine all group output information
+combined_bev_insurance_output = rbind(bev_medicaid,bev_medicare, bev_private)
+
+#Remove original factor names that created unaesthetic graph
+combined_bev_insurance_output = subset(combined_bev_insurance_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_bev_insurance_output<-combined_bev_insurance_output[!(combined_bev_insurance_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_bev_insurance_output$group = factor(combined_bev_insurance_output$group, levels=c("private","medicare","medicaid")) 
+combined_bev_insurance_output$FACTOR_clean = factor(combined_bev_insurance_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+
+p3 <- ggplot(combined_bev_insurance_output,aes(y = FACTOR_clean, x = odds))+
+geom_point()+
+facet_wrap(~group)+
+geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Insurance") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+p3
+ggsave('bev_race2.pdf')
+
+```
+
+
+
+```{r}
+#FOREST PLOT DEMONSTRATING EFFECT OF RACE, SPLIT BY INSURANCE STATUS
+White_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("White"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+summary(White_avastin_logreg)
+
+Black_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("Black"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+Hispanic_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+#Extract values from regression output
+bev_white <- summary(White_avastin_logreg)$coefficients[1:9,]
+
+#Convert values into data frame
+bev_white = as.data.frame(bev_white)
+bev_white <- tibble::rownames_to_column(bev_white, "FACTOR")
+
+#Create limits for values
+bev_white$up_error = bev_white$Estimate + 1.96*bev_white$`Std. Error`
+bev_white$down_error = bev_white$Estimate - 1.96*bev_white$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_white$odds <- exp(bev_white$Estimate)
+
+bev_white$upper_limit = exp(bev_white$up_error)
+bev_white$lower_limit = exp(bev_white$down_error)
+
+#Add a group name
+bev_white$group <- "white"
+bev_white$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+View(bev_private)
+
+#MEDICARE DATA ASSEMBLY
+
+bev_black <- summary(Black_avastin_logreg)$coefficients[1:9,]
+bev_black = as.data.frame(bev_black)
+bev_black <- tibble::rownames_to_column(bev_black, "FACTOR")
+
+#Create limits for values
+bev_black$up_error = bev_black$Estimate + 1.96*bev_black$`Std. Error`
+bev_black$down_error = bev_black$Estimate - 1.96*bev_black$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_black$odds <- exp(bev_black$Estimate)
+
+bev_black$upper_limit = exp(bev_black$up_error)
+bev_black$lower_limit = exp(bev_black$down_error)
+
+#Add a group name
+bev_black$group <- "black"
+bev_black$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+
+#MEDICAID DATA ASSEMBLY
+bev_hispanic <- summary(Hispanic_avastin_logreg)$coefficients[1:9,]
+bev_hispanic = as.data.frame(bev_hispanic)
+bev_hispanic <- tibble::rownames_to_column(bev_hispanic, "FACTOR")
+
+#Create limits for values
+bev_hispanic$up_error = bev_hispanic$Estimate + 1.96*bev_hispanic$`Std. Error`
+bev_hispanic$down_error = bev_hispanic$Estimate - 1.96*bev_hispanic$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_hispanic$odds <- exp(bev_hispanic$Estimate)
+
+bev_hispanic$upper_limit = exp(bev_hispanic$up_error)
+bev_hispanic$lower_limit = exp(bev_hispanic$down_error)
+
+
+#Add a group name
+bev_hispanic$group <- "hispanic"
+bev_hispanic$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+
+View(bev_white)
+View(bev_black)
+View(bev_hispanic)
+
+#Combine all group output information
+combined_bev_race_output = rbind(bev_hispanic,bev_black,bev_white)
+
+#Remove original factor names that created unaesthetic graph
+combined_bev_race_output = subset(combined_bev_race_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_bev_race_output<-combined_bev_race_output[!(combined_bev_race_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_bev_race_output$group = factor(combined_bev_race_output$group, levels=c("white","black","hispanic")) 
+combined_bev_race_output$FACTOR_clean = factor(combined_bev_race_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
+
+
+p4 <- ggplot(combined_bev_race_output,aes(y = FACTOR_clean, x = odds))+
+geom_point()+
+facet_wrap(~group)+
+geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Race") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+p4
+
+
+```
+
+
 
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
 
@@ -632,6 +999,8 @@ loss_15_race <-
       time_diff == "two_year_loss" ~ "Two year"
     )
   )
+
+View(loss_15_race)
 
 plot_loss_15_race <-
 loss_15_race %>%
@@ -764,6 +1133,10 @@ loss_15_insurance <-
       time_diff == "two_year_loss" ~ "Two year"
     )
   )
+
+
+View(loss_15_insurance)
+
 
 plot_loss_15_insurance <-
 loss_15_insurance %>% 
@@ -928,6 +1301,7 @@ va_insurance_race_diff %>%
     color = "Race"
   )
 
+View(va_insurance_race_diff)
 plot_va_insurance_race_diff
 
 #ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
@@ -959,6 +1333,462 @@ summary(one_year_va_delta_4.lm)
 
 vif(one_year_va_delta_4.lm)
 ```
+
+## Regression Y: Variables that influence change in vision after one year: stratified by race and insurance status
+```{r}
+
+#Race analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+private_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Private"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(private_only_one_year_va_delta.lm)
+vif(private_only_one_year_va_delta.lm)
+
+#Significant for both Black and Hispanic patients
+
+Medicare_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(Medicare_only_one_year_va_delta.lm)
+vif(Medicare_only_one_year_va_delta.lm)
+#Significant for Hispanic patients (***)
+
+Medicaid_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicaid"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(Medicaid_only_one_year_va_delta.lm)
+vif(Medicaid_only_one_year_va_delta.lm)
+#Not significant for either Hispanic and Black patients. 
+
+
+#Insurance analysis: Regress data across only White patients to see effect of insurance on vision: 
+white_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("White")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(white_only_one_year_va_delta.lm)
+vif(white_only_one_year_va_delta.lm)
+#significant worse for both Medicaid and Medicare patients (***)
+
+black_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Black")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(black_only_one_year_va_delta.lm)
+vif(black_only_one_year_va_delta.lm) 
+#barely significant worse for Medicaid patients (*)
+
+hispanic_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Hispanic")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(hispanic_only_one_year_va_delta.lm)
+vif(hispanic_only_one_year_va_delta.lm)
+#significant worse for both Medicaid and Medicare patients (**)
+
+
+# Analysis:
+#   - Hispanic patients have significantly worse VA outcomes after 1-year in privately-insured and Medicare populations, relative to White patients. Black patients hve significantly worse VA outcomes after 1-year in only privately-insured populations. Medicaid-based Hispanic patients and Medicaid-based White patients show no significant difference in 1-year VA outcomes.
+# - Across all individual racial groups, Medicaid patients have worse VA outcomes after 1 year relative to privately-insured patients. In White and Hispanic populations, Medicare patients have significantly worse VA outcomes after 1 year relative to privately insured patients.
+# 
+#   Racial differences in VA change, after controlling for insurance, are evident in the privately-insured population for both Black/Hispanic patients and the Medicaid population for Hispanic patients.
+
+```
+
+#Forest Plot to Determine Factors Associated with VA Changes within Each Insurance Group
+```{r}
+library(tibble)
+
+#Race analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+GRAPHprivate_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Private"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHprivate_only_one_year_va_delta.lm)
+vif(GRAPHprivate_only_one_year_va_delta.lm)
+
+#Significant for both Black and Hispanic patients
+
+GRAPHMedicare_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"),
+          gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHMedicare_only_one_year_va_delta.lm)
+vif(GRAPHMedicare_only_one_year_va_delta.lm)
+#Significant for Hispanic patients (***)
+
+GRAPHMedicaid_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicaid"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHMedicaid_only_one_year_va_delta.lm)
+vif(GRAPHMedicaid_only_one_year_va_delta.lm)
+#Not significant for either Hispanic and Black patients. 
+
+
+
+#Extract values from regression output
+private_output <- summary(GRAPHprivate_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+private_output = as.data.frame(private_output)
+private_output <- tibble::rownames_to_column(private_output, "FACTOR")
+
+#Create limits for values
+private_output$upper_limit = private_output$Estimate + 1.96*private_output$`Std. Error`
+private_output$lower_limit = private_output$Estimate - 1.96*private_output$`Std. Error`
+
+#Add a group name
+private_output$group <- "private"
+private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+View(private_output)
+
+
+#Repeat steps for other groups:
+
+medicare_output <- summary(GRAPHMedicare_only_one_year_va_delta.lm)$coefficients[1:12,]
+medicare_output = as.data.frame(medicare_output)
+medicare_output <- tibble::rownames_to_column(medicare_output, "FACTOR")
+medicare_output$upper_limit = medicare_output$Estimate + 1.96*medicare_output$`Std. Error`
+medicare_output$lower_limit = medicare_output$Estimate - 1.96*medicare_output$`Std. Error`
+medicare_output$group <- "medicare"
+medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+#Convert group name into a factor
+
+View(medicare_output)
+
+
+medicaid_output <- summary(GRAPHMedicaid_only_one_year_va_delta.lm)$coefficients[1:12,]
+medicaid_output = as.data.frame(medicaid_output)
+medicaid_output <- tibble::rownames_to_column(medicaid_output, "FACTOR")
+medicaid_output$upper_limit = medicaid_output$Estimate + 1.96*medicaid_output$`Std. Error`
+medicaid_output$lower_limit = medicaid_output$Estimate - 1.96*medicaid_output$`Std. Error`
+medicaid_output$group <- "medicaid"
+medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+#Convert group name into a factor
+
+
+#Combine all group output information
+combined_output = rbind(medicaid_output,medicare_output, private_output)
+
+#Remove original factor names that created unaesthetic graph
+combined_output = subset(combined_output, select = -c(FACTOR) )
+combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Avastin)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+
+#Remove intercept values to allow for graph interpretation
+combined_output<-combined_output[!(combined_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_output$group = factor(combined_output$group, levels=c("private","medicare","medicaid")) 
+
+p1 <- ggplot(combined_output,aes(y = FACTOR_clean, x = Estimate))+
+geom_point()+
+facet_wrap(~group)+
+geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+geom_vline(lty=2, aes(xintercept=0), colour = 'red') +
+  labs(y= "Factor", x = "Change in VA after 1 year", title = "Factors Associated with Changes in VA by Insurance") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+p1
+
+```
+
+#Forest Plot to Determine Factors Associated with VA Changes within Each Race
+```{r}
+
+#Insurance analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+GRAPHwhite_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("White"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+
+# COUNT_for_Regression <-
+#   timeseries_analysis %>%
+#        filter(
+#          insurance %in% c("Medicare", "Medicaid", "Private"),
+#          race_ethnicity %in% c("White", "Black", "Hispanic"),
+#          gender %in% c("Male", "Female"),
+#          smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+#        ) %>%
+#        mutate(
+#          insurance = factor(insurance, ordered = FALSE),
+#          insurance = relevel(insurance, ref = "Private"),
+#          smoke_status = factor(smoke_status),
+#          smoke_status = relevel(smoke_status, ref = "No / Never")
+#        )
+# 
+# count(COUNT_for_Regression)
+
+summary(GRAPHwhite_only_one_year_va_delta.lm)
+
+vif(GRAPHwhite_only_one_year_va_delta.lm)
+vif(GRAPHblack_only_one_year_va_delta.lm)
+vif(GRAPHhispanic_only_one_year_va_delta.lm)
+
+
+#Extract values from regression output
+white_output <- summary(GRAPHwhite_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+white_output = as.data.frame(white_output)
+white_output <- tibble::rownames_to_column(white_output, "FACTOR")
+
+#Create limits for values
+white_output$upper_limit = white_output$Estimate + 1.96*white_output$`Std. Error`
+white_output$lower_limit = white_output$Estimate - 1.96*white_output$`Std. Error`
+
+#Add a group name
+white_output$group <- "white"
+white_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+View(white_output)
+
+#Repeat steps for other groups:
+
+GRAPHblack_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Black"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHblack_only_one_year_va_delta.lm)
+
+#Extract values from regression output
+black_output <- summary(GRAPHblack_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+black_output = as.data.frame(black_output)
+black_output <- tibble::rownames_to_column(black_output, "FACTOR")
+
+#Create limits for values
+black_output$upper_limit = black_output$Estimate + 1.96*black_output$`Std. Error`
+black_output$lower_limit = black_output$Estimate - 1.96*black_output$`Std. Error`
+
+#Add a group name
+black_output$group <- "black"
+black_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+View(black_output)
+
+GRAPHhispanic_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Hispanic"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHhispanic_only_one_year_va_delta.lm)
+
+#Extract values from regression output
+hispanic_output <- summary(GRAPHhispanic_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+hispanic_output = as.data.frame(hispanic_output)
+hispanic_output <- tibble::rownames_to_column(hispanic_output, "FACTOR")
+
+#Create limits for values
+hispanic_output$upper_limit = hispanic_output$Estimate + 1.96*hispanic_output$`Std. Error`
+hispanic_output$lower_limit = hispanic_output$Estimate - 1.96*hispanic_output$`Std. Error`
+
+#Add a group name
+hispanic_output$group <- "hispanic"
+hispanic_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+View(hispanic_output)
+
+#Combine all group output information
+combined_race_output = rbind(white_output, black_output, hispanic_output)
+
+#Remove original factor names that created unaesthetic graph
+combined_race_output = subset(combined_race_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_race_output<-combined_race_output[!(combined_race_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_race_output$group = factor(combined_race_output$group, levels=c("white","black","hispanic")) 
+combined_race_output$FACTOR_clean = factor(combined_race_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Bevacizumab)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
+
+p2 <- ggplot(combined_race_output,aes(y = FACTOR_clean, x = Estimate))+
+geom_point()+
+facet_wrap(~group)+
+geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+geom_vline(lty=2, aes(xintercept=0), colour = 'red') +
+  labs(y= "Factor", x = "Change in VA after 1 year", title = "Factors Associated with Changes in VA by Race") + 
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+```{r}
+#Old Forest Plot attempts
+
+race_colors <- c("#54AE55", "#189CD9", "#A167A5")
+insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
+
+dotCOLS = c("#a6d8f0","#f9b282")
+barCOLS = c("#A00033","#D1603D")
+
+p <- ggplot(combined_output, aes(x=FACTOR_clean, y=Estimate, ymin=lower_limit, ymax=upper_limit,col=group,fill=group)) + 
+#specify position here
+  geom_errorbar(size=2,position=position_dodge(width = 0.5)) +
+  geom_hline(yintercept=0, lty=2) +
+#specify position here too
+  geom_point(size=1, shape=21, colour="white", stroke = 0.5,position=position_dodge(width = 0.5)) +
+  scale_fill_manual(values = insurance_colors) +
+  scale_color_manual(values=insurance_colors)+
+  scale_y_continuous(name="Change in VA", limits = c(-7, 3)) +
+  coord_flip() +
+  theme_minimal()
+
+p
+
+```
+
+
+
 
 ## Calculation X: Number of patients including the multivariate linear regresison
 
