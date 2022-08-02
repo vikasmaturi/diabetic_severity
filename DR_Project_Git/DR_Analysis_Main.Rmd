@@ -24,6 +24,7 @@ library(knitr)
 library(googlesheets4)
 library(car)
 library(lsmeans)
+library(boot)
 
 # parameters
 
@@ -545,7 +546,7 @@ inv.logit(matrix_coef)
 ```
 
 
-#Forest Plot Representing Effect of Race on Bevacizumab Administration by Insurance Status
+#### Forest Plot Representing Effect of Race on Bevacizumab Administration by Insurance Status
 ```{r}
 #FOREST PLOT DEMONSTRATING EFFECT OF RACE, SPLIT BY INSURANCE STATUS
 Private_avastin_logreg <-
@@ -692,23 +693,36 @@ combined_bev_insurance_output = subset(combined_bev_insurance_output, select = -
 combined_bev_insurance_output<-combined_bev_insurance_output[!(combined_bev_insurance_output$FACTOR_clean=="Intercept"),]
 
 #Create factor for group name to order the facet grids
-combined_bev_insurance_output$group = factor(combined_bev_insurance_output$group, levels=c("private","medicare","medicaid")) 
+combined_bev_insurance_output$group = factor(combined_bev_insurance_output$group, levels=c("private","medicare","medicaid"), labels = c("Private", "Medicare", "Medicaid")) 
 combined_bev_insurance_output$FACTOR_clean = factor(combined_bev_insurance_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
 
-p3 <- ggplot(combined_bev_insurance_output,aes(y = FACTOR_clean, x = odds))+
-geom_point()+
-facet_wrap(~group)+
-geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
-geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
-  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Insurance") + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-p3
-ggsave('bev_race2.pdf')
 
 ```
 
+```{r}
+
+plot_forest_bev_insurance <- 
+  ggplot(combined_bev_insurance_output,aes(y = FACTOR_clean, x = odds))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Insurance") + 
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  )
+
+
+plot_forest_bev_insurance
+
+#ggsave("graphs/plot_forest_bev_insurance.png", plot_forest_bev_insurance, width = 10, height = 5)
+
+
+```
 
 
 ```{r}
@@ -857,24 +871,43 @@ combined_bev_race_output = subset(combined_bev_race_output, select = -c(FACTOR) 
 combined_bev_race_output<-combined_bev_race_output[!(combined_bev_race_output$FACTOR_clean=="Intercept"),]
 
 #Create factor for group name to order the facet grids
-combined_bev_race_output$group = factor(combined_bev_race_output$group, levels=c("white","black","hispanic")) 
+combined_bev_race_output$group = factor(combined_bev_race_output$group, levels=c("white","black","hispanic"), labels = c("White", "Black", "Hispanic")) 
 combined_bev_race_output$FACTOR_clean = factor(combined_bev_race_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
 
 
-p4 <- ggplot(combined_bev_race_output,aes(y = FACTOR_clean, x = odds))+
-geom_point()+
-facet_wrap(~group)+
-geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
-geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
-  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Race") + 
-  theme(plot.title = element_text(hjust = 0.5))
 
-
-p4
 
 
 ```
 
+
+```{r}
+
+plot_forest_bev_race <- 
+  ggplot(combined_bev_race_output,aes(y = FACTOR_clean, x = odds))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Race") + 
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) 
+
+
+plot_forest_bev_race 
+
+
+
+
+#ggsave("graphs/plot_forest_bev_race.png", plot_forest_bev_race, width = 10, height = 5)
+
+
+```
 
 
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
@@ -1458,7 +1491,9 @@ vif(hispanic_only_one_year_va_delta.lm)
 
 ```
 
-#Forest Plot to Determine Factors Associated with VA Changes within Each Insurance Group
+## Forest Plots on VA change
+
+#### Forest Plot to Determine Factors Associated with VA Changes within Each Insurance Group
 ```{r}
 library(tibble)
 
@@ -1579,21 +1614,38 @@ combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("
 combined_output<-combined_output[!(combined_output$FACTOR_clean=="Intercept"),]
 
 #Create factor for group name to order the facet grids
-combined_output$group = factor(combined_output$group, levels=c("private","medicare","medicaid")) 
-
-p1 <- ggplot(combined_output,aes(y = FACTOR_clean, x = Estimate))+
-geom_point()+
-facet_wrap(~group)+
-geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
-geom_vline(lty=2, aes(xintercept=0), colour = 'red') +
-  labs(y= "Factor", x = "Change in VA after 1 year", title = "Factors Associated with Changes in VA by Insurance") + 
-  theme(plot.title = element_text(hjust = 0.5))
-
-p1
+combined_output$group = factor(combined_output$group, levels=c("private","medicare","medicaid"), labels = c("Private", "Medicare", "Medicaid")) 
 
 ```
 
-#Forest Plot to Determine Factors Associated with VA Changes within Each Race
+```{r}
+
+forest_va_change_insurance <- 
+  ggplot(combined_output, aes(y = FACTOR_clean, x = Estimate))+
+  geom_point() +
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty = 2, aes(xintercept=0), colour = 'red') +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) +
+  labs(
+    y = "Factor", 
+    x = "Change in VA after 1 year", 
+    title = "Factors Associated with Changes in VA by Insurance"
+  )
+
+forest_va_change_insurance
+
+#ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
+```
+
+
+#### Forest Plot to Determine Factors Associated with VA Changes within Each Race
 ```{r}
 
 #Insurance analysis: Regress data across only privately-insured patients to see effect of race on vision: 
@@ -1633,9 +1685,6 @@ GRAPHwhite_only_one_year_va_delta.lm <-
 
 summary(GRAPHwhite_only_one_year_va_delta.lm)
 
-vif(GRAPHwhite_only_one_year_va_delta.lm)
-vif(GRAPHblack_only_one_year_va_delta.lm)
-vif(GRAPHhispanic_only_one_year_va_delta.lm)
 
 
 #Extract values from regression output
@@ -1653,7 +1702,6 @@ white_output$lower_limit = white_output$Estimate - 1.96*white_output$`Std. Error
 white_output$group <- "white"
 white_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 
-View(white_output)
 
 #Repeat steps for other groups:
 
@@ -1689,7 +1737,6 @@ black_output$lower_limit = black_output$Estimate - 1.96*black_output$`Std. Error
 #Add a group name
 black_output$group <- "black"
 black_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
-View(black_output)
 
 GRAPHhispanic_only_one_year_va_delta.lm <-
   lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
@@ -1724,7 +1771,6 @@ hispanic_output$lower_limit = hispanic_output$Estimate - 1.96*hispanic_output$`S
 hispanic_output$group <- "hispanic"
 hispanic_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 
-View(hispanic_output)
 
 #Combine all group output information
 combined_race_output = rbind(white_output, black_output, hispanic_output)
@@ -1736,61 +1782,78 @@ combined_race_output = subset(combined_race_output, select = -c(FACTOR) )
 combined_race_output<-combined_race_output[!(combined_race_output$FACTOR_clean=="Intercept"),]
 
 #Create factor for group name to order the facet grids
-combined_race_output$group = factor(combined_race_output$group, levels=c("white","black","hispanic")) 
+combined_race_output$group = factor(combined_race_output$group, levels=c("white","black","hispanic"), labels = c("White", "Black", "Hispanic")) 
 combined_race_output$FACTOR_clean = factor(combined_race_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Bevacizumab)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
 
-p2 <- ggplot(combined_race_output,aes(y = FACTOR_clean, x = Estimate))+
-geom_point()+
-facet_wrap(~group)+
-geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
-geom_vline(lty=2, aes(xintercept=0), colour = 'red') +
-  labs(y= "Factor", x = "Change in VA after 1 year", title = "Factors Associated with Changes in VA by Race") + 
-  theme(plot.title = element_text(hjust = 0.5))
 
-p2
 ```
 
+```{r}
+
+vif(GRAPHwhite_only_one_year_va_delta.lm)
+vif(GRAPHblack_only_one_year_va_delta.lm)
+vif(GRAPHhispanic_only_one_year_va_delta.lm)
+```
 
 
 ```{r}
 
+
+
+forest_va_change_race <- 
+  ggplot(combined_race_output,aes(y = FACTOR_clean, x = Estimate))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty = 2, aes(xintercept=0), colour = 'red') +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) +
+  labs(
+    y= "Factor", 
+    x = "Change in VA after 1 year",
+    title = "Factors Associated with Changes in VA by Race"
+  )
+
+forest_va_change_race
+
+#ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
 ```
-
-
-
-
-
 
 
 ```{r}
 #Old Forest Plot attempts
-
-race_colors <- c("#54AE55", "#189CD9", "#A167A5")
-insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
-
-dotCOLS = c("#a6d8f0","#f9b282")
-barCOLS = c("#A00033","#D1603D")
-
-p <- ggplot(combined_output, aes(x=FACTOR_clean, y=Estimate, ymin=lower_limit, ymax=upper_limit,col=group,fill=group)) + 
-#specify position here
-  geom_errorbar(size=2,position=position_dodge(width = 0.5)) +
-  geom_hline(yintercept=0, lty=2) +
-#specify position here too
-  geom_point(size=1, shape=21, colour="white", stroke = 0.5,position=position_dodge(width = 0.5)) +
-  scale_fill_manual(values = insurance_colors) +
-  scale_color_manual(values=insurance_colors)+
-  scale_y_continuous(name="Change in VA", limits = c(-7, 3)) +
-  coord_flip() +
-  theme_minimal()
-
-p
+# 
+# race_colors <- c("#54AE55", "#189CD9", "#A167A5")
+# insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
+# 
+# dotCOLS = c("#a6d8f0","#f9b282")
+# barCOLS = c("#A00033","#D1603D")
+# 
+# p <- ggplot(combined_output, aes(x=FACTOR_clean, y=Estimate, ymin=lower_limit, ymax=upper_limit,col=group,fill=group)) + 
+# #specify position here
+#   geom_errorbar(size=2,position=position_dodge(width = 0.5)) +
+#   geom_hline(yintercept=0, lty=2) +
+# #specify position here too
+#   geom_point(size=1, shape=21, colour="white", stroke = 0.5,position=position_dodge(width = 0.5)) +
+#   scale_fill_manual(values = insurance_colors) +
+#   scale_color_manual(values=insurance_colors)+
+#   scale_y_continuous(name="Change in VA", limits = c(-7, 3)) +
+#   coord_flip() +
+#   theme_minimal()
+# 
+# p
 
 ```
 
 
 
 
-## Calculation X: Number of patients including the multivariate linear regresison
+## Calculation X: Number of patients including the multivariate linear regression
 
 ```{r}
 timeseries_analysis %>% 

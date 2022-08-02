@@ -3,107 +3,201 @@ DR_Analysis_Main
 Vikas Maturi
 2021-07-07
 
--   [Setup](#setup)
-    -   [Libraries and data import](#libraries-and-data-import)
-    -   [Join severity and timeseries patient/visit
-        data](#join-severity-and-timeseries-patientvisit-data)
--   [Cleaned datasets for analysis](#cleaned-datasets-for-analysis)
--   [Table 1: Patient Demographics](#table-1-patient-demographics)
-    -   [Construct dataset to generate data
-        tables](#construct-dataset-to-generate-data-tables)
-    -   [Table: Age by race and
-        insurance](#table-age-by-race-and-insurance)
-    -   [Table: Gender by race and
-        insurance](#table-gender-by-race-and-insurance)
-    -   [Table: Baseline VA by race and
-        insurance](#table-baseline-va-by-race-and-insurance)
-    -   [Table: VEGF drug by race and
-        insurance](#table-vegf-drug-by-race-and-insurance)
-    -   [Table: Smoke status by race and
-        insurance](#table-smoke-status-by-race-and-insurance)
-    -   [Table: Insurance by race](#table-insurance-by-race)
--   [Calculation X: Mean VA and SD of VA and at
-    baseline](#calculation-x-mean-va-and-sd-of-va-and-at-baseline)
--   [Calculation X: N after eliminating ICD-10 diagnostic
-    codes](#calculation-x-n-after-eliminating-icd-10-diagnostic-codes)
--   [Figure 1: Baseline Differences in Severity Score by
-    Race](#figure-1-baseline-differences-in-severity-score-by-race)
--   [Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by
-    Severity Category, Race and Insurance
-    Status](#figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status)
--   [Regression X: Variables that influence likelihood of receiving
-    Bevacizumab
-    treatment](#regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment)
--   [Supplement: Differences in Rates of Bevacizumab, Aflibercept, and
-    Ranibizumab Injection by Severity Category, Race and Insurance
-    Status](#supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status)
--   [Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two
-    Years, by
-    Race](#figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race)
--   [Figure 4A, 4B, 4C: Visual Acuity Change from Baseline at One and
-    Two Years, by Insurance and
-    Race](#figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race)
--   [Regression X: Variables that influence change in vision after one
-    year](#regression-x-variables-that-influence-change-in-vision-after-one-year)
--   [Calculation X: Number of patients including the multivariate linear
-    regresison](#calculation-x-number-of-patients-including-the-multivariate-linear-regresison)
--   [Figure 5: Average severity score at each baseline VA (rounded to
-    nearest 5) by
-    race](#figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race)
--   [Figure 6: Average severity score at each baseline VA (rounded to
-    nearest 5) by
-    insurance](#figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance)
--   [Timeseries analysis of visual
-    acuity](#timeseries-analysis-of-visual-acuity)
-    -   [Distribution of VA by race](#distribution-of-va-by-race)
-    -   [Timeseries VA by race and
-        severity](#timeseries-va-by-race-and-severity)
-    -   [Timeseries VA by race](#timeseries-va-by-race)
-    -   [Timeseries VA by insurance](#timeseries-va-by-insurance)
-    -   [Percentage with 15 letter loss by
-        race](#percentage-with-15-letter-loss-by-race)
-    -   [Percentage with 15 letter loss by
-        insurance](#percentage-with-15-letter-loss-by-insurance)
-    -   [Timeseries VA by insurance and
-        race](#timeseries-va-by-insurance-and-race)
-    -   [Timeseries VA by smoking and
-        race](#timeseries-va-by-smoking-and-race)
-    -   [Timeseries VA by gender and
-        race](#timeseries-va-by-gender-and-race)
-    -   [Race VA timeseries](#race-va-timeseries)
-    -   [Race VA timeseries bucketed by
-        10](#race-va-timeseries-bucketed-by-10)
-    -   [Severity race VA timeseries](#severity-race-va-timeseries)
-    -   [Severity insurance race VA
-        timeseries](#severity-insurance-race-va-timeseries)
--   [Injections by VA analysis](#injections-by-va-analysis)
--   [Baseline analysis](#baseline-analysis)
-    -   [Severity by race](#severity-by-race)
-    -   [Severity by race and region](#severity-by-race-and-region)
-    -   [Severity by race and age](#severity-by-race-and-age)
-    -   [Severity by region](#severity-by-region)
-    -   [Severity by race and
-        insurance](#severity-by-race-and-insurance)
-    -   [Severity by race and sex](#severity-by-race-and-sex)
-    -   [Severity by type of treatment](#severity-by-type-of-treatment)
-    -   [Likelihood of drug received by severity score and race (given
-        that patient recieved anti-vegf
-        treatment)](#likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment)
-    -   [Likelihood of drug received by severity score CATEGORY and race
-        (given that patient recieved anti-vegf
-        treatment)](#likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment)
-    -   [Likelihood of drug received by baseline VA and race (given that
-        patient recieved anti-vegf
-        treatment)](#likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment)
-    -   [Likelihood of drug received by severity score CATEGORY and
-        insurance (given that patient recieved anti-vegf
-        treatment)](#likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment)
-    -   [Drug received by race and
-        insurance](#drug-received-by-race-and-insurance)
-    -   [Severity vs. vision](#severity-vs-vision)
--   [Regression](#regression)
-    -   [Linear regression](#linear-regression)
-    -   [Quantile regressionn](#quantile-regressionn)
+-   <a href="#setup" id="toc-setup">Setup</a>
+    -   <a href="#libraries-and-data-import"
+        id="toc-libraries-and-data-import">Libraries and data import</a>
+    -   <a href="#join-severity-and-timeseries-patientvisit-data"
+        id="toc-join-severity-and-timeseries-patientvisit-data">Join severity
+        and timeseries patient/visit data</a>
+-   <a href="#cleaned-datasets-for-analysis"
+    id="toc-cleaned-datasets-for-analysis">Cleaned datasets for analysis</a>
+-   <a href="#table-1-patient-demographics"
+    id="toc-table-1-patient-demographics">Table 1: Patient Demographics</a>
+    -   <a href="#construct-dataset-to-generate-data-tables"
+        id="toc-construct-dataset-to-generate-data-tables">Construct dataset to
+        generate data tables</a>
+    -   <a href="#table-age-by-race-and-insurance"
+        id="toc-table-age-by-race-and-insurance">Table: Age by race and
+        insurance</a>
+    -   <a href="#table-gender-by-race-and-insurance"
+        id="toc-table-gender-by-race-and-insurance">Table: Gender by race and
+        insurance</a>
+    -   <a href="#table-baseline-va-by-race-and-insurance"
+        id="toc-table-baseline-va-by-race-and-insurance">Table: Baseline VA by
+        race and insurance</a>
+    -   <a href="#table-vegf-drug-by-race-and-insurance"
+        id="toc-table-vegf-drug-by-race-and-insurance">Table: VEGF drug by race
+        and insurance</a>
+    -   <a href="#table-smoke-status-by-race-and-insurance"
+        id="toc-table-smoke-status-by-race-and-insurance">Table: Smoke status by
+        race and insurance</a>
+    -   <a href="#table-insurance-by-race"
+        id="toc-table-insurance-by-race">Table: Insurance by race</a>
+-   <a href="#calculation-x-mean-va-and-sd-of-va-and-at-baseline"
+    id="toc-calculation-x-mean-va-and-sd-of-va-and-at-baseline">Calculation
+    X: Mean VA and SD of VA and at baseline</a>
+-   <a href="#calculation-x-n-after-eliminating-icd-10-diagnostic-codes"
+    id="toc-calculation-x-n-after-eliminating-icd-10-diagnostic-codes">Calculation
+    X: N after eliminating ICD-10 diagnostic codes</a>
+-   <a href="#figure-1a-baseline-differences-in-severity-score-by-race"
+    id="toc-figure-1a-baseline-differences-in-severity-score-by-race">Figure
+    1A: Baseline Differences in Severity Score by Race</a>
+-   <a
+    href="#figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status"
+    id="toc-figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status">Figure
+    2A and 2B: Differences in Rates of Bevacizumab Injection by Severity
+    Category, Race and Insurance Status</a>
+-   <a
+    href="#regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
+    id="toc-regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
+    X: Variables that influence likelihood of receiving Bevacizumab
+    treatment</a>
+-   <a
+    href="#regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
+    id="toc-regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
+    Y: Using No-Intercept Model to Determine Variables that influence
+    likelihood of receiving Bevacizumab treatment</a>
+    -   <a
+        href="#forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status"
+        id="toc-forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status">Forest
+        Plot Representing Effect of Race on Bevacizumab Administration by
+        Insurance Status</a>
+-   <a
+    href="#supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status"
+    id="toc-supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status">Supplement:
+    Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab
+    Injection by Severity Category, Race and Insurance Status</a>
+-   <a
+    href="#figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race"
+    id="toc-figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race">Figure
+    3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by
+    Race</a>
+-   <a
+    href="#figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race"
+    id="toc-figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race">Figure
+    4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by
+    Insurance and Race</a>
+-   <a
+    href="#regression-x-variables-that-influence-change-in-vision-after-one-year"
+    id="toc-regression-x-variables-that-influence-change-in-vision-after-one-year">Regression
+    X: Variables that influence change in vision after one year</a>
+-   <a
+    href="#regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status"
+    id="toc-regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status">Regression
+    Y: Variables that influence change in vision after one year: stratified
+    by race and insurance status</a>
+-   <a href="#forest-plots-on-va-change"
+    id="toc-forest-plots-on-va-change">Forest Plots on VA change</a>
+    -   <a
+        href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group"
+        id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group">Forest
+        Plot to Determine Factors Associated with VA Changes within Each
+        Insurance Group</a>
+    -   <a
+        href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-race"
+        id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-race">Forest
+        Plot to Determine Factors Associated with VA Changes within Each
+        Race</a>
+-   <a
+    href="#calculation-x-number-of-patients-including-the-multivariate-linear-regression"
+    id="toc-calculation-x-number-of-patients-including-the-multivariate-linear-regression">Calculation
+    X: Number of patients including the multivariate linear regression</a>
+-   <a
+    href="#figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race"
+    id="toc-figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race">Figure
+    5: Average severity score at each baseline VA (rounded to nearest 5) by
+    race</a>
+-   <a
+    href="#figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance"
+    id="toc-figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance">Figure
+    6: Average severity score at each baseline VA (rounded to nearest 5) by
+    insurance</a>
+-   <a href="#timeseries-analysis-of-visual-acuity"
+    id="toc-timeseries-analysis-of-visual-acuity">Timeseries analysis of
+    visual acuity</a>
+    -   <a href="#distribution-of-va-by-race"
+        id="toc-distribution-of-va-by-race">Distribution of VA by race</a>
+    -   <a href="#timeseries-va-by-race-and-severity"
+        id="toc-timeseries-va-by-race-and-severity">Timeseries VA by race and
+        severity</a>
+    -   <a href="#timeseries-va-by-race"
+        id="toc-timeseries-va-by-race">Timeseries VA by race</a>
+    -   <a href="#timeseries-va-by-insurance"
+        id="toc-timeseries-va-by-insurance">Timeseries VA by insurance</a>
+    -   <a href="#percentage-with-15-letter-loss-by-race"
+        id="toc-percentage-with-15-letter-loss-by-race">Percentage with 15
+        letter loss by race</a>
+    -   <a href="#percentage-with-15-letter-loss-by-insurance"
+        id="toc-percentage-with-15-letter-loss-by-insurance">Percentage with 15
+        letter loss by insurance</a>
+    -   <a href="#timeseries-va-by-insurance-and-race"
+        id="toc-timeseries-va-by-insurance-and-race">Timeseries VA by insurance
+        and race</a>
+    -   <a href="#timeseries-va-by-smoking-and-race"
+        id="toc-timeseries-va-by-smoking-and-race">Timeseries VA by smoking and
+        race</a>
+    -   <a href="#timeseries-va-by-gender-and-race"
+        id="toc-timeseries-va-by-gender-and-race">Timeseries VA by gender and
+        race</a>
+    -   <a href="#race-va-timeseries" id="toc-race-va-timeseries">Race VA
+        timeseries</a>
+    -   <a href="#race-va-timeseries-bucketed-by-10"
+        id="toc-race-va-timeseries-bucketed-by-10">Race VA timeseries bucketed
+        by 10</a>
+    -   <a href="#severity-race-va-timeseries"
+        id="toc-severity-race-va-timeseries">Severity race VA timeseries</a>
+    -   <a href="#severity-insurance-race-va-timeseries"
+        id="toc-severity-insurance-race-va-timeseries">Severity insurance race
+        VA timeseries</a>
+-   <a href="#injections-by-va-analysis"
+    id="toc-injections-by-va-analysis">Injections by VA analysis</a>
+-   <a href="#baseline-analysis" id="toc-baseline-analysis">Baseline
+    analysis</a>
+    -   <a href="#severity-by-race" id="toc-severity-by-race">Severity by
+        race</a>
+    -   <a href="#severity-by-race-and-region"
+        id="toc-severity-by-race-and-region">Severity by race and region</a>
+    -   <a href="#severity-by-race-and-age"
+        id="toc-severity-by-race-and-age">Severity by race and age</a>
+    -   <a href="#severity-by-region" id="toc-severity-by-region">Severity by
+        region</a>
+    -   <a href="#severity-by-race-and-insurance"
+        id="toc-severity-by-race-and-insurance">Severity by race and
+        insurance</a>
+    -   <a href="#severity-by-race-and-sex"
+        id="toc-severity-by-race-and-sex">Severity by race and sex</a>
+    -   <a href="#severity-by-type-of-treatment"
+        id="toc-severity-by-type-of-treatment">Severity by type of treatment</a>
+    -   <a
+        href="#likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment"
+        id="toc-likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+        of drug received by severity score and race (given that patient recieved
+        anti-vegf treatment)</a>
+    -   <a
+        href="#likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment"
+        id="toc-likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+        of drug received by severity score CATEGORY and race (given that patient
+        recieved anti-vegf treatment)</a>
+    -   <a
+        href="#likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment"
+        id="toc-likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+        of drug received by baseline VA and race (given that patient recieved
+        anti-vegf treatment)</a>
+    -   <a
+        href="#likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment"
+        id="toc-likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+        of drug received by severity score CATEGORY and insurance (given that
+        patient recieved anti-vegf treatment)</a>
+    -   <a href="#drug-received-by-race-and-insurance"
+        id="toc-drug-received-by-race-and-insurance">Drug received by race and
+        insurance</a>
+    -   <a href="#severity-vs-vision" id="toc-severity-vs-vision">Severity
+        vs. vision</a>
+-   <a href="#regression" id="toc-regression">Regression</a>
+    -   <a href="#linear-regression" id="toc-linear-regression">Linear
+        regression</a>
+    -   <a href="#quantile-regressionn" id="toc-quantile-regressionn">Quantile
+        regressionn</a>
 
 ## Setup
 
@@ -117,7 +211,8 @@ library(lubridate)
 library(knitr)
 library(googlesheets4)
 library(car)
-
+library(lsmeans)
+library(boot)
 
 # parameters
 
@@ -540,7 +635,7 @@ tbl_data %>%
     ##   <int>
     ## 1 20787
 
-## Figure 1: Baseline Differences in Severity Score by Race
+## Figure 1A: Baseline Differences in Severity Score by Race
 
 To consider here: how do we want to respond to the NAs in this graph?
 One option I could see is creating four new categories: (mild NPDR
@@ -549,6 +644,7 @@ PDR unknown edema)
 
 ``` r
 timeseries_analysis %>% 
+  dplyr::filter(!is.na(vision_category)) %>% 
   dplyr::count(vision_category, race_ethnicity) %>%
   dplyr::ungroup() %>% 
   dplyr::group_by(race_ethnicity) %>% 
@@ -557,7 +653,7 @@ timeseries_analysis %>%
   geom_col(aes(x = vision_category, y = prop_category, group = race_ethnicity, fill = race_ethnicity), position = "dodge", alpha = 1) +
   theme_light() +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1),
+    axis.text.x = element_text(angle = 55, hjust = 1),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
   ) +
@@ -571,6 +667,12 @@ timeseries_analysis %>%
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+ggsave("figure1A.pdf")
+```
+
+    ## Saving 7 x 5 in image
 
 ## Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by Severity Category, Race and Insurance Status
 
@@ -630,7 +732,7 @@ plot_drug_sev_cat_race <-
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of eyes receiving Bevacizumab",
+    y = "Percentage of patients receiving Bevacizumab",
     fill = "Race"
   )
 
@@ -640,7 +742,7 @@ plot_drug_sev_cat_race
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+ggsave("graphs_6_28/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 ```
 
 ``` r
@@ -699,7 +801,7 @@ drug_sev_cat_insurance %>%
   scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Bevacizumab",
+    y = "Percentage of patients receiving Bevacizumab",
     fill = "Insurance"
   )
 
@@ -709,7 +811,7 @@ plot_drug_sev_cat_insurance
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+ggsave("graphs_6_28/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
 ```
 
 ## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
@@ -838,6 +940,701 @@ summary(avastin_1.logm)
     ## 
     ## Number of Fisher Scoring iterations: 4
 
+## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
+
+``` r
+no_intercept_regression_avastin_data <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private"),
+    race_ethnicity %in% c("White", "Black", "Hispanic")
+  ) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+  ) 
+
+# glm for logistic regression
+no_intercept_avastin <- 
+  glm(avastin ~ 0 + gender + race_ethnicity + insurance + race_ethnicity * insurance + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = no_intercept_regression_avastin_data, family = binomial(link = "probit"))
+
+
+summary(no_intercept_avastin)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = avastin ~ 0 + gender + race_ethnicity + insurance + 
+    ##     race_ethnicity * insurance + first_dr_age + smoke_status + 
+    ##     baseline_va_letter + severity_score, family = binomial(link = "probit"), 
+    ##     data = no_intercept_regression_avastin_data)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.9272  -1.0992  -0.9095   1.1741   1.6015  
+    ## 
+    ## Coefficients:
+    ##                                                               Estimate
+    ## genderFemale                                                -0.5182405
+    ## genderMale                                                  -0.5769336
+    ## genderUnknown                                               -0.5819260
+    ## race_ethnicityBlack                                          0.0740645
+    ## race_ethnicityHispanic                                       0.3823148
+    ## insuranceMedicare                                            0.0608310
+    ## insuranceMedicaid                                            0.2703450
+    ## first_dr_age                                                -0.0059686
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0125240
+    ## smoke_statusUnknown / Unclassified                           0.0638353
+    ## smoke_statusYes / Active                                     0.0851868
+    ## baseline_va_letter                                           0.0031772
+    ## severity_score                                               0.0088792
+    ## race_ethnicityBlack:insuranceMedicare                        0.1106431
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0778363
+    ## race_ethnicityBlack:insuranceMedicaid                        0.1146698
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.0924488
+    ##                                                             Std. Error
+    ## genderFemale                                                 0.0655382
+    ## genderMale                                                   0.0656205
+    ## genderUnknown                                                0.1167629
+    ## race_ethnicityBlack                                          0.0381844
+    ## race_ethnicityHispanic                                       0.0354531
+    ## insuranceMedicare                                            0.0186220
+    ## insuranceMedicaid                                            0.0370648
+    ## first_dr_age                                                 0.0006639
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0149404
+    ## smoke_statusUnknown / Unclassified                           0.0627204
+    ## smoke_statusYes / Active                                     0.0210994
+    ## baseline_va_letter                                           0.0005061
+    ## severity_score                                               0.0004327
+    ## race_ethnicityBlack:insuranceMedicare                        0.0442570
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0429474
+    ## race_ethnicityBlack:insuranceMedicaid                        0.0843732
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.0709398
+    ##                                                             z value
+    ## genderFemale                                                 -7.907
+    ## genderMale                                                   -8.792
+    ## genderUnknown                                                -4.984
+    ## race_ethnicityBlack                                           1.940
+    ## race_ethnicityHispanic                                       10.784
+    ## insuranceMedicare                                             3.267
+    ## insuranceMedicaid                                             7.294
+    ## first_dr_age                                                 -8.991
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.838
+    ## smoke_statusUnknown / Unclassified                            1.018
+    ## smoke_statusYes / Active                                      4.037
+    ## baseline_va_letter                                            6.278
+    ## severity_score                                               20.521
+    ## race_ethnicityBlack:insuranceMedicare                         2.500
+    ## race_ethnicityHispanic:insuranceMedicare                      1.812
+    ## race_ethnicityBlack:insuranceMedicaid                         1.359
+    ## race_ethnicityHispanic:insuranceMedicaid                      1.303
+    ##                                                             Pr(>|z|)    
+    ## genderFemale                                                2.63e-15 ***
+    ## genderMale                                                   < 2e-16 ***
+    ## genderUnknown                                               6.23e-07 ***
+    ## race_ethnicityBlack                                          0.05242 .  
+    ## race_ethnicityHispanic                                       < 2e-16 ***
+    ## insuranceMedicare                                            0.00109 ** 
+    ## insuranceMedicaid                                           3.01e-13 ***
+    ## first_dr_age                                                 < 2e-16 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.40188    
+    ## smoke_statusUnknown / Unclassified                           0.30878    
+    ## smoke_statusYes / Active                                    5.40e-05 ***
+    ## baseline_va_letter                                          3.42e-10 ***
+    ## severity_score                                               < 2e-16 ***
+    ## race_ethnicityBlack:insuranceMedicare                        0.01242 *  
+    ## race_ethnicityHispanic:insuranceMedicare                     0.06993 .  
+    ## race_ethnicityBlack:insuranceMedicaid                        0.17412    
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.19251    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 55324  on 39908  degrees of freedom
+    ## Residual deviance: 53630  on 39891  degrees of freedom
+    ## AIC: 53664
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+``` r
+matrix_coef <- summary(no_intercept_avastin)$coefficients[,2]
+matrix_coef
+```
+
+    ##                                                genderFemale 
+    ##                                                0.0655382423 
+    ##                                                  genderMale 
+    ##                                                0.0656204919 
+    ##                                               genderUnknown 
+    ##                                                0.1167628953 
+    ##                                         race_ethnicityBlack 
+    ##                                                0.0381844271 
+    ##                                      race_ethnicityHispanic 
+    ##                                                0.0354530782 
+    ##                                           insuranceMedicare 
+    ##                                                0.0186219668 
+    ##                                           insuranceMedicaid 
+    ##                                                0.0370647984 
+    ##                                                first_dr_age 
+    ##                                                0.0006638559 
+    ## smoke_statusFormer / No longer active / Past History / Quit 
+    ##                                                0.0149403837 
+    ##                          smoke_statusUnknown / Unclassified 
+    ##                                                0.0627204391 
+    ##                                    smoke_statusYes / Active 
+    ##                                                0.0210994335 
+    ##                                          baseline_va_letter 
+    ##                                                0.0005060504 
+    ##                                              severity_score 
+    ##                                                0.0004326807 
+    ##                       race_ethnicityBlack:insuranceMedicare 
+    ##                                                0.0442569729 
+    ##                    race_ethnicityHispanic:insuranceMedicare 
+    ##                                                0.0429473582 
+    ##                       race_ethnicityBlack:insuranceMedicaid 
+    ##                                                0.0843731863 
+    ##                    race_ethnicityHispanic:insuranceMedicaid 
+    ##                                                0.0709397843
+
+``` r
+inv.logit(matrix_coef)
+```
+
+    ##                                                genderFemale 
+    ##                                                   0.5163787 
+    ##                                                  genderMale 
+    ##                                                   0.5163992 
+    ##                                               genderUnknown 
+    ##                                                   0.5291576 
+    ##                                         race_ethnicityBlack 
+    ##                                                   0.5095449 
+    ##                                      race_ethnicityHispanic 
+    ##                                                   0.5088623 
+    ##                                           insuranceMedicare 
+    ##                                                   0.5046554 
+    ##                                           insuranceMedicaid 
+    ##                                                   0.5092651 
+    ##                                                first_dr_age 
+    ##                                                   0.5001660 
+    ## smoke_statusFormer / No longer active / Past History / Quit 
+    ##                                                   0.5037350 
+    ##                          smoke_statusUnknown / Unclassified 
+    ##                                                   0.5156750 
+    ##                                    smoke_statusYes / Active 
+    ##                                                   0.5052747 
+    ##                                          baseline_va_letter 
+    ##                                                   0.5001265 
+    ##                                              severity_score 
+    ##                                                   0.5001082 
+    ##                       race_ethnicityBlack:insuranceMedicare 
+    ##                                                   0.5110624 
+    ##                    race_ethnicityHispanic:insuranceMedicare 
+    ##                                                   0.5107352 
+    ##                       race_ethnicityBlack:insuranceMedicaid 
+    ##                                                   0.5210808 
+    ##                    race_ethnicityHispanic:insuranceMedicaid 
+    ##                                                   0.5177275
+
+#### Forest Plot Representing Effect of Race on Bevacizumab Administration by Insurance Status
+
+``` r
+#FOREST PLOT DEMONSTRATING EFFECT OF RACE, SPLIT BY INSURANCE STATUS
+Private_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Private"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+
+
+Medicare_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+Medicaid_avastin_logreg <-
+  glm(
+    avastin ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicaid"),
+        race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+        race_ethnicity = relevel(race_ethnicity, ref = "White"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+#Extract values from regression output
+bev_private <- summary(Private_avastin_logreg)$coefficients[1:9,]
+
+#Convert values into data frame
+bev_private = as.data.frame(bev_private)
+bev_private <- tibble::rownames_to_column(bev_private, "FACTOR")
+
+#Create limits for values
+bev_private$up_error = bev_private$Estimate + 1.96*bev_private$`Std. Error`
+bev_private$down_error = bev_private$Estimate - 1.96*bev_private$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_private$odds <- exp(bev_private$Estimate)
+
+bev_private$upper_limit = exp(bev_private$up_error)
+bev_private$lower_limit = exp(bev_private$down_error)
+bev_private
+```
+
+    ##                                                        FACTOR     Estimate
+    ## 1                                                 (Intercept) -1.405305056
+    ## 2                                         race_ethnicityBlack  0.090829928
+    ## 3                                      race_ethnicityHispanic  0.594751369
+    ## 4                                                  genderMale -0.141105791
+    ## 5                                                first_dr_age -0.002534082
+    ## 6 smoke_statusFormer / No longer active / Past History / Quit -0.004742439
+    ## 7                                    smoke_statusYes / Active  0.079740497
+    ## 8                                          baseline_va_letter  0.005050871
+    ## 9                                              severity_score  0.018310333
+    ##    Std. Error     z value     Pr(>|z|)     up_error   down_error      odds
+    ## 1 0.203218271 -6.91524953 4.670405e-12 -1.006997244 -1.803612868 0.2452922
+    ## 2 0.061986104  1.46532726 1.428317e-01  0.212322691 -0.030662836 1.0950827
+    ## 3 0.058171662 10.22407393 1.546995e-24  0.708767826  0.480734912 1.8125802
+    ## 4 0.040394522 -3.49319125 4.772846e-04 -0.061932528 -0.220279054 0.8683974
+    ## 5 0.002032842 -1.24657093 2.125549e-01  0.001450289 -0.006518453 0.9974691
+    ## 6 0.049595360 -0.09562263 9.238203e-01  0.092464467 -0.101949345 0.9952688
+    ## 7 0.065035776  1.22610203 2.201603e-01  0.207210618 -0.047729624 1.0830060
+    ## 8 0.001607349  3.14236192 1.675907e-03  0.008201275  0.001900468 1.0050636
+    ## 9 0.001361540 13.44825505 3.152234e-41  0.020978951  0.015641715 1.0184790
+    ##   upper_limit lower_limit
+    ## 1   0.3653143   0.1647028
+    ## 2   1.2365468   0.9698025
+    ## 3   2.0314866   1.6172625
+    ## 4   0.9399463   0.8022949
+    ## 5   1.0014513   0.9935027
+    ## 6   1.0968742   0.9030753
+    ## 7   1.2302417   0.9533915
+    ## 8   1.0082350   1.0019023
+    ## 9   1.0212006   1.0157647
+
+``` r
+#Add a group name
+bev_private$group <- "private"
+bev_private$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+View(bev_private)
+
+#MEDICARE DATA ASSEMBLY
+
+bev_medicare <- summary(Medicare_avastin_logreg)$coefficients[1:9,]
+bev_medicare = as.data.frame(bev_medicare)
+bev_medicare <- tibble::rownames_to_column(bev_medicare, "FACTOR")
+
+#Create limits for values
+bev_medicare$up_error = bev_medicare$Estimate + 1.96*bev_medicare$`Std. Error`
+bev_medicare$down_error = bev_medicare$Estimate - 1.96*bev_medicare$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_medicare$odds <- exp(bev_medicare$Estimate)
+
+bev_medicare$upper_limit = exp(bev_medicare$up_error)
+bev_medicare$lower_limit = exp(bev_medicare$down_error)
+bev_private
+```
+
+    ##                                                        FACTOR     Estimate
+    ## 1                                                 (Intercept) -1.405305056
+    ## 2                                         race_ethnicityBlack  0.090829928
+    ## 3                                      race_ethnicityHispanic  0.594751369
+    ## 4                                                  genderMale -0.141105791
+    ## 5                                                first_dr_age -0.002534082
+    ## 6 smoke_statusFormer / No longer active / Past History / Quit -0.004742439
+    ## 7                                    smoke_statusYes / Active  0.079740497
+    ## 8                                          baseline_va_letter  0.005050871
+    ## 9                                              severity_score  0.018310333
+    ##    Std. Error     z value     Pr(>|z|)     up_error   down_error      odds
+    ## 1 0.203218271 -6.91524953 4.670405e-12 -1.006997244 -1.803612868 0.2452922
+    ## 2 0.061986104  1.46532726 1.428317e-01  0.212322691 -0.030662836 1.0950827
+    ## 3 0.058171662 10.22407393 1.546995e-24  0.708767826  0.480734912 1.8125802
+    ## 4 0.040394522 -3.49319125 4.772846e-04 -0.061932528 -0.220279054 0.8683974
+    ## 5 0.002032842 -1.24657093 2.125549e-01  0.001450289 -0.006518453 0.9974691
+    ## 6 0.049595360 -0.09562263 9.238203e-01  0.092464467 -0.101949345 0.9952688
+    ## 7 0.065035776  1.22610203 2.201603e-01  0.207210618 -0.047729624 1.0830060
+    ## 8 0.001607349  3.14236192 1.675907e-03  0.008201275  0.001900468 1.0050636
+    ## 9 0.001361540 13.44825505 3.152234e-41  0.020978951  0.015641715 1.0184790
+    ##   upper_limit lower_limit   group                       FACTOR_clean
+    ## 1   0.3653143   0.1647028 private                          Intercept
+    ## 2   1.2365468   0.9698025 private               Black (rel to White)
+    ## 3   2.0314866   1.6172625 private            Hispanic (rel to White)
+    ## 4   0.9399463   0.8022949 private               Male (rel to Female)
+    ## 5   1.0014513   0.9935027 private                       DR Diag. Age
+    ## 6   1.0968742   0.9030753 private  Former Smoker (rel to Non-Smoker)
+    ## 7   1.2302417   0.9533915 private Current Smoker (rel to Non-Smoker)
+    ## 8   1.0082350   1.0019023 private                        Baseline VA
+    ## 9   1.0212006   1.0157647 private                     Severity Score
+
+``` r
+#Add a group name
+bev_medicare$group <- "medicare"
+bev_medicare$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+View(bev_medicare)
+
+#MEDICAID DATA ASSEMBLY
+bev_medicaid <- summary(Medicaid_avastin_logreg)$coefficients[1:9,]
+bev_medicaid = as.data.frame(bev_medicaid)
+bev_medicaid <- tibble::rownames_to_column(bev_medicaid, "FACTOR")
+
+#Create limits for values
+bev_medicaid$up_error = bev_medicaid$Estimate + 1.96*bev_medicaid$`Std. Error`
+bev_medicaid$down_error = bev_medicaid$Estimate - 1.96*bev_medicaid$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_medicaid$odds <- exp(bev_medicaid$Estimate)
+
+bev_medicaid$upper_limit = exp(bev_medicaid$up_error)
+bev_medicaid$lower_limit = exp(bev_medicaid$down_error)
+View(bev_private)
+View(bev_medicare)
+View(bev_medicaid)
+
+
+#Add a group name
+bev_medicaid$group <- "medicaid"
+bev_medicaid$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+#Combine all group output information
+combined_bev_insurance_output = rbind(bev_medicaid,bev_medicare, bev_private)
+
+#Remove original factor names that created unaesthetic graph
+combined_bev_insurance_output = subset(combined_bev_insurance_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_bev_insurance_output<-combined_bev_insurance_output[!(combined_bev_insurance_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_bev_insurance_output$group = factor(combined_bev_insurance_output$group, levels=c("private","medicare","medicaid"), labels = c("Private", "Medicare", "Medicaid")) 
+combined_bev_insurance_output$FACTOR_clean = factor(combined_bev_insurance_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+```
+
+``` r
+plot_forest_bev_insurance <- 
+  ggplot(combined_bev_insurance_output,aes(y = FACTOR_clean, x = odds))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Insurance") + 
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  )
+
+
+plot_forest_bev_insurance
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/plot_forest_bev_insurance.png", plot_forest_bev_insurance, width = 10, height = 5)
+```
+
+``` r
+#FOREST PLOT DEMONSTRATING EFFECT OF RACE, SPLIT BY INSURANCE STATUS
+White_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("White"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+summary(White_avastin_logreg)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = avastin ~ insurance + gender + first_dr_age + smoke_status + 
+    ##     baseline_va_letter + severity_score, family = binomial, data = timeseries_analysis %>% 
+    ##     filter(insurance %in% c("Medicare", "Medicaid", "Private"), 
+    ##         race_ethnicity %in% c("White"), gender %in% c("Male", 
+    ##             "Female"), smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(insurance = factor(insurance, 
+    ##     ordered = FALSE), insurance = relevel(insurance, ref = "Private"), 
+    ##     smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##         ref = "No / Never"), avastin = if_else(vegf_group_365 == 
+    ##         "Avastin", 1, 0)))
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.6073  -1.0641  -0.9423   1.2191   1.6057  
+    ## 
+    ## Coefficients:
+    ##                                                               Estimate
+    ## (Intercept)                                                 -0.9262526
+    ## insuranceMedicare                                            0.0880002
+    ## insuranceMedicaid                                            0.4264501
+    ## genderMale                                                  -0.0926253
+    ## first_dr_age                                                -0.0089711
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0494319
+    ## smoke_statusYes / Active                                     0.1324540
+    ## baseline_va_letter                                           0.0057675
+    ## severity_score                                               0.0144313
+    ##                                                             Std. Error
+    ## (Intercept)                                                  0.1248362
+    ## insuranceMedicare                                            0.0313183
+    ## insuranceMedicaid                                            0.0601459
+    ## genderMale                                                   0.0245241
+    ## first_dr_age                                                 0.0012818
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0278325
+    ## smoke_statusYes / Active                                     0.0389534
+    ## baseline_va_letter                                           0.0009743
+    ## severity_score                                               0.0008229
+    ##                                                             z value
+    ## (Intercept)                                                  -7.420
+    ## insuranceMedicare                                             2.810
+    ## insuranceMedicaid                                             7.090
+    ## genderMale                                                   -3.777
+    ## first_dr_age                                                 -6.999
+    ## smoke_statusFormer / No longer active / Past History / Quit   1.776
+    ## smoke_statusYes / Active                                      3.400
+    ## baseline_va_letter                                            5.920
+    ## severity_score                                               17.537
+    ##                                                             Pr(>|z|)    
+    ## (Intercept)                                                 1.17e-13 ***
+    ## insuranceMedicare                                           0.004956 ** 
+    ## insuranceMedicaid                                           1.34e-12 ***
+    ## genderMale                                                  0.000159 ***
+    ## first_dr_age                                                2.59e-12 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.075725 .  
+    ## smoke_statusYes / Active                                    0.000673 ***
+    ## baseline_va_letter                                          3.22e-09 ***
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 39165  on 28478  degrees of freedom
+    ## Residual deviance: 38550  on 28470  degrees of freedom
+    ## AIC: 38568
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+``` r
+Black_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("Black"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+Hispanic_avastin_logreg <-
+  glm(
+    avastin ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score,
+    data = timeseries_analysis %>%
+      filter(
+        insurance %in% c("Medicare", "Medicaid", "Private"),
+        race_ethnicity %in% c("Hispanic"),
+        gender %in% c("Male", "Female"),
+        smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+      mutate(
+        # unorder for appropriate regression interpretation
+        insurance = factor(insurance, ordered = FALSE),
+        insurance = relevel(insurance, ref = "Private"),
+        smoke_status = factor(smoke_status),
+        smoke_status = relevel(smoke_status, ref = "No / Never"),
+        avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+      ),
+    family = binomial
+  )
+
+#Extract values from regression output
+bev_white <- summary(White_avastin_logreg)$coefficients[1:9,]
+
+#Convert values into data frame
+bev_white = as.data.frame(bev_white)
+bev_white <- tibble::rownames_to_column(bev_white, "FACTOR")
+
+#Create limits for values
+bev_white$up_error = bev_white$Estimate + 1.96*bev_white$`Std. Error`
+bev_white$down_error = bev_white$Estimate - 1.96*bev_white$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_white$odds <- exp(bev_white$Estimate)
+
+bev_white$upper_limit = exp(bev_white$up_error)
+bev_white$lower_limit = exp(bev_white$down_error)
+
+#Add a group name
+bev_white$group <- "white"
+bev_white$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+View(bev_private)
+
+#MEDICARE DATA ASSEMBLY
+
+bev_black <- summary(Black_avastin_logreg)$coefficients[1:9,]
+bev_black = as.data.frame(bev_black)
+bev_black <- tibble::rownames_to_column(bev_black, "FACTOR")
+
+#Create limits for values
+bev_black$up_error = bev_black$Estimate + 1.96*bev_black$`Std. Error`
+bev_black$down_error = bev_black$Estimate - 1.96*bev_black$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_black$odds <- exp(bev_black$Estimate)
+
+bev_black$upper_limit = exp(bev_black$up_error)
+bev_black$lower_limit = exp(bev_black$down_error)
+
+#Add a group name
+bev_black$group <- "black"
+bev_black$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+
+#MEDICAID DATA ASSEMBLY
+bev_hispanic <- summary(Hispanic_avastin_logreg)$coefficients[1:9,]
+bev_hispanic = as.data.frame(bev_hispanic)
+bev_hispanic <- tibble::rownames_to_column(bev_hispanic, "FACTOR")
+
+#Create limits for values
+bev_hispanic$up_error = bev_hispanic$Estimate + 1.96*bev_hispanic$`Std. Error`
+bev_hispanic$down_error = bev_hispanic$Estimate - 1.96*bev_hispanic$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+bev_hispanic$odds <- exp(bev_hispanic$Estimate)
+
+bev_hispanic$upper_limit = exp(bev_hispanic$up_error)
+bev_hispanic$lower_limit = exp(bev_hispanic$down_error)
+
+
+#Add a group name
+bev_hispanic$group <- "hispanic"
+bev_hispanic$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+
+View(bev_white)
+View(bev_black)
+View(bev_hispanic)
+
+#Combine all group output information
+combined_bev_race_output = rbind(bev_hispanic,bev_black,bev_white)
+
+#Remove original factor names that created unaesthetic graph
+combined_bev_race_output = subset(combined_bev_race_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_bev_race_output<-combined_bev_race_output[!(combined_bev_race_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_bev_race_output$group = factor(combined_bev_race_output$group, levels=c("white","black","hispanic"), labels = c("White", "Black", "Hispanic")) 
+combined_bev_race_output$FACTOR_clean = factor(combined_bev_race_output$FACTOR_clean, levels = c("Severity Score",  "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
+```
+
+``` r
+plot_forest_bev_race <- 
+  ggplot(combined_bev_race_output,aes(y = FACTOR_clean, x = odds))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment by Race") + 
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) 
+
+
+plot_forest_bev_race 
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/plot_forest_bev_race.png", plot_forest_bev_race, width = 10, height = 5)
+```
+
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
 
 ``` r
@@ -870,7 +1667,7 @@ drug_sev_cat_race %>%
 plot_drug_sev_cat_race_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
@@ -906,7 +1703,7 @@ drug_sev_cat_insurance %>%
 plot_drug_sev_cat_insurance_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
@@ -958,6 +1755,8 @@ loss_15_race <-
     )
   )
 
+View(loss_15_race)
+
 plot_loss_15_race <-
 loss_15_race %>%
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = race_ethnicity)) +
@@ -979,7 +1778,7 @@ loss_15_race %>%
 plot_loss_15_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/3A_plot_loss_15_race.png", plot_loss_15_race, width = 7, height = 5)
@@ -1060,7 +1859,7 @@ plot_va_race_diff <-
 plot_va_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/3B_plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
@@ -1095,6 +1894,10 @@ loss_15_insurance <-
     )
   )
 
+
+View(loss_15_insurance)
+
+
 plot_loss_15_insurance <-
 loss_15_insurance %>% 
   ggplot(aes(x = time_diff, y = pct_15pt_loss, fill = insurance)) +
@@ -1116,7 +1919,7 @@ loss_15_insurance %>%
 plot_loss_15_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/4A_plot_loss_15_insurance.png", plot_loss_15_insurance, width = 7, height = 5)
@@ -1180,7 +1983,7 @@ va_insurance_diff %>%
 plot_va_insurance_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
@@ -1270,10 +2073,11 @@ va_insurance_race_diff %>%
     color = "Race"
   )
 
+View(va_insurance_race_diff)
 plot_va_insurance_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
@@ -1425,7 +2229,1616 @@ vif(one_year_va_delta_4.lm)
     ## severity_score            1.136036  1        1.065850
     ## race_ethnicity:insurance 29.006857  4        1.523395
 
-## Calculation X: Number of patients including the multivariate linear regresison
+## Regression Y: Variables that influence change in vision after one year: stratified by race and insurance status
+
+``` r
+#Race analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+private_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Private"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(private_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Private"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
+    ##         mutate(race_ethnicity = factor(race_ethnicity, ordered = FALSE), 
+    ##             race_ethnicity = relevel(race_ethnicity, ref = "White"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -93.375  -3.952   1.733   6.103  38.660 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 43.899482
+    ## race_ethnicityBlack                                         -1.398298
+    ## race_ethnicityHispanic                                      -1.365116
+    ## genderMale                                                   0.546065
+    ## genderUnknown                                               -2.682725
+    ## first_dr_age                                                -0.129478
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.036922
+    ## smoke_statusUnknown / Unclassified                          -0.906734
+    ## smoke_statusYes / Active                                    -0.923314
+    ## baseline_va_letter                                          -0.454402
+    ## vegf_group_365combo                                          0.277906
+    ## vegf_group_365Eylea                                          0.708741
+    ## vegf_group_365Lucentis                                       0.954690
+    ## severity_score                                              -0.058369
+    ##                                                             Std. Error
+    ## (Intercept)                                                   1.145367
+    ## race_ethnicityBlack                                           0.347399
+    ## race_ethnicityHispanic                                        0.320933
+    ## genderMale                                                    0.225860
+    ## genderUnknown                                                 1.889086
+    ## first_dr_age                                                  0.011341
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.277729
+    ## smoke_statusUnknown / Unclassified                            0.959857
+    ## smoke_statusYes / Active                                      0.365577
+    ## baseline_va_letter                                            0.008943
+    ## vegf_group_365combo                                           0.290068
+    ## vegf_group_365Eylea                                           0.305916
+    ## vegf_group_365Lucentis                                        0.352139
+    ## severity_score                                                0.007636
+    ##                                                             t value
+    ## (Intercept)                                                  38.328
+    ## race_ethnicityBlack                                          -4.025
+    ## race_ethnicityHispanic                                       -4.254
+    ## genderMale                                                    2.418
+    ## genderUnknown                                                -1.420
+    ## first_dr_age                                                -11.417
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.133
+    ## smoke_statusUnknown / Unclassified                           -0.945
+    ## smoke_statusYes / Active                                     -2.526
+    ## baseline_va_letter                                          -50.811
+    ## vegf_group_365combo                                           0.958
+    ## vegf_group_365Eylea                                           2.317
+    ## vegf_group_365Lucentis                                        2.711
+    ## severity_score                                               -7.644
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                         5.74e-05 ***
+    ## race_ethnicityHispanic                                      2.12e-05 ***
+    ## genderMale                                                   0.01564 *  
+    ## genderUnknown                                                0.15560    
+    ## first_dr_age                                                 < 2e-16 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.89424    
+    ## smoke_statusUnknown / Unclassified                           0.34486    
+    ## smoke_statusYes / Active                                     0.01156 *  
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                          0.33805    
+    ## vegf_group_365Eylea                                          0.02053 *  
+    ## vegf_group_365Lucentis                                       0.00672 ** 
+    ## severity_score                                              2.28e-14 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 11.43 on 10760 degrees of freedom
+    ## Multiple R-squared:  0.1983, Adjusted R-squared:  0.1973 
+    ## F-statistic: 204.7 on 13 and 10760 DF,  p-value: < 2.2e-16
+
+``` r
+vif(private_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.032155  2        1.007944
+    ## gender             1.023887  2        1.005919
+    ## first_dr_age       1.115473  1        1.056159
+    ## smoke_status       1.029688  3        1.004888
+    ## baseline_va_letter 1.030087  1        1.014932
+    ## vegf_group_365     1.041352  3        1.006776
+    ## severity_score     1.119685  1        1.058152
+
+``` r
+#Significant for both Black and Hispanic patients
+
+Medicare_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(Medicare_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
+    ##         mutate(race_ethnicity = factor(race_ethnicity, ordered = FALSE), 
+    ##             race_ethnicity = relevel(race_ethnicity, ref = "White"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -97.200  -4.584   1.515   6.548  43.372 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 30.678234
+    ## race_ethnicityBlack                                         -0.037361
+    ## race_ethnicityHispanic                                      -1.237036
+    ## genderMale                                                   0.386604
+    ## genderUnknown                                               -0.446759
+    ## first_dr_age                                                -0.027565
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.163537
+    ## smoke_statusUnknown / Unclassified                           1.151950
+    ## smoke_statusYes / Active                                    -0.703175
+    ## baseline_va_letter                                          -0.366463
+    ## vegf_group_365combo                                         -0.065183
+    ## vegf_group_365Eylea                                          0.493189
+    ## vegf_group_365Lucentis                                       0.722907
+    ## severity_score                                              -0.063018
+    ##                                                             Std. Error
+    ## (Intercept)                                                   0.814791
+    ## race_ethnicityBlack                                           0.218238
+    ## race_ethnicityHispanic                                        0.234182
+    ## genderMale                                                    0.153414
+    ## genderUnknown                                                 1.095833
+    ## first_dr_age                                                  0.007935
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.170677
+    ## smoke_statusUnknown / Unclassified                            0.776508
+    ## smoke_statusYes / Active                                      0.253981
+    ## baseline_va_letter                                            0.005945
+    ## vegf_group_365combo                                           0.201192
+    ## vegf_group_365Eylea                                           0.204698
+    ## vegf_group_365Lucentis                                        0.231756
+    ## severity_score                                                0.005097
+    ##                                                             t value
+    ## (Intercept)                                                  37.652
+    ## race_ethnicityBlack                                          -0.171
+    ## race_ethnicityHispanic                                       -5.282
+    ## genderMale                                                    2.520
+    ## genderUnknown                                                -0.408
+    ## first_dr_age                                                 -3.474
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.958
+    ## smoke_statusUnknown / Unclassified                            1.484
+    ## smoke_statusYes / Active                                     -2.769
+    ## baseline_va_letter                                          -61.641
+    ## vegf_group_365combo                                          -0.324
+    ## vegf_group_365Eylea                                           2.409
+    ## vegf_group_365Lucentis                                        3.119
+    ## severity_score                                              -12.365
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                         0.864072    
+    ## race_ethnicityHispanic                                      1.29e-07 ***
+    ## genderMale                                                  0.011741 *  
+    ## genderUnknown                                               0.683505    
+    ## first_dr_age                                                0.000514 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.337987    
+    ## smoke_statusUnknown / Unclassified                          0.137953    
+    ## smoke_statusYes / Active                                    0.005633 ** 
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.745951    
+    ## vegf_group_365Eylea                                         0.015988 *  
+    ## vegf_group_365Lucentis                                      0.001815 ** 
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 12.19 on 26645 degrees of freedom
+    ## Multiple R-squared:  0.1266, Adjusted R-squared:  0.1262 
+    ## F-statistic: 297.2 on 13 and 26645 DF,  p-value: < 2.2e-16
+
+``` r
+vif(Medicare_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.060166  2        1.014714
+    ## gender             1.050819  2        1.012470
+    ## first_dr_age       1.117137  1        1.056947
+    ## smoke_status       1.056458  3        1.009196
+    ## baseline_va_letter 1.027315  1        1.013565
+    ## vegf_group_365     1.044021  3        1.007206
+    ## severity_score     1.129783  1        1.062912
+
+``` r
+#Significant for Hispanic patients (***)
+
+Medicaid_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicaid"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(Medicaid_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicaid"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic")) %>% 
+    ##         mutate(race_ethnicity = factor(race_ethnicity, ordered = FALSE), 
+    ##             race_ethnicity = relevel(race_ethnicity, ref = "White"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -90.277  -3.999   2.641   8.007  37.517 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 41.19569
+    ## race_ethnicityBlack                                         -1.53871
+    ## race_ethnicityHispanic                                      -0.69874
+    ## genderMale                                                   0.25909
+    ## genderUnknown                                               -3.55764
+    ## first_dr_age                                                -0.06422
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.05926
+    ## smoke_statusUnknown / Unclassified                           5.01472
+    ## smoke_statusYes / Active                                     0.62724
+    ## baseline_va_letter                                          -0.48018
+    ## vegf_group_365combo                                         -0.98410
+    ## vegf_group_365Eylea                                          0.59873
+    ## vegf_group_365Lucentis                                      -0.23930
+    ## severity_score                                              -0.07816
+    ##                                                             Std. Error
+    ## (Intercept)                                                    2.79012
+    ## race_ethnicityBlack                                            0.86336
+    ## race_ethnicityHispanic                                         0.69685
+    ## genderMale                                                     0.59321
+    ## genderUnknown                                                  4.41945
+    ## first_dr_age                                                   0.02783
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.74490
+    ## smoke_statusUnknown / Unclassified                             3.28962
+    ## smoke_statusYes / Active                                       0.80646
+    ## baseline_va_letter                                             0.02213
+    ## vegf_group_365combo                                            0.78374
+    ## vegf_group_365Eylea                                            0.97294
+    ## vegf_group_365Lucentis                                         1.19213
+    ## severity_score                                                 0.02046
+    ##                                                             t value
+    ## (Intercept)                                                  14.765
+    ## race_ethnicityBlack                                          -1.782
+    ## race_ethnicityHispanic                                       -1.003
+    ## genderMale                                                    0.437
+    ## genderUnknown                                                -0.805
+    ## first_dr_age                                                 -2.308
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.080
+    ## smoke_statusUnknown / Unclassified                            1.524
+    ## smoke_statusYes / Active                                      0.778
+    ## baseline_va_letter                                          -21.697
+    ## vegf_group_365combo                                          -1.256
+    ## vegf_group_365Eylea                                           0.615
+    ## vegf_group_365Lucentis                                       -0.201
+    ## severity_score                                               -3.819
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                         0.074833 .  
+    ## race_ethnicityHispanic                                      0.316096    
+    ## genderMale                                                  0.662321    
+    ## genderUnknown                                               0.420899    
+    ## first_dr_age                                                0.021073 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.936596    
+    ## smoke_statusUnknown / Unclassified                          0.127535    
+    ## smoke_statusYes / Active                                    0.436779    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.209362    
+    ## vegf_group_365Eylea                                         0.538356    
+    ## vegf_group_365Lucentis                                      0.840922    
+    ## severity_score                                              0.000137 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 14.58 on 2461 degrees of freedom
+    ## Multiple R-squared:  0.1635, Adjusted R-squared:  0.1591 
+    ## F-statistic:    37 on 13 and 2461 DF,  p-value: < 2.2e-16
+
+``` r
+vif(Medicaid_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.091364  2        1.022098
+    ## gender             1.020834  2        1.005168
+    ## first_dr_age       1.123947  1        1.060164
+    ## smoke_status       1.065120  3        1.010570
+    ## baseline_va_letter 1.023087  1        1.011478
+    ## vegf_group_365     1.053620  3        1.008743
+    ## severity_score     1.095844  1        1.046826
+
+``` r
+#Not significant for either Hispanic and Black patients. 
+
+
+#Insurance analysis: Regress data across only White patients to see effect of insurance on vision: 
+white_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("White")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(white_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("White")) %>% 
+    ##         mutate(insurance = factor(insurance, ordered = FALSE), 
+    ##             insurance = relevel(insurance, ref = "Private"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -96.673  -4.310   1.593   6.293  41.544 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 36.678568
+    ## insuranceMedicare                                           -1.814743
+    ## insuranceMedicaid                                           -2.107611
+    ## genderMale                                                   0.545557
+    ## genderUnknown                                               -0.893200
+    ## first_dr_age                                                -0.055449
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.101759
+    ## smoke_statusUnknown / Unclassified                           0.721122
+    ## smoke_statusYes / Active                                    -0.824296
+    ## baseline_va_letter                                          -0.400982
+    ## vegf_group_365combo                                         -0.057933
+    ## vegf_group_365Eylea                                          0.520591
+    ## vegf_group_365Lucentis                                       0.592619
+    ## severity_score                                              -0.064501
+    ##                                                             Std. Error
+    ## (Intercept)                                                   0.723341
+    ## insuranceMedicare                                             0.179604
+    ## insuranceMedicaid                                             0.344032
+    ## genderMale                                                    0.141007
+    ## genderUnknown                                                 1.123991
+    ## first_dr_age                                                  0.007353
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.160224
+    ## smoke_statusUnknown / Unclassified                            0.673494
+    ## smoke_statusYes / Active                                      0.225337
+    ## baseline_va_letter                                            0.005573
+    ## vegf_group_365combo                                           0.184154
+    ## vegf_group_365Eylea                                           0.186347
+    ## vegf_group_365Lucentis                                        0.211954
+    ## severity_score                                                0.004751
+    ##                                                             t value
+    ## (Intercept)                                                  50.707
+    ## insuranceMedicare                                           -10.104
+    ## insuranceMedicaid                                            -6.126
+    ## genderMale                                                    3.869
+    ## genderUnknown                                                -0.795
+    ## first_dr_age                                                 -7.541
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.635
+    ## smoke_statusUnknown / Unclassified                            1.071
+    ## smoke_statusYes / Active                                     -3.658
+    ## baseline_va_letter                                          -71.946
+    ## vegf_group_365combo                                          -0.315
+    ## vegf_group_365Eylea                                           2.794
+    ## vegf_group_365Lucentis                                        2.796
+    ## severity_score                                              -13.577
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                            < 2e-16 ***
+    ## insuranceMedicaid                                           9.12e-10 ***
+    ## genderMale                                                  0.000110 ***
+    ## genderUnknown                                               0.426813    
+    ## first_dr_age                                                4.80e-14 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.525366    
+    ## smoke_statusUnknown / Unclassified                          0.284305    
+    ## smoke_statusYes / Active                                    0.000255 ***
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.753076    
+    ## vegf_group_365Eylea                                         0.005215 ** 
+    ## vegf_group_365Lucentis                                      0.005178 ** 
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 11.74 on 28884 degrees of freedom
+    ## Multiple R-squared:  0.155,  Adjusted R-squared:  0.1546 
+    ## F-statistic: 407.5 on 13 and 28884 DF,  p-value: < 2.2e-16
+
+``` r
+vif(white_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.412262  2        1.090131
+    ## gender             1.028620  2        1.007079
+    ## first_dr_age       1.527044  1        1.235736
+    ## smoke_status       1.056349  3        1.009178
+    ## baseline_va_letter 1.034779  1        1.017241
+    ## vegf_group_365     1.028407  3        1.004679
+    ## severity_score     1.129030  1        1.062558
+
+``` r
+#significant worse for both Medicaid and Medicare patients (***)
+
+black_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Black")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(black_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("Black")) %>% 
+    ##         mutate(insurance = factor(insurance, ordered = FALSE), 
+    ##             insurance = relevel(insurance, ref = "Private"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -93.414  -4.607   1.671   6.713  41.185 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 31.68939
+    ## insuranceMedicare                                           -0.58305
+    ## insuranceMedicaid                                           -2.14705
+    ## genderMale                                                  -0.09339
+    ## genderUnknown                                               -0.78896
+    ## first_dr_age                                                -0.04156
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.61751
+    ## smoke_statusUnknown / Unclassified                           0.89748
+    ## smoke_statusYes / Active                                    -0.81305
+    ## baseline_va_letter                                          -0.37244
+    ## vegf_group_365combo                                         -0.16526
+    ## vegf_group_365Eylea                                          0.63878
+    ## vegf_group_365Lucentis                                       1.22107
+    ## severity_score                                              -0.04859
+    ##                                                             Std. Error
+    ## (Intercept)                                                    1.75279
+    ## insuranceMedicare                                              0.44362
+    ## insuranceMedicaid                                              0.75399
+    ## genderMale                                                     0.35681
+    ## genderUnknown                                                  2.59774
+    ## first_dr_age                                                   0.01734
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.41343
+    ## smoke_statusUnknown / Unclassified                             1.70826
+    ## smoke_statusYes / Active                                       0.59132
+    ## baseline_va_letter                                             0.01338
+    ## vegf_group_365combo                                            0.46055
+    ## vegf_group_365Eylea                                            0.48782
+    ## vegf_group_365Lucentis                                         0.55560
+    ## severity_score                                                 0.01152
+    ##                                                             t value
+    ## (Intercept)                                                  18.079
+    ## insuranceMedicare                                            -1.314
+    ## insuranceMedicaid                                            -2.848
+    ## genderMale                                                   -0.262
+    ## genderUnknown                                                -0.304
+    ## first_dr_age                                                 -2.396
+    ## smoke_statusFormer / No longer active / Past History / Quit   1.494
+    ## smoke_statusUnknown / Unclassified                            0.525
+    ## smoke_statusYes / Active                                     -1.375
+    ## baseline_va_letter                                          -27.830
+    ## vegf_group_365combo                                          -0.359
+    ## vegf_group_365Eylea                                           1.309
+    ## vegf_group_365Lucentis                                        2.198
+    ## severity_score                                               -4.217
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                            0.18880    
+    ## insuranceMedicaid                                            0.00442 ** 
+    ## genderMale                                                   0.79353    
+    ## genderUnknown                                                0.76136    
+    ## first_dr_age                                                 0.01659 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.13533    
+    ## smoke_statusUnknown / Unclassified                           0.59935    
+    ## smoke_statusYes / Active                                     0.16919    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                          0.71973    
+    ## vegf_group_365Eylea                                          0.19043    
+    ## vegf_group_365Lucentis                                       0.02801 *  
+    ## severity_score                                              2.52e-05 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 12.67 on 5426 degrees of freedom
+    ## Multiple R-squared:  0.1271, Adjusted R-squared:  0.125 
+    ## F-statistic: 60.75 on 13 and 5426 DF,  p-value: < 2.2e-16
+
+``` r
+vif(black_only_one_year_va_delta.lm) 
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.226919  2        1.052456
+    ## gender             1.036648  2        1.009039
+    ## first_dr_age       1.324696  1        1.150954
+    ## smoke_status       1.050856  3        1.008302
+    ## baseline_va_letter 1.036080  1        1.017880
+    ## vegf_group_365     1.035608  3        1.005849
+    ## severity_score     1.102943  1        1.050211
+
+``` r
+#barely significant worse for Medicaid patients (*)
+
+hispanic_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Hispanic")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(hispanic_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("Hispanic")) %>% 
+    ##         mutate(insurance = factor(insurance, ordered = FALSE), 
+    ##             insurance = relevel(insurance, ref = "Private"), 
+    ##             smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##                 ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -92.706  -4.615   2.099   7.195  43.092 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 37.22589
+    ## insuranceMedicare                                           -1.61947
+    ## insuranceMedicaid                                           -1.58585
+    ## genderMale                                                   0.15789
+    ## genderUnknown                                               -2.48154
+    ## first_dr_age                                                -0.08614
+    ## smoke_statusFormer / No longer active / Past History / Quit -0.31908
+    ## smoke_statusUnknown / Unclassified                          -0.56906
+    ## smoke_statusYes / Active                                     0.58603
+    ## baseline_va_letter                                          -0.39655
+    ## vegf_group_365combo                                          0.18711
+    ## vegf_group_365Eylea                                          0.60123
+    ## vegf_group_365Lucentis                                       1.54138
+    ## severity_score                                              -0.07149
+    ##                                                             Std. Error
+    ## (Intercept)                                                    1.85642
+    ## insuranceMedicare                                              0.45297
+    ## insuranceMedicaid                                              0.62845
+    ## genderMale                                                     0.38394
+    ## genderUnknown                                                  2.22813
+    ## first_dr_age                                                   0.01820
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.46129
+    ## smoke_statusUnknown / Unclassified                             1.96602
+    ## smoke_statusYes / Active                                       0.65720
+    ## baseline_va_letter                                             0.01418
+    ## vegf_group_365combo                                            0.50524
+    ## vegf_group_365Eylea                                            0.61109
+    ## vegf_group_365Lucentis                                         0.71267
+    ## severity_score                                                 0.01282
+    ##                                                             t value
+    ## (Intercept)                                                  20.052
+    ## insuranceMedicare                                            -3.575
+    ## insuranceMedicaid                                            -2.523
+    ## genderMale                                                    0.411
+    ## genderUnknown                                                -1.114
+    ## first_dr_age                                                 -4.733
+    ## smoke_statusFormer / No longer active / Past History / Quit  -0.692
+    ## smoke_statusUnknown / Unclassified                           -0.289
+    ## smoke_statusYes / Active                                      0.892
+    ## baseline_va_letter                                          -27.965
+    ## vegf_group_365combo                                           0.370
+    ## vegf_group_365Eylea                                           0.984
+    ## vegf_group_365Lucentis                                        2.163
+    ## severity_score                                               -5.576
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                           0.000353 ***
+    ## insuranceMedicaid                                           0.011650 *  
+    ## genderMale                                                  0.680916    
+    ## genderUnknown                                               0.265442    
+    ## first_dr_age                                                2.26e-06 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.489152    
+    ## smoke_statusUnknown / Unclassified                          0.772250    
+    ## smoke_statusYes / Active                                    0.372589    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.711150    
+    ## vegf_group_365Eylea                                         0.325231    
+    ## vegf_group_365Lucentis                                      0.030596 *  
+    ## severity_score                                              2.57e-08 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 13.79 on 5556 degrees of freedom
+    ## Multiple R-squared:  0.1271, Adjusted R-squared:  0.1251 
+    ## F-statistic: 62.25 on 13 and 5556 DF,  p-value: < 2.2e-16
+
+``` r
+vif(hispanic_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.200338  2        1.046709
+    ## gender             1.068676  2        1.016744
+    ## first_dr_age       1.274551  1        1.128960
+    ## smoke_status       1.068853  3        1.011159
+    ## baseline_va_letter 1.030526  1        1.015148
+    ## vegf_group_365     1.029944  3        1.004930
+    ## severity_score     1.097858  1        1.047787
+
+``` r
+#significant worse for both Medicaid and Medicare patients (**)
+
+
+# Analysis:
+#   - Hispanic patients have significantly worse VA outcomes after 1-year in privately-insured and Medicare populations, relative to White patients. Black patients hve significantly worse VA outcomes after 1-year in only privately-insured populations. Medicaid-based Hispanic patients and Medicaid-based White patients show no significant difference in 1-year VA outcomes.
+# - Across all individual racial groups, Medicaid patients have worse VA outcomes after 1 year relative to privately-insured patients. In White and Hispanic populations, Medicare patients have significantly worse VA outcomes after 1 year relative to privately insured patients.
+# 
+#   Racial differences in VA change, after controlling for insurance, are evident in the privately-insured population for both Black/Hispanic patients and the Medicaid population for Hispanic patients.
+```
+
+## Forest Plots on VA change
+
+#### Forest Plot to Determine Factors Associated with VA Changes within Each Insurance Group
+
+``` r
+library(tibble)
+
+#Race analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+GRAPHprivate_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Private"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHprivate_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Private"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(race_ethnicity = factor(race_ethnicity, 
+    ##         ordered = FALSE), race_ethnicity = relevel(race_ethnicity, 
+    ##         ref = "White"), smoke_status = factor(smoke_status), 
+    ##         smoke_status = relevel(smoke_status, ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -93.328  -3.976   1.734   6.120  38.607 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 44.022946
+    ## race_ethnicityBlack                                         -1.385677
+    ## race_ethnicityHispanic                                      -1.310448
+    ## genderMale                                                   0.553595
+    ## first_dr_age                                                -0.129471
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.036103
+    ## smoke_statusYes / Active                                    -0.893833
+    ## baseline_va_letter                                          -0.456108
+    ## vegf_group_365combo                                          0.294099
+    ## vegf_group_365Eylea                                          0.703746
+    ## vegf_group_365Lucentis                                       0.923121
+    ## severity_score                                              -0.058730
+    ##                                                             Std. Error
+    ## (Intercept)                                                   1.157521
+    ## race_ethnicityBlack                                           0.350807
+    ## race_ethnicityHispanic                                        0.324795
+    ## genderMale                                                    0.227560
+    ## first_dr_age                                                  0.011451
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.279049
+    ## smoke_statusYes / Active                                      0.366991
+    ## baseline_va_letter                                            0.009047
+    ## vegf_group_365combo                                           0.292897
+    ## vegf_group_365Eylea                                           0.309521
+    ## vegf_group_365Lucentis                                        0.355699
+    ## severity_score                                                0.007713
+    ##                                                             t value
+    ## (Intercept)                                                  38.032
+    ## race_ethnicityBlack                                          -3.950
+    ## race_ethnicityHispanic                                       -4.035
+    ## genderMale                                                    2.433
+    ## first_dr_age                                                -11.307
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.129
+    ## smoke_statusYes / Active                                     -2.436
+    ## baseline_va_letter                                          -50.415
+    ## vegf_group_365combo                                           1.004
+    ## vegf_group_365Eylea                                           2.274
+    ## vegf_group_365Lucentis                                        2.595
+    ## severity_score                                               -7.614
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                         7.87e-05 ***
+    ## race_ethnicityHispanic                                      5.51e-05 ***
+    ## genderMale                                                   0.01500 *  
+    ## first_dr_age                                                 < 2e-16 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.89706    
+    ## smoke_statusYes / Active                                     0.01488 *  
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                          0.31535    
+    ## vegf_group_365Eylea                                          0.02301 *  
+    ## vegf_group_365Lucentis                                       0.00947 ** 
+    ## severity_score                                              2.88e-14 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 11.45 on 10580 degrees of freedom
+    ## Multiple R-squared:  0.1981, Adjusted R-squared:  0.1973 
+    ## F-statistic: 237.6 on 11 and 10580 DF,  p-value: < 2.2e-16
+
+``` r
+vif(GRAPHprivate_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.030891  2        1.007635
+    ## gender             1.020152  1        1.010026
+    ## first_dr_age       1.114218  1        1.055565
+    ## smoke_status       1.027619  2        1.006834
+    ## baseline_va_letter 1.030409  1        1.015091
+    ## vegf_group_365     1.040503  3        1.006639
+    ## severity_score     1.118573  1        1.057626
+
+``` r
+#Significant for both Black and Hispanic patients
+
+GRAPHMedicare_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"),
+          gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHMedicare_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(race_ethnicity = factor(race_ethnicity, 
+    ##         ordered = FALSE), race_ethnicity = relevel(race_ethnicity, 
+    ##         ref = "White"), smoke_status = factor(smoke_status), 
+    ##         smoke_status = relevel(smoke_status, ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -97.178  -4.580   1.514   6.552  43.393 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 30.526717
+    ## race_ethnicityBlack                                         -0.044052
+    ## race_ethnicityHispanic                                      -1.237605
+    ## genderMale                                                   0.400696
+    ## first_dr_age                                                -0.025807
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.150485
+    ## smoke_statusYes / Active                                    -0.683870
+    ## baseline_va_letter                                          -0.365665
+    ## vegf_group_365combo                                         -0.074501
+    ## vegf_group_365Eylea                                          0.482869
+    ## vegf_group_365Lucentis                                       0.697120
+    ## severity_score                                              -0.063248
+    ##                                                             Std. Error
+    ## (Intercept)                                                   0.820830
+    ## race_ethnicityBlack                                           0.219948
+    ## race_ethnicityHispanic                                        0.235887
+    ## genderMale                                                    0.154145
+    ## first_dr_age                                                  0.007998
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.171186
+    ## smoke_statusYes / Active                                      0.254749
+    ## baseline_va_letter                                            0.005994
+    ## vegf_group_365combo                                           0.202651
+    ## vegf_group_365Eylea                                           0.206214
+    ## vegf_group_365Lucentis                                        0.233334
+    ## severity_score                                                0.005130
+    ##                                                             t value
+    ## (Intercept)                                                  37.190
+    ## race_ethnicityBlack                                          -0.200
+    ## race_ethnicityHispanic                                       -5.247
+    ## genderMale                                                    2.599
+    ## first_dr_age                                                 -3.227
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.879
+    ## smoke_statusYes / Active                                     -2.684
+    ## baseline_va_letter                                          -61.001
+    ## vegf_group_365combo                                          -0.368
+    ## vegf_group_365Eylea                                           2.342
+    ## vegf_group_365Lucentis                                        2.988
+    ## severity_score                                              -12.329
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                          0.84126    
+    ## race_ethnicityHispanic                                      1.56e-07 ***
+    ## genderMale                                                   0.00934 ** 
+    ## first_dr_age                                                 0.00125 ** 
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.37937    
+    ## smoke_statusYes / Active                                     0.00727 ** 
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                          0.71315    
+    ## vegf_group_365Eylea                                          0.01921 *  
+    ## vegf_group_365Lucentis                                       0.00281 ** 
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 12.19 on 26272 degrees of freedom
+    ## Multiple R-squared:  0.1259, Adjusted R-squared:  0.1255 
+    ## F-statistic:   344 on 11 and 26272 DF,  p-value: < 2.2e-16
+
+``` r
+vif(GRAPHMedicare_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.059675  2        1.014596
+    ## gender             1.049820  1        1.024607
+    ## first_dr_age       1.116705  1        1.056743
+    ## smoke_status       1.055533  2        1.013603
+    ## baseline_va_letter 1.027051  1        1.013435
+    ## vegf_group_365     1.043583  3        1.007135
+    ## severity_score     1.128220  1        1.062177
+
+``` r
+#Significant for Hispanic patients (***)
+
+GRAPHMedicaid_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ race_ethnicity + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicaid"), 
+         race_ethnicity %in% c("White", "Black", "Hispanic"),
+        gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+         race_ethnicity = relevel(race_ethnicity, ref = "White"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHMedicaid_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ race_ethnicity + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicaid"), 
+    ##         race_ethnicity %in% c("White", "Black", "Hispanic"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(race_ethnicity = factor(race_ethnicity, 
+    ##         ordered = FALSE), race_ethnicity = relevel(race_ethnicity, 
+    ##         ref = "White"), smoke_status = factor(smoke_status), 
+    ##         smoke_status = relevel(smoke_status, ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -90.218  -3.983   2.656   8.017  37.569 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 40.86120
+    ## race_ethnicityBlack                                         -1.44693
+    ## race_ethnicityHispanic                                      -0.60882
+    ## genderMale                                                   0.22206
+    ## first_dr_age                                                -0.06296
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.13186
+    ## smoke_statusYes / Active                                     0.67077
+    ## baseline_va_letter                                          -0.47767
+    ## vegf_group_365combo                                         -0.90933
+    ## vegf_group_365Eylea                                          0.67655
+    ## vegf_group_365Lucentis                                      -0.21172
+    ## severity_score                                              -0.07763
+    ##                                                             Std. Error
+    ## (Intercept)                                                    2.81509
+    ## race_ethnicityBlack                                            0.87017
+    ## race_ethnicityHispanic                                         0.70384
+    ## genderMale                                                     0.59728
+    ## first_dr_age                                                   0.02805
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.74978
+    ## smoke_statusYes / Active                                       0.80960
+    ## baseline_va_letter                                             0.02235
+    ## vegf_group_365combo                                            0.79115
+    ## vegf_group_365Eylea                                            0.98398
+    ## vegf_group_365Lucentis                                         1.19648
+    ## severity_score                                                 0.02063
+    ##                                                             t value
+    ## (Intercept)                                                  14.515
+    ## race_ethnicityBlack                                          -1.663
+    ## race_ethnicityHispanic                                       -0.865
+    ## genderMale                                                    0.372
+    ## first_dr_age                                                 -2.244
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.176
+    ## smoke_statusYes / Active                                      0.829
+    ## baseline_va_letter                                          -21.375
+    ## vegf_group_365combo                                          -1.149
+    ## vegf_group_365Eylea                                           0.688
+    ## vegf_group_365Lucentis                                       -0.177
+    ## severity_score                                               -3.763
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## race_ethnicityBlack                                         0.096477 .  
+    ## race_ethnicityHispanic                                      0.387128    
+    ## genderMale                                                  0.710079    
+    ## first_dr_age                                                0.024898 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.860416    
+    ## smoke_statusYes / Active                                    0.407457    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.250510    
+    ## vegf_group_365Eylea                                         0.491794    
+    ## vegf_group_365Lucentis                                      0.859558    
+    ## severity_score                                              0.000172 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 14.63 on 2432 degrees of freedom
+    ## Multiple R-squared:  0.1598, Adjusted R-squared:  0.156 
+    ## F-statistic: 42.06 on 11 and 2432 DF,  p-value: < 2.2e-16
+
+``` r
+vif(GRAPHMedicaid_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## race_ethnicity     1.091406  2        1.022108
+    ## gender             1.016730  1        1.008330
+    ## first_dr_age       1.119974  1        1.058288
+    ## smoke_status       1.060295  2        1.014744
+    ## baseline_va_letter 1.024062  1        1.011959
+    ## vegf_group_365     1.054134  3        1.008825
+    ## severity_score     1.095238  1        1.046536
+
+``` r
+#Not significant for either Hispanic and Black patients. 
+
+
+
+#Extract values from regression output
+private_output <- summary(GRAPHprivate_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+private_output = as.data.frame(private_output)
+private_output <- tibble::rownames_to_column(private_output, "FACTOR")
+
+#Create limits for values
+private_output$upper_limit = private_output$Estimate + 1.96*private_output$`Std. Error`
+private_output$lower_limit = private_output$Estimate - 1.96*private_output$`Std. Error`
+
+#Add a group name
+private_output$group <- "private"
+private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+View(private_output)
+
+
+#Repeat steps for other groups:
+
+medicare_output <- summary(GRAPHMedicare_only_one_year_va_delta.lm)$coefficients[1:12,]
+medicare_output = as.data.frame(medicare_output)
+medicare_output <- tibble::rownames_to_column(medicare_output, "FACTOR")
+medicare_output$upper_limit = medicare_output$Estimate + 1.96*medicare_output$`Std. Error`
+medicare_output$lower_limit = medicare_output$Estimate - 1.96*medicare_output$`Std. Error`
+medicare_output$group <- "medicare"
+medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+#Convert group name into a factor
+
+View(medicare_output)
+
+
+medicaid_output <- summary(GRAPHMedicaid_only_one_year_va_delta.lm)$coefficients[1:12,]
+medicaid_output = as.data.frame(medicaid_output)
+medicaid_output <- tibble::rownames_to_column(medicaid_output, "FACTOR")
+medicaid_output$upper_limit = medicaid_output$Estimate + 1.96*medicaid_output$`Std. Error`
+medicaid_output$lower_limit = medicaid_output$Estimate - 1.96*medicaid_output$`Std. Error`
+medicaid_output$group <- "medicaid"
+medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+#Convert group name into a factor
+
+
+#Combine all group output information
+combined_output = rbind(medicaid_output,medicare_output, private_output)
+
+#Remove original factor names that created unaesthetic graph
+combined_output = subset(combined_output, select = -c(FACTOR) )
+combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Avastin)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+
+#Remove intercept values to allow for graph interpretation
+combined_output<-combined_output[!(combined_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_output$group = factor(combined_output$group, levels=c("private","medicare","medicaid"), labels = c("Private", "Medicare", "Medicaid")) 
+```
+
+``` r
+forest_va_change_insurance <- 
+  ggplot(combined_output, aes(y = FACTOR_clean, x = Estimate))+
+  geom_point() +
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty = 2, aes(xintercept=0), colour = 'red') +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) +
+  labs(
+    y = "Factor", 
+    x = "Change in VA after 1 year", 
+    title = "Factors Associated with Changes in VA by Insurance"
+  )
+
+forest_va_change_insurance
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
+```
+
+#### Forest Plot to Determine Factors Associated with VA Changes within Each Race
+
+``` r
+#Insurance analysis: Regress data across only privately-insured patients to see effect of race on vision: 
+GRAPHwhite_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("White"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+
+# COUNT_for_Regression <-
+#   timeseries_analysis %>%
+#        filter(
+#          insurance %in% c("Medicare", "Medicaid", "Private"),
+#          race_ethnicity %in% c("White", "Black", "Hispanic"),
+#          gender %in% c("Male", "Female"),
+#          smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+#        ) %>%
+#        mutate(
+#          insurance = factor(insurance, ordered = FALSE),
+#          insurance = relevel(insurance, ref = "Private"),
+#          smoke_status = factor(smoke_status),
+#          smoke_status = relevel(smoke_status, ref = "No / Never")
+#        )
+# 
+# count(COUNT_for_Regression)
+
+summary(GRAPHwhite_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("White"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(insurance = factor(insurance, 
+    ##         ordered = FALSE), insurance = relevel(insurance, ref = "Private"), 
+    ##         smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##             ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -96.635  -4.312   1.597   6.295  41.523 
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 36.597481
+    ## insuranceMedicare                                           -1.855450
+    ## insuranceMedicaid                                           -2.188447
+    ## genderMale                                                   0.549090
+    ## first_dr_age                                                -0.053679
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.091660
+    ## smoke_statusYes / Active                                    -0.786128
+    ## baseline_va_letter                                          -0.400699
+    ## vegf_group_365combo                                         -0.055629
+    ## vegf_group_365Eylea                                          0.506237
+    ## vegf_group_365Lucentis                                       0.576628
+    ## severity_score                                              -0.064761
+    ##                                                             Std. Error
+    ## (Intercept)                                                   0.729228
+    ## insuranceMedicare                                             0.181213
+    ## insuranceMedicaid                                             0.346726
+    ## genderMale                                                    0.141740
+    ## first_dr_age                                                  0.007413
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.160723
+    ## smoke_statusYes / Active                                      0.225874
+    ## baseline_va_letter                                            0.005622
+    ## vegf_group_365combo                                           0.185592
+    ## vegf_group_365Eylea                                           0.187919
+    ## vegf_group_365Lucentis                                        0.213541
+    ## severity_score                                                0.004787
+    ##                                                             t value
+    ## (Intercept)                                                  50.187
+    ## insuranceMedicare                                           -10.239
+    ## insuranceMedicaid                                            -6.312
+    ## genderMale                                                    3.874
+    ## first_dr_age                                                 -7.241
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.570
+    ## smoke_statusYes / Active                                     -3.480
+    ## baseline_va_letter                                          -71.272
+    ## vegf_group_365combo                                          -0.300
+    ## vegf_group_365Eylea                                           2.694
+    ## vegf_group_365Lucentis                                        2.700
+    ## severity_score                                              -13.528
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                            < 2e-16 ***
+    ## insuranceMedicaid                                           2.80e-10 ***
+    ## genderMale                                                  0.000107 ***
+    ## first_dr_age                                                4.56e-13 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.568483    
+    ## smoke_statusYes / Active                                    0.000501 ***
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.764379    
+    ## vegf_group_365Eylea                                         0.007066 ** 
+    ## vegf_group_365Lucentis                                      0.006932 ** 
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 11.75 on 28467 degrees of freedom
+    ## Multiple R-squared:  0.1544, Adjusted R-squared:  0.1541 
+    ## F-statistic: 472.7 on 11 and 28467 DF,  p-value: < 2.2e-16
+
+``` r
+#Extract values from regression output
+white_output <- summary(GRAPHwhite_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+white_output = as.data.frame(white_output)
+white_output <- tibble::rownames_to_column(white_output, "FACTOR")
+
+#Create limits for values
+white_output$upper_limit = white_output$Estimate + 1.96*white_output$`Std. Error`
+white_output$lower_limit = white_output$Estimate - 1.96*white_output$`Std. Error`
+
+#Add a group name
+white_output$group <- "white"
+white_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+
+#Repeat steps for other groups:
+
+GRAPHblack_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Black"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHblack_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("Black"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(insurance = factor(insurance, 
+    ##         ordered = FALSE), insurance = relevel(insurance, ref = "Private"), 
+    ##         smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##             ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -93.351  -4.609   1.661   6.726  41.145 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 31.45010
+    ## insuranceMedicare                                           -0.66277
+    ## insuranceMedicaid                                           -2.12972
+    ## genderMale                                                  -0.05514
+    ## first_dr_age                                                -0.03718
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.62566
+    ## smoke_statusYes / Active                                    -0.81742
+    ## baseline_va_letter                                          -0.37356
+    ## vegf_group_365combo                                         -0.17280
+    ## vegf_group_365Eylea                                          0.65992
+    ## vegf_group_365Lucentis                                       1.16720
+    ## severity_score                                              -0.04714
+    ##                                                             Std. Error
+    ## (Intercept)                                                    1.77072
+    ## insuranceMedicare                                              0.44839
+    ## insuranceMedicaid                                              0.75943
+    ## genderMale                                                     0.35963
+    ## first_dr_age                                                   0.01753
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.41569
+    ## smoke_statusYes / Active                                       0.59437
+    ## baseline_va_letter                                             0.01353
+    ## vegf_group_365combo                                            0.46442
+    ## vegf_group_365Eylea                                            0.49254
+    ## vegf_group_365Lucentis                                         0.56101
+    ## severity_score                                                 0.01162
+    ##                                                             t value
+    ## (Intercept)                                                  17.761
+    ## insuranceMedicare                                            -1.478
+    ## insuranceMedicaid                                            -2.804
+    ## genderMale                                                   -0.153
+    ## first_dr_age                                                 -2.121
+    ## smoke_statusFormer / No longer active / Past History / Quit   1.505
+    ## smoke_statusYes / Active                                     -1.375
+    ## baseline_va_letter                                          -27.607
+    ## vegf_group_365combo                                          -0.372
+    ## vegf_group_365Eylea                                           1.340
+    ## vegf_group_365Lucentis                                        2.081
+    ## severity_score                                               -4.056
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                            0.13944    
+    ## insuranceMedicaid                                            0.00506 ** 
+    ## genderMale                                                   0.87816    
+    ## first_dr_age                                                 0.03397 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.13235    
+    ## smoke_statusYes / Active                                     0.16911    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                          0.70985    
+    ## vegf_group_365Eylea                                          0.18036    
+    ## vegf_group_365Lucentis                                       0.03752 *  
+    ## severity_score                                              5.07e-05 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 12.7 on 5348 degrees of freedom
+    ## Multiple R-squared:  0.1268, Adjusted R-squared:  0.125 
+    ## F-statistic: 70.62 on 11 and 5348 DF,  p-value: < 2.2e-16
+
+``` r
+#Extract values from regression output
+black_output <- summary(GRAPHblack_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+black_output = as.data.frame(black_output)
+black_output <- tibble::rownames_to_column(black_output, "FACTOR")
+
+#Create limits for values
+black_output$upper_limit = black_output$Estimate + 1.96*black_output$`Std. Error`
+black_output$lower_limit = black_output$Estimate - 1.96*black_output$`Std. Error`
+
+#Add a group name
+black_output$group <- "black"
+black_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+GRAPHhispanic_only_one_year_va_delta.lm <-
+  lm(one_year_va_delta ~ insurance + gender + first_dr_age + smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+     data = timeseries_analysis %>% 
+       filter(
+         insurance %in% c("Medicare", "Medicaid", "Private"), 
+         race_ethnicity %in% c("Hispanic"), 
+         gender %in% c("Male", "Female"),
+         smoke_status %in% c("Yes / Active", "Former / No longer active / Past History / Quit", "No / Never")
+       ) %>% 
+       mutate(
+         insurance = factor(insurance, ordered = FALSE), 
+         insurance = relevel(insurance, ref = "Private"),
+         smoke_status = factor(smoke_status),
+         smoke_status = relevel(smoke_status, ref = "No / Never")
+       )
+  ) 
+summary(GRAPHhispanic_only_one_year_va_delta.lm)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = one_year_va_delta ~ insurance + gender + first_dr_age + 
+    ##     smoke_status + baseline_va_letter + vegf_group_365 + severity_score, 
+    ##     data = timeseries_analysis %>% filter(insurance %in% c("Medicare", 
+    ##         "Medicaid", "Private"), race_ethnicity %in% c("Hispanic"), 
+    ##         gender %in% c("Male", "Female"), smoke_status %in% c("Yes / Active", 
+    ##             "Former / No longer active / Past History / Quit", 
+    ##             "No / Never")) %>% mutate(insurance = factor(insurance, 
+    ##         ordered = FALSE), insurance = relevel(insurance, ref = "Private"), 
+    ##         smoke_status = factor(smoke_status), smoke_status = relevel(smoke_status, 
+    ##             ref = "No / Never")))
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -92.750  -4.592   2.082   7.150  43.141 
+    ## 
+    ## Coefficients:
+    ##                                                             Estimate
+    ## (Intercept)                                                 37.34084
+    ## insuranceMedicare                                           -1.66855
+    ## insuranceMedicaid                                           -1.61652
+    ## genderMale                                                   0.15340
+    ## first_dr_age                                                -0.08835
+    ## smoke_statusFormer / No longer active / Past History / Quit -0.29726
+    ## smoke_statusYes / Active                                     0.55467
+    ## baseline_va_letter                                          -0.39415
+    ## vegf_group_365combo                                          0.19229
+    ## vegf_group_365Eylea                                          0.62016
+    ## vegf_group_365Lucentis                                       1.49365
+    ## severity_score                                              -0.07319
+    ##                                                             Std. Error
+    ## (Intercept)                                                    1.86951
+    ## insuranceMedicare                                              0.45793
+    ## insuranceMedicaid                                              0.63389
+    ## genderMale                                                     0.38618
+    ## first_dr_age                                                   0.01833
+    ## smoke_statusFormer / No longer active / Past History / Quit    0.46393
+    ## smoke_statusYes / Active                                       0.66157
+    ## baseline_va_letter                                             0.01433
+    ## vegf_group_365combo                                            0.51006
+    ## vegf_group_365Eylea                                            0.61778
+    ## vegf_group_365Lucentis                                         0.71701
+    ## severity_score                                                 0.01291
+    ##                                                             t value
+    ## (Intercept)                                                  19.974
+    ## insuranceMedicare                                            -3.644
+    ## insuranceMedicaid                                            -2.550
+    ## genderMale                                                    0.397
+    ## first_dr_age                                                 -4.820
+    ## smoke_statusFormer / No longer active / Past History / Quit  -0.641
+    ## smoke_statusYes / Active                                      0.838
+    ## baseline_va_letter                                          -27.514
+    ## vegf_group_365combo                                           0.377
+    ## vegf_group_365Eylea                                           1.004
+    ## vegf_group_365Lucentis                                        2.083
+    ## severity_score                                               -5.669
+    ##                                                             Pr(>|t|)    
+    ## (Intercept)                                                  < 2e-16 ***
+    ## insuranceMedicare                                           0.000271 ***
+    ## insuranceMedicaid                                           0.010794 *  
+    ## genderMale                                                  0.691212    
+    ## first_dr_age                                                1.48e-06 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.521711    
+    ## smoke_statusYes / Active                                    0.401836    
+    ## baseline_va_letter                                           < 2e-16 ***
+    ## vegf_group_365combo                                         0.706191    
+    ## vegf_group_365Eylea                                         0.315497    
+    ## vegf_group_365Lucentis                                      0.037283 *  
+    ## severity_score                                              1.51e-08 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 13.8 on 5469 degrees of freedom
+    ## Multiple R-squared:  0.1254, Adjusted R-squared:  0.1236 
+    ## F-statistic: 71.28 on 11 and 5469 DF,  p-value: < 2.2e-16
+
+``` r
+#Extract values from regression output
+hispanic_output <- summary(GRAPHhispanic_only_one_year_va_delta.lm)$coefficients[1:12,]
+
+#Convert values into data frame
+hispanic_output = as.data.frame(hispanic_output)
+hispanic_output <- tibble::rownames_to_column(hispanic_output, "FACTOR")
+
+#Create limits for values
+hispanic_output$upper_limit = hispanic_output$Estimate + 1.96*hispanic_output$`Std. Error`
+hispanic_output$lower_limit = hispanic_output$Estimate - 1.96*hispanic_output$`Std. Error`
+
+#Add a group name
+hispanic_output$group <- "hispanic"
+hispanic_output$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+
+
+#Combine all group output information
+combined_race_output = rbind(white_output, black_output, hispanic_output)
+
+#Remove original factor names that created unaesthetic graph
+combined_race_output = subset(combined_race_output, select = -c(FACTOR) )
+
+#Remove intercept values to allow for graph interpretation
+combined_race_output<-combined_race_output[!(combined_race_output$FACTOR_clean=="Intercept"),]
+
+#Create factor for group name to order the facet grids
+combined_race_output$group = factor(combined_race_output$group, levels=c("white","black","hispanic"), labels = c("White", "Black", "Hispanic")) 
+combined_race_output$FACTOR_clean = factor(combined_race_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Bevacizumab)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)", "DR Diag. Age", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Intercept"))
+```
+
+``` r
+vif(GRAPHwhite_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.412988  2        1.090271
+    ## gender             1.026969  1        1.013395
+    ## first_dr_age       1.527236  1        1.235814
+    ## smoke_status       1.055012  2        1.013478
+    ## baseline_va_letter 1.034570  1        1.017138
+    ## vegf_group_365     1.028014  3        1.004615
+    ## severity_score     1.128246  1        1.062189
+
+``` r
+vif(GRAPHblack_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.228659  2        1.052829
+    ## gender             1.033992  1        1.016854
+    ## first_dr_age       1.328362  1        1.152546
+    ## smoke_status       1.048800  2        1.011983
+    ## baseline_va_letter 1.036600  1        1.018135
+    ## vegf_group_365     1.034459  3        1.005662
+    ## severity_score     1.102111  1        1.049815
+
+``` r
+vif(GRAPHhispanic_only_one_year_va_delta.lm)
+```
+
+    ##                        GVIF Df GVIF^(1/(2*Df))
+    ## insurance          1.201247  2        1.046907
+    ## gender             1.067911  1        1.033398
+    ## first_dr_age       1.273472  1        1.128482
+    ## smoke_status       1.066041  2        1.016116
+    ## baseline_va_letter 1.030726  1        1.015247
+    ## vegf_group_365     1.029631  3        1.004879
+    ## severity_score     1.095979  1        1.046890
+
+``` r
+forest_va_change_race <- 
+  ggplot(combined_race_output,aes(y = FACTOR_clean, x = Estimate))+
+  geom_point()+
+  facet_wrap(~group)+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty = 2, aes(xintercept=0), colour = 'red') +
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  ) +
+  labs(
+    y= "Factor", 
+    x = "Change in VA after 1 year",
+    title = "Factors Associated with Changes in VA by Race"
+  )
+
+forest_va_change_race
+```
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+
+``` r
+#ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
+```
+
+``` r
+#Old Forest Plot attempts
+# 
+# race_colors <- c("#54AE55", "#189CD9", "#A167A5")
+# insurance_colors <- c("#A00033", "#D1603D", "#F7D002")
+# 
+# dotCOLS = c("#a6d8f0","#f9b282")
+# barCOLS = c("#A00033","#D1603D")
+# 
+# p <- ggplot(combined_output, aes(x=FACTOR_clean, y=Estimate, ymin=lower_limit, ymax=upper_limit,col=group,fill=group)) + 
+# #specify position here
+#   geom_errorbar(size=2,position=position_dodge(width = 0.5)) +
+#   geom_hline(yintercept=0, lty=2) +
+# #specify position here too
+#   geom_point(size=1, shape=21, colour="white", stroke = 0.5,position=position_dodge(width = 0.5)) +
+#   scale_fill_manual(values = insurance_colors) +
+#   scale_color_manual(values=insurance_colors)+
+#   scale_y_continuous(name="Change in VA", limits = c(-7, 3)) +
+#   coord_flip() +
+#   theme_minimal()
+# 
+# p
+```
+
+## Calculation X: Number of patients including the multivariate linear regression
 
 ``` r
 timeseries_analysis %>% 
@@ -1508,7 +3921,7 @@ plot_sev_race_va <-
 plot_sev_race_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/5_plot_sev_race_va.png", plot_sev_race_va, width = 7, height = 5)
@@ -1574,7 +3987,7 @@ plot_sev_insurance_va <-
 plot_sev_insurance_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/6_plot_sev_insurance_va.png", plot_sev_insurance_va, width = 7, height = 5)
@@ -1622,7 +4035,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
 
 ``` r
 race_distribution %>% 
@@ -1638,7 +4051,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -1684,7 +4097,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -1726,7 +4139,7 @@ va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ``` r
 va_race_diff <-
@@ -1755,7 +4168,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ``` r
 # plot change in visual acuity by race at one and two yeaars
@@ -1775,7 +4188,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -1800,7 +4213,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -1824,7 +4237,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -1865,7 +4278,7 @@ va_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 ``` r
 va_insurance_diff <-
@@ -1894,7 +4307,7 @@ va_insurance_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
 
 #### Percentage with 15 letter loss by race
 
@@ -1946,7 +4359,7 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
 
 ``` r
 gain_15_race <-
@@ -1975,7 +4388,7 @@ gain_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-2.png)<!-- -->
 
 #### Percentage with 15 letter loss by insurance
 
@@ -2011,7 +4424,7 @@ loss_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
 
 ``` r
 gain_15_insurance <-
@@ -2041,7 +4454,7 @@ gain_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-2.png)<!-- -->
 
 #### Timeseries VA by insurance and race
 
@@ -2153,7 +4566,7 @@ smoking_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
 #### Timeseries VA by gender and race
 
@@ -2183,7 +4596,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -2232,7 +4645,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -2264,7 +4677,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with \~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -2295,7 +4708,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -2326,7 +4739,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -2362,7 +4775,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -2432,7 +4845,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -2475,7 +4888,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-77-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -2520,7 +4933,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -2560,7 +4973,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -2603,7 +5016,7 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-81-1.png)<!-- -->
 
 ## Injections by VA analysis
 
@@ -2773,7 +5186,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -2824,7 +5237,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -2853,7 +5266,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is \~1.5-2
 pts higher for Black people vs. Caucasian people, and \~3-4 pts higher
@@ -2945,7 +5358,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-94-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -2993,7 +5406,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-84-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -3031,7 +5444,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-86-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -3083,7 +5496,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-100-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -3106,7 +5519,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -3163,7 +5576,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -3181,7 +5594,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -3205,7 +5618,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-93-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Bevacizumab as compared to their Caucasian
@@ -3266,7 +5679,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-95-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-107-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -3283,7 +5696,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and race
@@ -3304,7 +5717,7 @@ drug_sev_cat_race %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-97-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
 
 #### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
 
@@ -3355,7 +5768,7 @@ drug_va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
 
 #### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
 
@@ -3410,7 +5823,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-113-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and insurance
@@ -3428,7 +5841,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-114-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and insurance
@@ -3450,7 +5863,7 @@ drug_sev_cat_insurance %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-115-1.png)<!-- -->
 
 #### Drug received by race and insurance
 
@@ -3508,7 +5921,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-117-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -3529,7 +5942,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -3550,7 +5963,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-107-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-119-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -3584,7 +5997,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-121-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -3639,7 +6052,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-123-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -3672,7 +6085,7 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-112-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-124-1.png)<!-- -->
 
 ## Regression
 
