@@ -340,7 +340,7 @@ tbl_data %>%
 To consider here: how do we want to respond to the NAs in this graph? One option I could see is creating four new categories: (mild NPDR unknown edema, moderate NPDR unknown edema, severe NPDR unknown edema, PDR unknown edema)
 
 ```{r}
-timeseries_analysis %>% 
+figure_1A <- timeseries_analysis %>% 
   dplyr::filter(!is.na(vision_category)) %>% 
   dplyr::count(vision_category, race_ethnicity) %>%
   dplyr::ungroup() %>% 
@@ -362,7 +362,10 @@ timeseries_analysis %>%
     fill = "Race"
   )
 
-ggsave("figure1A.pdf")
+figure_1A
+
+ggsave("graphs_6_28/figure1A.png", figure_1A, width = 10, height = 5)
+
 ```
 
 
@@ -1574,7 +1577,7 @@ private_output$lower_limit = private_output$Estimate - 1.96*private_output$`Std.
 
 #Add a group name
 private_output$group <- "private"
-private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 
 View(private_output)
 
@@ -1587,7 +1590,7 @@ medicare_output <- tibble::rownames_to_column(medicare_output, "FACTOR")
 medicare_output$upper_limit = medicare_output$Estimate + 1.96*medicare_output$`Std. Error`
 medicare_output$lower_limit = medicare_output$Estimate - 1.96*medicare_output$`Std. Error`
 medicare_output$group <- "medicare"
-medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 #Convert group name into a factor
 
 View(medicare_output)
@@ -1599,7 +1602,7 @@ medicaid_output <- tibble::rownames_to_column(medicaid_output, "FACTOR")
 medicaid_output$upper_limit = medicaid_output$Estimate + 1.96*medicaid_output$`Std. Error`
 medicaid_output$lower_limit = medicaid_output$Estimate - 1.96*medicaid_output$`Std. Error`
 medicaid_output$group <- "medicaid"
-medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 #Convert group name into a factor
 
 
@@ -1608,7 +1611,7 @@ combined_output = rbind(medicaid_output,medicare_output, private_output)
 
 #Remove original factor names that created unaesthetic graph
 combined_output = subset(combined_output, select = -c(FACTOR) )
-combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Avastin)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Bevacizumab)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
 
 #Remove intercept values to allow for graph interpretation
 combined_output<-combined_output[!(combined_output$FACTOR_clean=="Intercept"),]
@@ -1641,7 +1644,7 @@ forest_va_change_insurance <-
 
 forest_va_change_insurance
 
-#ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
+ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
 ```
 
 
