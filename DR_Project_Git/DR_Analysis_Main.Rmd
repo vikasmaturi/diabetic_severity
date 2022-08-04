@@ -917,13 +917,23 @@ plot_forest_bev_race
 
 ```{r}
 
-plot_drug_sev_cat_race_all <- 
-# Graphing likelihood of Bevacizumab by severity and race
-drug_sev_cat_race %>% 
+drug_sev_cat_race_2 <-
+  drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
   # round proportion to nearest 100th
-  mutate(pct_round = round(prop, 2)) %>% 
+  mutate(pct_round = round(prop, 2))  %>% 
+  mutate(
+    vegf_drug_name = vegf_group_365, 
+  ) 
+
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Avastin"]<-"Bevacizumab"
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Lucentis"]<-"Ranibizumab"
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Eylea"]<-"Aflibercept"
+
+plot_drug_sev_cat_race_all <- 
+# Graphing likelihood of Bevacizumab by severity and race
+drug_sev_cat_race_2 %>% 
   ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
   theme_bw() +
@@ -932,7 +942,7 @@ drug_sev_cat_race %>%
     # remove background lines
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
-  ) +  facet_grid(vegf_group_365 ~ .) +
+  ) +  facet_grid(vegf_drug_name ~ .) +
   #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
   #scale_x_continuous()
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
@@ -952,9 +962,24 @@ ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_rac
 
 
 ```{r}
+
+drug_sev_cat_insurance_2 <-
+  drug_sev_cat_insurance %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2))  %>% 
+  mutate(
+    vegf_drug_name = vegf_group_365, 
+  ) 
+
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Avastin"]<-"Bevacizumab"
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Lucentis"]<-"Ranibizumab"
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Eylea"]<-"Aflibercept"
+
 plot_drug_sev_cat_insurance_all <-
 # Graphing likelihood of first drug type by severity and insurance
-drug_sev_cat_insurance %>% 
+drug_sev_cat_insurance_2 %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
   # round proportion to nearest 100th
@@ -967,8 +992,7 @@ drug_sev_cat_insurance %>%
     # remove background lines
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
-  ) +  facet_grid(vegf_group_365 ~ .) +
-  facet_grid(vegf_group_365~.) +
+  ) +  facet_grid(vegf_drug_name ~ .) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
   # different colors for insurance
   scale_fill_manual(values = insurance_colors) +
