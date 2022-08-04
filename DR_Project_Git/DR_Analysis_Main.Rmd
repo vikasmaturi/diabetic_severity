@@ -364,7 +364,7 @@ figure_1A <- timeseries_analysis %>%
 
 figure_1A
 
-ggsave("graphs_6_28/figure1A.png", figure_1A, width = 10, height = 5)
+ggsave("graphs/figure1A.png", figure_1A, width = 10, height = 5)
 
 ```
 
@@ -421,7 +421,7 @@ plot_drug_sev_cat_race <-
 
 plot_drug_sev_cat_race
 
-ggsave("graphs_6_28/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 
 ```
 
@@ -477,7 +477,7 @@ drug_sev_cat_insurance %>%
 
 plot_drug_sev_cat_insurance
 
-ggsave("graphs_6_28/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
 
 
 ```
@@ -939,13 +939,13 @@ drug_sev_cat_race %>%
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Bevacizumab",
+    y = "Percentage of people receiving Each Treatment",
     fill = "Race"
   )
 
 plot_drug_sev_cat_race_all
 
-#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
+ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
 
 
 ```
@@ -1638,7 +1638,7 @@ forest_va_change_insurance <-
   ) +
   labs(
     y = "Factor", 
-    x = "Change in VA after 1 year", 
+    x = "Relative Effect on VA after 1 year", 
     title = "Factors Associated with Changes in VA by Insurance"
   )
 
@@ -1800,9 +1800,6 @@ vif(GRAPHhispanic_only_one_year_va_delta.lm)
 
 
 ```{r}
-
-
-
 forest_va_change_race <- 
   ggplot(combined_race_output,aes(y = FACTOR_clean, x = Estimate))+
   geom_point()+
@@ -1818,13 +1815,13 @@ forest_va_change_race <-
   ) +
   labs(
     y= "Factor", 
-    x = "Change in VA after 1 year",
+    x = "Relative Effect on VA after 1 year",
     title = "Factors Associated with Changes in VA by Race"
   )
 
 forest_va_change_race
 
-#ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
+ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
 ```
 
 
