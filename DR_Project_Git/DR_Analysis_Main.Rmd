@@ -515,6 +515,43 @@ summary(avastin_1.logm)
 
 ```
 
+## Regression X.2: Variables that influence likelihood of receiving Bevacizumab treatment for patients with less than 20/50 vision
+
+```{r}
+
+# create dataset for regression
+data_avastin_reg_2 <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>%
+  # filter for vision at or worse than 20/50
+  filter(baseline_va_letter < 66) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+  ) 
+
+# glm for logistic regression
+avastin_2.logm <- 
+  glm(
+    avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg_2, 
+    family = binomial
+  ) 
+
+summary(avastin_2.logm)
+
+```
+
+
 ## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
 ```{r}
 no_intercept_regression_avastin_data <- 
@@ -639,7 +676,7 @@ bev_private
 bev_private$group <- "private"
 bev_private$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
-View(bev_private)
+# View(bev_private)
 
 #MEDICARE DATA ASSEMBLY
 
@@ -661,7 +698,7 @@ bev_private
 #Add a group name
 bev_medicare$group <- "medicare"
 bev_medicare$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
-View(bev_medicare)
+# View(bev_medicare)
 
 #MEDICAID DATA ASSEMBLY
 bev_medicaid <- summary(Medicaid_avastin_logreg)$coefficients[1:9,]
@@ -677,9 +714,9 @@ bev_medicaid$odds <- exp(bev_medicaid$Estimate)
 
 bev_medicaid$upper_limit = exp(bev_medicaid$up_error)
 bev_medicaid$lower_limit = exp(bev_medicaid$down_error)
-View(bev_private)
-View(bev_medicare)
-View(bev_medicaid)
+# View(bev_private)
+# View(bev_medicare)
+# View(bev_medicaid)
 
 
 #Add a group name
@@ -816,7 +853,7 @@ bev_white$lower_limit = exp(bev_white$down_error)
 bev_white$group <- "white"
 bev_white$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
-View(bev_private)
+# View(bev_private)
 
 #MEDICARE DATA ASSEMBLY
 
@@ -860,9 +897,9 @@ bev_hispanic$group <- "hispanic"
 bev_hispanic$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
 
-View(bev_white)
-View(bev_black)
-View(bev_hispanic)
+# View(bev_white)
+# View(bev_black)
+# View(bev_hispanic)
 
 #Combine all group output information
 combined_bev_race_output = rbind(bev_hispanic,bev_black,bev_white)
@@ -1058,7 +1095,7 @@ loss_15_race <-
     )
   )
 
-View(loss_15_race)
+# View(loss_15_race)
 
 plot_loss_15_race <-
 loss_15_race %>%
@@ -1193,7 +1230,7 @@ loss_15_insurance <-
   )
 
 
-View(loss_15_insurance)
+# View(loss_15_insurance)
 
 
 plot_loss_15_insurance <-
@@ -1363,7 +1400,7 @@ va_insurance_race_diff %>%
     color = "Race"
   )
 
-View(va_insurance_race_diff)
+# View(va_insurance_race_diff)
 plot_va_insurance_race_diff
 
 #ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
@@ -1605,7 +1642,7 @@ private_output$lower_limit = private_output$Estimate - 1.96*private_output$`Std.
 private_output$group <- "private"
 private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 
-View(private_output)
+# View(private_output)
 
 
 #Repeat steps for other groups:
@@ -1619,7 +1656,7 @@ medicare_output$group <- "medicare"
 medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 #Convert group name into a factor
 
-View(medicare_output)
+# View(medicare_output)
 
 
 medicaid_output <- summary(GRAPHMedicaid_only_one_year_va_delta.lm)$coefficients[1:12,]
