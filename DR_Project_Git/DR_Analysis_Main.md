@@ -3,201 +3,206 @@ DR_Analysis_Main
 Vikas Maturi
 2021-07-07
 
--   <a href="#setup" id="toc-setup">Setup</a>
-    -   <a href="#libraries-and-data-import"
-        id="toc-libraries-and-data-import">Libraries and data import</a>
-    -   <a href="#join-severity-and-timeseries-patientvisit-data"
-        id="toc-join-severity-and-timeseries-patientvisit-data">Join severity
-        and timeseries patient/visit data</a>
--   <a href="#cleaned-datasets-for-analysis"
-    id="toc-cleaned-datasets-for-analysis">Cleaned datasets for analysis</a>
--   <a href="#table-1-patient-demographics"
-    id="toc-table-1-patient-demographics">Table 1: Patient Demographics</a>
-    -   <a href="#construct-dataset-to-generate-data-tables"
-        id="toc-construct-dataset-to-generate-data-tables">Construct dataset to
-        generate data tables</a>
-    -   <a href="#table-age-by-race-and-insurance"
-        id="toc-table-age-by-race-and-insurance">Table: Age by race and
-        insurance</a>
-    -   <a href="#table-gender-by-race-and-insurance"
-        id="toc-table-gender-by-race-and-insurance">Table: Gender by race and
-        insurance</a>
-    -   <a href="#table-baseline-va-by-race-and-insurance"
-        id="toc-table-baseline-va-by-race-and-insurance">Table: Baseline VA by
-        race and insurance</a>
-    -   <a href="#table-vegf-drug-by-race-and-insurance"
-        id="toc-table-vegf-drug-by-race-and-insurance">Table: VEGF drug by race
-        and insurance</a>
-    -   <a href="#table-smoke-status-by-race-and-insurance"
-        id="toc-table-smoke-status-by-race-and-insurance">Table: Smoke status by
-        race and insurance</a>
-    -   <a href="#table-insurance-by-race"
-        id="toc-table-insurance-by-race">Table: Insurance by race</a>
--   <a href="#calculation-x-mean-va-and-sd-of-va-and-at-baseline"
-    id="toc-calculation-x-mean-va-and-sd-of-va-and-at-baseline">Calculation
-    X: Mean VA and SD of VA and at baseline</a>
--   <a href="#calculation-x-n-after-eliminating-icd-10-diagnostic-codes"
-    id="toc-calculation-x-n-after-eliminating-icd-10-diagnostic-codes">Calculation
-    X: N after eliminating ICD-10 diagnostic codes</a>
--   <a href="#figure-1a-baseline-differences-in-severity-score-by-race"
-    id="toc-figure-1a-baseline-differences-in-severity-score-by-race">Figure
-    1A: Baseline Differences in Severity Score by Race</a>
--   <a
-    href="#figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status"
-    id="toc-figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status">Figure
-    2A and 2B: Differences in Rates of Bevacizumab Injection by Severity
-    Category, Race and Insurance Status</a>
--   <a
-    href="#regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
-    id="toc-regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
-    X: Variables that influence likelihood of receiving Bevacizumab
-    treatment</a>
--   <a
-    href="#regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
-    id="toc-regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
-    Y: Using No-Intercept Model to Determine Variables that influence
-    likelihood of receiving Bevacizumab treatment</a>
-    -   <a
-        href="#forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status"
-        id="toc-forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status">Forest
-        Plot Representing Effect of Race on Bevacizumab Administration by
-        Insurance Status</a>
--   <a
-    href="#supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status"
-    id="toc-supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status">Supplement:
-    Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab
-    Injection by Severity Category, Race and Insurance Status</a>
--   <a
-    href="#figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race"
-    id="toc-figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race">Figure
-    3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by
-    Race</a>
--   <a
-    href="#figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race"
-    id="toc-figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race">Figure
-    4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by
-    Insurance and Race</a>
--   <a
-    href="#regression-x-variables-that-influence-change-in-vision-after-one-year"
-    id="toc-regression-x-variables-that-influence-change-in-vision-after-one-year">Regression
-    X: Variables that influence change in vision after one year</a>
--   <a
-    href="#regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status"
-    id="toc-regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status">Regression
-    Y: Variables that influence change in vision after one year: stratified
-    by race and insurance status</a>
--   <a href="#forest-plots-on-va-change"
-    id="toc-forest-plots-on-va-change">Forest Plots on VA change</a>
-    -   <a
-        href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group"
-        id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group">Forest
-        Plot to Determine Factors Associated with VA Changes within Each
-        Insurance Group</a>
-    -   <a
-        href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-race"
-        id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-race">Forest
-        Plot to Determine Factors Associated with VA Changes within Each
-        Race</a>
--   <a
-    href="#calculation-x-number-of-patients-including-the-multivariate-linear-regression"
-    id="toc-calculation-x-number-of-patients-including-the-multivariate-linear-regression">Calculation
-    X: Number of patients including the multivariate linear regression</a>
--   <a
-    href="#figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race"
-    id="toc-figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race">Figure
-    5: Average severity score at each baseline VA (rounded to nearest 5) by
-    race</a>
--   <a
-    href="#figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance"
-    id="toc-figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance">Figure
-    6: Average severity score at each baseline VA (rounded to nearest 5) by
+- <a href="#setup" id="toc-setup">Setup</a>
+  - <a href="#libraries-and-data-import"
+    id="toc-libraries-and-data-import">Libraries and data import</a>
+  - <a href="#join-severity-and-timeseries-patientvisit-data"
+    id="toc-join-severity-and-timeseries-patientvisit-data">Join severity
+    and timeseries patient/visit data</a>
+- <a href="#cleaned-datasets-for-analysis"
+  id="toc-cleaned-datasets-for-analysis">Cleaned datasets for analysis</a>
+- <a href="#table-1-patient-demographics"
+  id="toc-table-1-patient-demographics">Table 1: Patient Demographics</a>
+  - <a href="#construct-dataset-to-generate-data-tables"
+    id="toc-construct-dataset-to-generate-data-tables">Construct dataset to
+    generate data tables</a>
+  - <a href="#table-age-by-race-and-insurance"
+    id="toc-table-age-by-race-and-insurance">Table: Age by race and
     insurance</a>
--   <a href="#timeseries-analysis-of-visual-acuity"
-    id="toc-timeseries-analysis-of-visual-acuity">Timeseries analysis of
-    visual acuity</a>
-    -   <a href="#distribution-of-va-by-race"
-        id="toc-distribution-of-va-by-race">Distribution of VA by race</a>
-    -   <a href="#timeseries-va-by-race-and-severity"
-        id="toc-timeseries-va-by-race-and-severity">Timeseries VA by race and
-        severity</a>
-    -   <a href="#timeseries-va-by-race"
-        id="toc-timeseries-va-by-race">Timeseries VA by race</a>
-    -   <a href="#timeseries-va-by-insurance"
-        id="toc-timeseries-va-by-insurance">Timeseries VA by insurance</a>
-    -   <a href="#percentage-with-15-letter-loss-by-race"
-        id="toc-percentage-with-15-letter-loss-by-race">Percentage with 15
-        letter loss by race</a>
-    -   <a href="#percentage-with-15-letter-loss-by-insurance"
-        id="toc-percentage-with-15-letter-loss-by-insurance">Percentage with 15
-        letter loss by insurance</a>
-    -   <a href="#timeseries-va-by-insurance-and-race"
-        id="toc-timeseries-va-by-insurance-and-race">Timeseries VA by insurance
-        and race</a>
-    -   <a href="#timeseries-va-by-smoking-and-race"
-        id="toc-timeseries-va-by-smoking-and-race">Timeseries VA by smoking and
-        race</a>
-    -   <a href="#timeseries-va-by-gender-and-race"
-        id="toc-timeseries-va-by-gender-and-race">Timeseries VA by gender and
-        race</a>
-    -   <a href="#race-va-timeseries" id="toc-race-va-timeseries">Race VA
-        timeseries</a>
-    -   <a href="#race-va-timeseries-bucketed-by-10"
-        id="toc-race-va-timeseries-bucketed-by-10">Race VA timeseries bucketed
-        by 10</a>
-    -   <a href="#severity-race-va-timeseries"
-        id="toc-severity-race-va-timeseries">Severity race VA timeseries</a>
-    -   <a href="#severity-insurance-race-va-timeseries"
-        id="toc-severity-insurance-race-va-timeseries">Severity insurance race
-        VA timeseries</a>
--   <a href="#injections-by-va-analysis"
-    id="toc-injections-by-va-analysis">Injections by VA analysis</a>
--   <a href="#baseline-analysis" id="toc-baseline-analysis">Baseline
-    analysis</a>
-    -   <a href="#severity-by-race" id="toc-severity-by-race">Severity by
-        race</a>
-    -   <a href="#severity-by-race-and-region"
-        id="toc-severity-by-race-and-region">Severity by race and region</a>
-    -   <a href="#severity-by-race-and-age"
-        id="toc-severity-by-race-and-age">Severity by race and age</a>
-    -   <a href="#severity-by-region" id="toc-severity-by-region">Severity by
-        region</a>
-    -   <a href="#severity-by-race-and-insurance"
-        id="toc-severity-by-race-and-insurance">Severity by race and
-        insurance</a>
-    -   <a href="#severity-by-race-and-sex"
-        id="toc-severity-by-race-and-sex">Severity by race and sex</a>
-    -   <a href="#severity-by-type-of-treatment"
-        id="toc-severity-by-type-of-treatment">Severity by type of treatment</a>
-    -   <a
-        href="#likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment"
-        id="toc-likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
-        of drug received by severity score and race (given that patient recieved
-        anti-vegf treatment)</a>
-    -   <a
-        href="#likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment"
-        id="toc-likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
-        of drug received by severity score CATEGORY and race (given that patient
-        recieved anti-vegf treatment)</a>
-    -   <a
-        href="#likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment"
-        id="toc-likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
-        of drug received by baseline VA and race (given that patient recieved
-        anti-vegf treatment)</a>
-    -   <a
-        href="#likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment"
-        id="toc-likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment">Likelihood
-        of drug received by severity score CATEGORY and insurance (given that
-        patient recieved anti-vegf treatment)</a>
-    -   <a href="#drug-received-by-race-and-insurance"
-        id="toc-drug-received-by-race-and-insurance">Drug received by race and
-        insurance</a>
-    -   <a href="#severity-vs-vision" id="toc-severity-vs-vision">Severity
-        vs. vision</a>
--   <a href="#regression" id="toc-regression">Regression</a>
-    -   <a href="#linear-regression" id="toc-linear-regression">Linear
-        regression</a>
-    -   <a href="#quantile-regressionn" id="toc-quantile-regressionn">Quantile
-        regressionn</a>
+  - <a href="#table-gender-by-race-and-insurance"
+    id="toc-table-gender-by-race-and-insurance">Table: Gender by race and
+    insurance</a>
+  - <a href="#table-baseline-va-by-race-and-insurance"
+    id="toc-table-baseline-va-by-race-and-insurance">Table: Baseline VA by
+    race and insurance</a>
+  - <a href="#table-vegf-drug-by-race-and-insurance"
+    id="toc-table-vegf-drug-by-race-and-insurance">Table: VEGF drug by race
+    and insurance</a>
+  - <a href="#table-smoke-status-by-race-and-insurance"
+    id="toc-table-smoke-status-by-race-and-insurance">Table: Smoke status by
+    race and insurance</a>
+  - <a href="#table-insurance-by-race"
+    id="toc-table-insurance-by-race">Table: Insurance by race</a>
+- <a href="#calculation-x-mean-va-and-sd-of-va-and-at-baseline"
+  id="toc-calculation-x-mean-va-and-sd-of-va-and-at-baseline">Calculation
+  X: Mean VA and SD of VA and at baseline</a>
+- <a href="#calculation-x-n-after-eliminating-icd-10-diagnostic-codes"
+  id="toc-calculation-x-n-after-eliminating-icd-10-diagnostic-codes">Calculation
+  X: N after eliminating ICD-10 diagnostic codes</a>
+- <a href="#figure-1a-baseline-differences-in-severity-score-by-race"
+  id="toc-figure-1a-baseline-differences-in-severity-score-by-race">Figure
+  1A: Baseline Differences in Severity Score by Race</a>
+- <a
+  href="#figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status"
+  id="toc-figure-2a-and-2b-differences-in-rates-of-bevacizumab-injection-by-severity-category-race-and-insurance-status">Figure
+  2A and 2B: Differences in Rates of Bevacizumab Injection by Severity
+  Category, Race and Insurance Status</a>
+- <a
+  href="#regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
+  id="toc-regression-x-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
+  X: Variables that influence likelihood of receiving Bevacizumab
+  treatment</a>
+- <a
+  href="#regression-x2-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment-for-patients-with-less-than-2050-vision"
+  id="toc-regression-x2-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment-for-patients-with-less-than-2050-vision">Regression
+  X.2: Variables that influence likelihood of receiving Bevacizumab
+  treatment for patients with less than 20/50 vision</a>
+- <a
+  href="#regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
+  id="toc-regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
+  Y: Using No-Intercept Model to Determine Variables that influence
+  likelihood of receiving Bevacizumab treatment</a>
+  - <a
+    href="#forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status"
+    id="toc-forest-plot-representing-effect-of-race-on-bevacizumab-administration-by-insurance-status">Forest
+    Plot Representing Effect of Race on Bevacizumab Administration by
+    Insurance Status</a>
+- <a
+  href="#supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status"
+  id="toc-supplement-differences-in-rates-of-bevacizumab-aflibercept-and-ranibizumab-injection-by-severity-category-race-and-insurance-status">Supplement:
+  Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab
+  Injection by Severity Category, Race and Insurance Status</a>
+- <a
+  href="#figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race"
+  id="toc-figure-3a-and-3b-visual-acuity-change-from-baseline-at-one-and-two-years-by-race">Figure
+  3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by
+  Race</a>
+- <a
+  href="#figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race"
+  id="toc-figure-4a-4b-4c-visual-acuity-change-from-baseline-at-one-and-two-years-by-insurance-and-race">Figure
+  4A, 4B, 4C: Visual Acuity Change from Baseline at One and Two Years, by
+  Insurance and Race</a>
+- <a
+  href="#regression-x-variables-that-influence-change-in-vision-after-one-year"
+  id="toc-regression-x-variables-that-influence-change-in-vision-after-one-year">Regression
+  X: Variables that influence change in vision after one year</a>
+- <a
+  href="#regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status"
+  id="toc-regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status">Regression
+  Y: Variables that influence change in vision after one year: stratified
+  by race and insurance status</a>
+- <a href="#forest-plots-on-va-change"
+  id="toc-forest-plots-on-va-change">Forest Plots on VA change</a>
+  - <a
+    href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group"
+    id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-insurance-group">Forest
+    Plot to Determine Factors Associated with VA Changes within Each
+    Insurance Group</a>
+  - <a
+    href="#forest-plot-to-determine-factors-associated-with-va-changes-within-each-race"
+    id="toc-forest-plot-to-determine-factors-associated-with-va-changes-within-each-race">Forest
+    Plot to Determine Factors Associated with VA Changes within Each
+    Race</a>
+- <a
+  href="#calculation-x-number-of-patients-including-the-multivariate-linear-regression"
+  id="toc-calculation-x-number-of-patients-including-the-multivariate-linear-regression">Calculation
+  X: Number of patients including the multivariate linear regression</a>
+- <a
+  href="#figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race"
+  id="toc-figure-5-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-race">Figure
+  5: Average severity score at each baseline VA (rounded to nearest 5) by
+  race</a>
+- <a
+  href="#figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance"
+  id="toc-figure-6-average-severity-score-at-each-baseline-va-rounded-to-nearest-5-by-insurance">Figure
+  6: Average severity score at each baseline VA (rounded to nearest 5) by
+  insurance</a>
+- <a href="#timeseries-analysis-of-visual-acuity"
+  id="toc-timeseries-analysis-of-visual-acuity">Timeseries analysis of
+  visual acuity</a>
+  - <a href="#distribution-of-va-by-race"
+    id="toc-distribution-of-va-by-race">Distribution of VA by race</a>
+  - <a href="#timeseries-va-by-race-and-severity"
+    id="toc-timeseries-va-by-race-and-severity">Timeseries VA by race and
+    severity</a>
+  - <a href="#timeseries-va-by-race"
+    id="toc-timeseries-va-by-race">Timeseries VA by race</a>
+  - <a href="#timeseries-va-by-insurance"
+    id="toc-timeseries-va-by-insurance">Timeseries VA by insurance</a>
+  - <a href="#percentage-with-15-letter-loss-by-race"
+    id="toc-percentage-with-15-letter-loss-by-race">Percentage with 15
+    letter loss by race</a>
+  - <a href="#percentage-with-15-letter-loss-by-insurance"
+    id="toc-percentage-with-15-letter-loss-by-insurance">Percentage with 15
+    letter loss by insurance</a>
+  - <a href="#timeseries-va-by-insurance-and-race"
+    id="toc-timeseries-va-by-insurance-and-race">Timeseries VA by insurance
+    and race</a>
+  - <a href="#timeseries-va-by-smoking-and-race"
+    id="toc-timeseries-va-by-smoking-and-race">Timeseries VA by smoking and
+    race</a>
+  - <a href="#timeseries-va-by-gender-and-race"
+    id="toc-timeseries-va-by-gender-and-race">Timeseries VA by gender and
+    race</a>
+  - <a href="#race-va-timeseries" id="toc-race-va-timeseries">Race VA
+    timeseries</a>
+  - <a href="#race-va-timeseries-bucketed-by-10"
+    id="toc-race-va-timeseries-bucketed-by-10">Race VA timeseries bucketed
+    by 10</a>
+  - <a href="#severity-race-va-timeseries"
+    id="toc-severity-race-va-timeseries">Severity race VA timeseries</a>
+  - <a href="#severity-insurance-race-va-timeseries"
+    id="toc-severity-insurance-race-va-timeseries">Severity insurance race
+    VA timeseries</a>
+- <a href="#injections-by-va-analysis"
+  id="toc-injections-by-va-analysis">Injections by VA analysis</a>
+- <a href="#baseline-analysis" id="toc-baseline-analysis">Baseline
+  analysis</a>
+  - <a href="#severity-by-race" id="toc-severity-by-race">Severity by
+    race</a>
+  - <a href="#severity-by-race-and-region"
+    id="toc-severity-by-race-and-region">Severity by race and region</a>
+  - <a href="#severity-by-race-and-age"
+    id="toc-severity-by-race-and-age">Severity by race and age</a>
+  - <a href="#severity-by-region" id="toc-severity-by-region">Severity by
+    region</a>
+  - <a href="#severity-by-race-and-insurance"
+    id="toc-severity-by-race-and-insurance">Severity by race and
+    insurance</a>
+  - <a href="#severity-by-race-and-sex"
+    id="toc-severity-by-race-and-sex">Severity by race and sex</a>
+  - <a href="#severity-by-type-of-treatment"
+    id="toc-severity-by-type-of-treatment">Severity by type of treatment</a>
+  - <a
+    href="#likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment"
+    id="toc-likelihood-of-drug-received-by-severity-score-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+    of drug received by severity score and race (given that patient recieved
+    anti-vegf treatment)</a>
+  - <a
+    href="#likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment"
+    id="toc-likelihood-of-drug-received-by-severity-score-category-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+    of drug received by severity score CATEGORY and race (given that patient
+    recieved anti-vegf treatment)</a>
+  - <a
+    href="#likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment"
+    id="toc-likelihood-of-drug-received-by-baseline-va-and-race-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+    of drug received by baseline VA and race (given that patient recieved
+    anti-vegf treatment)</a>
+  - <a
+    href="#likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment"
+    id="toc-likelihood-of-drug-received-by-severity-score-category-and-insurance-given-that-patient-recieved-anti-vegf-treatment">Likelihood
+    of drug received by severity score CATEGORY and insurance (given that
+    patient recieved anti-vegf treatment)</a>
+  - <a href="#drug-received-by-race-and-insurance"
+    id="toc-drug-received-by-race-and-insurance">Drug received by race and
+    insurance</a>
+  - <a href="#severity-vs-vision" id="toc-severity-vs-vision">Severity
+    vs. vision</a>
+- <a href="#regression" id="toc-regression">Regression</a>
+  - <a href="#linear-regression" id="toc-linear-regression">Linear
+    regression</a>
+  - <a href="#quantile-regressionn" id="toc-quantile-regressionn">Quantile
+    regressionn</a>
 
 ## Setup
 
@@ -643,7 +648,7 @@ unknown edema, moderate NPDR unknown edema, severe NPDR unknown edema,
 PDR unknown edema)
 
 ``` r
-timeseries_analysis %>% 
+figure_1A <- timeseries_analysis %>% 
   dplyr::filter(!is.na(vision_category)) %>% 
   dplyr::count(vision_category, race_ethnicity) %>%
   dplyr::ungroup() %>% 
@@ -664,15 +669,15 @@ timeseries_analysis %>%
     y = "Percentage ",
     fill = "Race"
   )
+
+figure_1A
 ```
 
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
-ggsave("figure1A.pdf")
+ggsave("graphs/figure1A.png", figure_1A, width = 10, height = 5)
 ```
-
-    ## Saving 7 x 5 in image
 
 ## Figure 2A and 2B: Differences in Rates of Bevacizumab Injection by Severity Category, Race and Insurance Status
 
@@ -742,7 +747,7 @@ plot_drug_sev_cat_race
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
-ggsave("graphs_6_28/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
+ggsave("graphs/2A_plot_drug_sev_cat_race.png", plot_drug_sev_cat_race, width = 10, height = 5)
 ```
 
 ``` r
@@ -811,7 +816,7 @@ plot_drug_sev_cat_insurance
 ![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
-ggsave("graphs_6_28/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
+ggsave("graphs/2B_plot_drug_sev_cat_insurance.png", plot_drug_sev_cat_insurance, width = 10, height = 5)
 ```
 
 ## Regression X: Variables that influence likelihood of receiving Bevacizumab treatment
@@ -937,6 +942,134 @@ summary(avastin_1.logm)
     ##     Null deviance: 55288  on 39907  degrees of freedom
     ## Residual deviance: 53629  on 39891  degrees of freedom
     ## AIC: 53663
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+## Regression X.2: Variables that influence likelihood of receiving Bevacizumab treatment for patients with less than 20/50 vision
+
+``` r
+# create dataset for regression
+data_avastin_reg_2 <- 
+  timeseries_analysis %>% 
+  filter(
+    insurance %in% c("Medicare", "Medicaid", "Private")
+  ) %>%
+  # filter for vision at or worse than 20/50
+  filter(baseline_va_letter < 66) %>% 
+  mutate(
+    # unorder for appropriate regression interpretation
+    race_ethnicity = factor(race_ethnicity, ordered = FALSE),
+    race_ethnicity = relevel(race_ethnicity, ref = "White"),
+    # unorder for appropriate regression interpretation
+    insurance = factor(insurance, ordered = FALSE),
+    insurance = relevel(insurance, ref = "Private"),
+    smoke_status = factor(smoke_status),
+    smoke_status = relevel(smoke_status, ref = "No / Never"),
+    avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
+  ) 
+
+# glm for logistic regression
+avastin_2.logm <- 
+  glm(
+    avastin ~ race_ethnicity + insurance + race_ethnicity * insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg_2, 
+    family = binomial
+  ) 
+
+summary(avastin_2.logm)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = avastin ~ race_ethnicity + insurance + race_ethnicity * 
+    ##     insurance + gender + first_dr_age + smoke_status + baseline_va_letter + 
+    ##     severity_score, family = binomial, data = data_avastin_reg_2)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.8677  -1.1014  -0.8908   1.1833   1.6056  
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 -0.433788
+    ## race_ethnicityBlack                                          0.061896
+    ## race_ethnicityHispanic                                       0.517063
+    ## insuranceMedicare                                            0.029217
+    ## insuranceMedicaid                                            0.314106
+    ## genderMale                                                  -0.074026
+    ## genderUnknown                                               -0.064045
+    ## first_dr_age                                                -0.010220
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.030236
+    ## smoke_statusUnknown / Unclassified                           0.081639
+    ## smoke_statusYes / Active                                     0.178632
+    ## baseline_va_letter                                          -0.001437
+    ## severity_score                                               0.014717
+    ## race_ethnicityBlack:insuranceMedicare                        0.319253
+    ## race_ethnicityHispanic:insuranceMedicare                     0.256201
+    ## race_ethnicityBlack:insuranceMedicaid                        0.347384
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.299243
+    ##                                                             Std. Error
+    ## (Intercept)                                                   0.153996
+    ## race_ethnicityBlack                                           0.099145
+    ## race_ethnicityHispanic                                        0.087962
+    ## insuranceMedicare                                             0.047018
+    ## insuranceMedicaid                                             0.090836
+    ## genderMale                                                    0.031263
+    ## genderUnknown                                                 0.228908
+    ## first_dr_age                                                  0.001565
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.035875
+    ## smoke_statusUnknown / Unclassified                            0.151752
+    ## smoke_statusYes / Active                                      0.051099
+    ## baseline_va_letter                                            0.001501
+    ## severity_score                                                0.001052
+    ## race_ethnicityBlack:insuranceMedicare                         0.111591
+    ## race_ethnicityHispanic:insuranceMedicare                      0.103056
+    ## race_ethnicityBlack:insuranceMedicaid                         0.206207
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.170674
+    ##                                                             z value
+    ## (Intercept)                                                  -2.817
+    ## race_ethnicityBlack                                           0.624
+    ## race_ethnicityHispanic                                        5.878
+    ## insuranceMedicare                                             0.621
+    ## insuranceMedicaid                                             3.458
+    ## genderMale                                                   -2.368
+    ## genderUnknown                                                -0.280
+    ## first_dr_age                                                 -6.529
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.843
+    ## smoke_statusUnknown / Unclassified                            0.538
+    ## smoke_statusYes / Active                                      3.496
+    ## baseline_va_letter                                           -0.958
+    ## severity_score                                               13.994
+    ## race_ethnicityBlack:insuranceMedicare                         2.861
+    ## race_ethnicityHispanic:insuranceMedicare                      2.486
+    ## race_ethnicityBlack:insuranceMedicaid                         1.685
+    ## race_ethnicityHispanic:insuranceMedicaid                      1.753
+    ##                                                             Pr(>|z|)    
+    ## (Intercept)                                                 0.004849 ** 
+    ## race_ethnicityBlack                                         0.532429    
+    ## race_ethnicityHispanic                                      4.15e-09 ***
+    ## insuranceMedicare                                           0.534335    
+    ## insuranceMedicaid                                           0.000544 ***
+    ## genderMale                                                  0.017891 *  
+    ## genderUnknown                                               0.779643    
+    ## first_dr_age                                                6.64e-11 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.399336    
+    ## smoke_statusUnknown / Unclassified                          0.590594    
+    ## smoke_statusYes / Active                                    0.000473 ***
+    ## baseline_va_letter                                          0.338233    
+    ## severity_score                                               < 2e-16 ***
+    ## race_ethnicityBlack:insuranceMedicare                       0.004224 ** 
+    ## race_ethnicityHispanic:insuranceMedicare                    0.012918 *  
+    ## race_ethnicityBlack:insuranceMedicaid                       0.092058 .  
+    ## race_ethnicityHispanic:insuranceMedicaid                    0.079551 .  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 24815  on 17925  degrees of freedom
+    ## Residual deviance: 23999  on 17909  degrees of freedom
+    ## AIC: 24033
     ## 
     ## Number of Fisher Scoring iterations: 4
 
@@ -1268,7 +1401,7 @@ bev_private
 bev_private$group <- "private"
 bev_private$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
-View(bev_private)
+# View(bev_private)
 
 #MEDICARE DATA ASSEMBLY
 
@@ -1323,7 +1456,7 @@ bev_private
 #Add a group name
 bev_medicare$group <- "medicare"
 bev_medicare$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
-View(bev_medicare)
+# View(bev_medicare)
 
 #MEDICAID DATA ASSEMBLY
 bev_medicaid <- summary(Medicaid_avastin_logreg)$coefficients[1:9,]
@@ -1339,9 +1472,9 @@ bev_medicaid$odds <- exp(bev_medicaid$Estimate)
 
 bev_medicaid$upper_limit = exp(bev_medicaid$up_error)
 bev_medicaid$lower_limit = exp(bev_medicaid$down_error)
-View(bev_private)
-View(bev_medicare)
-View(bev_medicaid)
+# View(bev_private)
+# View(bev_medicare)
+# View(bev_medicaid)
 
 
 #Add a group name
@@ -1382,7 +1515,7 @@ plot_forest_bev_insurance <-
 plot_forest_bev_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/plot_forest_bev_insurance.png", plot_forest_bev_insurance, width = 10, height = 5)
@@ -1547,7 +1680,7 @@ bev_white$lower_limit = exp(bev_white$down_error)
 bev_white$group <- "white"
 bev_white$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
-View(bev_private)
+# View(bev_private)
 
 #MEDICARE DATA ASSEMBLY
 
@@ -1591,9 +1724,9 @@ bev_hispanic$group <- "hispanic"
 bev_hispanic$FACTOR_clean <- c("Intercept", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
 
 
-View(bev_white)
-View(bev_black)
-View(bev_hispanic)
+# View(bev_white)
+# View(bev_black)
+# View(bev_hispanic)
 
 #Combine all group output information
 combined_bev_race_output = rbind(bev_hispanic,bev_black,bev_white)
@@ -1629,7 +1762,7 @@ plot_forest_bev_race <-
 plot_forest_bev_race 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/plot_forest_bev_race.png", plot_forest_bev_race, width = 10, height = 5)
@@ -1638,13 +1771,23 @@ plot_forest_bev_race
 ## Supplement: Differences in Rates of Bevacizumab, Aflibercept, and Ranibizumab Injection by Severity Category, Race and Insurance Status
 
 ``` r
-plot_drug_sev_cat_race_all <- 
-# Graphing likelihood of Bevacizumab by severity and race
-drug_sev_cat_race %>% 
+drug_sev_cat_race_2 <-
+  drug_sev_cat_race %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
   # round proportion to nearest 100th
-  mutate(pct_round = round(prop, 2)) %>% 
+  mutate(pct_round = round(prop, 2))  %>% 
+  mutate(
+    vegf_drug_name = vegf_group_365, 
+  ) 
+
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Avastin"]<-"Bevacizumab"
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Lucentis"]<-"Ranibizumab"
+drug_sev_cat_race_2$vegf_drug_name[drug_sev_cat_race_2$vegf_group_365=="Eylea"]<-"Aflibercept"
+
+plot_drug_sev_cat_race_all <- 
+# Graphing likelihood of Bevacizumab by severity and race
+drug_sev_cat_race_2 %>% 
   ggplot(aes(x = vision_category, y = pct_round, fill = race_ethnicity)) +
   geom_col(position = "dodge") +
   theme_bw() +
@@ -1653,30 +1796,44 @@ drug_sev_cat_race %>%
     # remove background lines
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
-  ) +  facet_grid(vegf_group_365 ~ .) +
+  ) +  facet_grid(vegf_drug_name ~ .) +
   #geom_text(aes(label = paste0(pct_round, "%")), vjust = -0.5, position = position_dodge(width = 1)) +
   #scale_x_continuous()
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
   scale_fill_manual(values = race_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Bevacizumab",
+    y = "Percentage of people receiving Each Treatment",
     fill = "Race"
   )
 
 plot_drug_sev_cat_race_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
+ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
 ```
 
 ``` r
+drug_sev_cat_insurance_2 <-
+  drug_sev_cat_insurance %>% 
+  # remove individuals with no vision category
+  filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
+  # round proportion to nearest 100th
+  mutate(pct_round = round(prop, 2))  %>% 
+  mutate(
+    vegf_drug_name = vegf_group_365, 
+  ) 
+
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Avastin"]<-"Bevacizumab"
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Lucentis"]<-"Ranibizumab"
+drug_sev_cat_insurance_2$vegf_drug_name[drug_sev_cat_insurance_2$vegf_group_365=="Eylea"]<-"Aflibercept"
+
 plot_drug_sev_cat_insurance_all <-
 # Graphing likelihood of first drug type by severity and insurance
-drug_sev_cat_insurance %>% 
+drug_sev_cat_insurance_2 %>% 
   # remove individuals with no vision category
   filter(!is.na(vision_category), !vision_category %in% c("NA")) %>% 
   # round proportion to nearest 100th
@@ -1689,24 +1846,23 @@ drug_sev_cat_insurance %>%
     # remove background lines
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank()
-  ) +  facet_grid(vegf_group_365 ~ .) +
-  facet_grid(vegf_group_365~.) +
+  ) +  facet_grid(vegf_drug_name ~ .) +
   scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, 1)) +
   # different colors for insurance
   scale_fill_manual(values = insurance_colors) +
   labs(
     x = "Severity category",
-    y = "Percentage of people receiving Bevacizumab",
+    y = "Percentage of people receiving Each Treatment",
     fill = "Insurance"
   )
 
 plot_drug_sev_cat_insurance_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
+ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
 ```
 
 ## Figure 3A and 3B: Visual Acuity Change from Baseline at One and Two Years, by Race
@@ -1755,7 +1911,7 @@ loss_15_race <-
     )
   )
 
-View(loss_15_race)
+# View(loss_15_race)
 
 plot_loss_15_race <-
 loss_15_race %>%
@@ -1778,7 +1934,7 @@ loss_15_race %>%
 plot_loss_15_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/3A_plot_loss_15_race.png", plot_loss_15_race, width = 7, height = 5)
@@ -1859,7 +2015,7 @@ plot_va_race_diff <-
 plot_va_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/3B_plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
@@ -1895,7 +2051,7 @@ loss_15_insurance <-
   )
 
 
-View(loss_15_insurance)
+# View(loss_15_insurance)
 
 
 plot_loss_15_insurance <-
@@ -1919,7 +2075,7 @@ loss_15_insurance %>%
 plot_loss_15_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/4A_plot_loss_15_insurance.png", plot_loss_15_insurance, width = 7, height = 5)
@@ -1971,7 +2127,11 @@ va_insurance_diff %>%
   theme_light() + 
   theme(
     panel.grid.minor.x = element_blank(),
-    panel.grid.major.x = element_blank()
+    panel.grid.major.x = element_blank(),    
+    legend.position = "bottom",
+    #legend.spacing.x = unit(1.0, "cm")
+    legend.margin = margin(c(5, 5, 5, 0)),
+    legend.text = element_text(margin = margin(r = 10, unit = "pt"))
   ) +
   scale_color_manual(values = insurance_colors) +
   labs(
@@ -1983,10 +2143,10 @@ va_insurance_diff %>%
 plot_va_insurance_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
+ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
 ```
 
 ``` r
@@ -2073,11 +2233,11 @@ va_insurance_race_diff %>%
     color = "Race"
   )
 
-View(va_insurance_race_diff)
+# View(va_insurance_race_diff)
 plot_va_insurance_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
@@ -3298,9 +3458,9 @@ private_output$lower_limit = private_output$Estimate - 1.96*private_output$`Std.
 
 #Add a group name
 private_output$group <- "private"
-private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+private_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 
-View(private_output)
+# View(private_output)
 
 
 #Repeat steps for other groups:
@@ -3311,10 +3471,10 @@ medicare_output <- tibble::rownames_to_column(medicare_output, "FACTOR")
 medicare_output$upper_limit = medicare_output$Estimate + 1.96*medicare_output$`Std. Error`
 medicare_output$lower_limit = medicare_output$Estimate - 1.96*medicare_output$`Std. Error`
 medicare_output$group <- "medicare"
-medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+medicare_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 #Convert group name into a factor
 
-View(medicare_output)
+# View(medicare_output)
 
 
 medicaid_output <- summary(GRAPHMedicaid_only_one_year_va_delta.lm)$coefficients[1:12,]
@@ -3323,7 +3483,7 @@ medicaid_output <- tibble::rownames_to_column(medicaid_output, "FACTOR")
 medicaid_output$upper_limit = medicaid_output$Estimate + 1.96*medicaid_output$`Std. Error`
 medicaid_output$lower_limit = medicaid_output$Estimate - 1.96*medicaid_output$`Std. Error`
 medicaid_output$group <- "medicaid"
-medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Avastin)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
+medicaid_output$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Male (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Combo (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Ranibizumab (rel to Bevacizumab)", "Severity Score")
 #Convert group name into a factor
 
 
@@ -3332,7 +3492,7 @@ combined_output = rbind(medicaid_output,medicare_output, private_output)
 
 #Remove original factor names that created unaesthetic graph
 combined_output = subset(combined_output, select = -c(FACTOR) )
-combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Avastin)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
+combined_output$FACTOR_clean = factor(medicaid_output$FACTOR_clean, levels = c("Severity Score", "Ranibizumab (rel to Bevacizumab)", "Aflibercept (rel to Bevacizumab)", "Combo (rel to Bevacizumab)", "Baseline VA", "Current Smoker (rel to Non-Smoker)", "Former Smoker (rel to Non-Smoker)",  "DR Diag. Age", "Male (rel to Female)","Hispanic (rel to White)", "Black (rel to White)", "Intercept"))
 
 #Remove intercept values to allow for graph interpretation
 combined_output<-combined_output[!(combined_output$FACTOR_clean=="Intercept"),]
@@ -3357,17 +3517,17 @@ forest_va_change_insurance <-
   ) +
   labs(
     y = "Factor", 
-    x = "Change in VA after 1 year", 
+    x = "Relative Effect on VA after 1 year", 
     title = "Factors Associated with Changes in VA by Insurance"
   )
 
 forest_va_change_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
+ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
 ```
 
 #### Forest Plot to Determine Factors Associated with VA Changes within Each Race
@@ -3801,17 +3961,17 @@ forest_va_change_race <-
   ) +
   labs(
     y= "Factor", 
-    x = "Change in VA after 1 year",
+    x = "Relative Effect on VA after 1 year",
     title = "Factors Associated with Changes in VA by Race"
   )
 
 forest_va_change_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ``` r
-#ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
+ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
 ```
 
 ``` r
@@ -3921,7 +4081,7 @@ plot_sev_race_va <-
 plot_sev_race_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/5_plot_sev_race_va.png", plot_sev_race_va, width = 7, height = 5)
@@ -3987,7 +4147,7 @@ plot_sev_insurance_va <-
 plot_sev_insurance_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/6_plot_sev_insurance_va.png", plot_sev_insurance_va, width = 7, height = 5)
@@ -4035,7 +4195,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-47-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 ``` r
 race_distribution %>% 
@@ -4051,7 +4211,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -4097,7 +4257,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-51-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -4139,7 +4299,7 @@ va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ``` r
 va_race_diff <-
@@ -4168,7 +4328,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
 
 ``` r
 # plot change in visual acuity by race at one and two yeaars
@@ -4188,7 +4348,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -4213,7 +4373,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -4237,7 +4397,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -4278,7 +4438,7 @@ va_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
 
 ``` r
 va_insurance_diff <-
@@ -4307,7 +4467,7 @@ va_insurance_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
 
 #### Percentage with 15 letter loss by race
 
@@ -4359,7 +4519,7 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
 
 ``` r
 gain_15_race <-
@@ -4388,7 +4548,7 @@ gain_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-2.png)<!-- -->
 
 #### Percentage with 15 letter loss by insurance
 
@@ -4424,7 +4584,7 @@ loss_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 
 ``` r
 gain_15_insurance <-
@@ -4454,7 +4614,7 @@ gain_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-2.png)<!-- -->
 
 #### Timeseries VA by insurance and race
 
@@ -4566,7 +4726,7 @@ smoking_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
 
 #### Timeseries VA by gender and race
 
@@ -4596,7 +4756,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
 Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -4645,7 +4805,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -4677,7 +4837,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with \~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -4708,7 +4868,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -4739,7 +4899,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -4775,7 +4935,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -4845,7 +5005,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -4888,7 +5048,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-77-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -4933,7 +5093,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -4973,7 +5133,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-80-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -5016,7 +5176,7 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-81-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
 
 ## Injections by VA analysis
 
@@ -5186,7 +5346,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -5237,7 +5397,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -5266,7 +5426,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is \~1.5-2
 pts higher for Black people vs. Caucasian people, and \~3-4 pts higher
@@ -5358,7 +5518,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-94-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-95-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -5406,7 +5566,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-97-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -5444,7 +5604,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -5496,7 +5656,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-100-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -5519,7 +5679,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -5576,7 +5736,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -5594,7 +5754,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -5618,7 +5778,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Bevacizumab as compared to their Caucasian
@@ -5679,7 +5839,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-107-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -5696,7 +5856,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and race
@@ -5717,7 +5877,7 @@ drug_sev_cat_race %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-110-1.png)<!-- -->
 
 #### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
 
@@ -5768,7 +5928,7 @@ drug_va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-112-1.png)<!-- -->
 
 #### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
 
@@ -5823,7 +5983,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-113-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-114-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and insurance
@@ -5841,7 +6001,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-114-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-115-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and insurance
@@ -5863,7 +6023,7 @@ drug_sev_cat_insurance %>%
     ## geom_path: Each group consists of only one observation. Do you need to
     ## adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-115-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-116-1.png)<!-- -->
 
 #### Drug received by race and insurance
 
@@ -5921,7 +6081,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-117-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -5942,7 +6102,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-119-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -5963,7 +6123,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-119-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-120-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -5997,7 +6157,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-121-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-122-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -6052,7 +6212,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-123-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-124-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -6085,7 +6245,7 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-124-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-125-1.png)<!-- -->
 
 ## Regression
 
