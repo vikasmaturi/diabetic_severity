@@ -42,6 +42,8 @@ visits_severity <- read_csv(file = "data_clean/maturi_all_cleaned.csv")
 # read in cleaned data on timeservies visual acuity
 va_progression <- read_csv(file = "data_clean/va_progression.csv")
 
+
+test1 <- read_csv(file = "data_clean/registration_gap.csv")
 ```
 
 #### Join severity and timeseries patient/visit data
@@ -517,6 +519,9 @@ summary(avastin_1.logm)
 
 ## Regression X.2: Variables that influence likelihood of receiving Bevacizumab treatment for patients with less than 20/50 vision
 
+
+Create the dataset for the regression. Dataset only includes patients wiht less than a 20/50 vision. 
+
 ```{r}
 
 # create dataset for regression
@@ -539,6 +544,73 @@ data_avastin_reg_2 <-
     avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
   ) 
 
+```
+
+#### Bevacizumab Regression: NO interaction between insurance x race
+
+```{r}
+library(broom)      # for tidy model output
+library(questionr)  # for odds.ratios
+library(sjPlot)     # for plotting results of log.regr.
+library(sjmisc)     # for plotting results of log.regr.
+```
+
+We run a logistic regression model that predicts the likelihood of receiving bevacizumab treatment vs. not receiving bevacizumab treatment. The model does not include an interaction term.
+
+```{r}
+avastin_3.logm <-
+  glm(
+    avastin ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg_2, 
+    family = binomial
+  ) 
+
+summary(avastin_3.logm)
+```
+
+We then translate the output of the glm model into interpretable terms (specifically, odds ratios)
+
+```{r}
+modelsum_avastin3 <-
+  coef(avastin_3.logm) %>% 
+  tidy() %>% 
+  rename(log_OR = `x`) %>% 
+  left_join(confint(avastin_3.logm) %>% as_tibble(rownames = "names"), by = ("names")) %>% 
+  rename(lower_log_OR    = `2.5 %`,
+         upper_log_OR    = `97.5 %`) %>%
+  left_join(odds.ratio(avastin_3.logm) %>% as_tibble(rownames = "names"), by = ("names")) %>% 
+  rename(lower_OR        = `2.5 %`,
+         upper_OR        = `97.5 %`) %>% 
+  mutate(percent_change  = ifelse(OR < 1, (1/OR - 1)*-100, (OR - 1)*100  ),
+         lower_percent_change = ifelse(lower_OR < 1, (1/lower_OR - 1)*-100, (lower_OR - 1)*100  ),
+         upper_percent_change = ifelse(upper_OR < 1, (1/upper_OR - 1)*-100, (upper_OR - 1)*100  )) %>%
+  mutate_if(is.numeric, ~round(., 3)) %>% 
+  select(names, log_OR, OR, percent_change, p, everything()) %>% 
+  kable()
+
+modelsum_avastin3
+```
+
+Interpretation: 
+
+* The intercept becomes the base level and takes all the first (alphabetically, numerically, or in ordered factor) values of any variable, e.g., "female" from gender. With respect to race and insurance, the Intercept represents White patients on Private insurance.
+
+* Hispanic patients (with vision lower than 20/50) are 106% more likely to receive Bevacizumab as compared to their White counterparts. The odds ratio of 2.058 represents the ratio of the odds of Hispanic patients receiving Bevacizumab as compared to the odds of White patients receiving Bevacizumab. 
+
+* Black patients (with vision lower than 20/50) are 35.5% more likely to receive Bevacizumab as compared to their White counterparts 
+
+* Patients on Medicare (with vision lower than 20/50) are 14.9% more likely to receive Bevacizumab as compared to their White counterparts 
+
+* Patients on Medicaid (with vision lower than 20/50) are 48.2% more likely to receive Bevacizumab as compared to their White counterparts
+
+Notably, in this regression, all of these values have p values < .01 (and for all but Medicare patients, < .001)
+
+
+
+
+#### Bevacizumab Regression: Interaction model between insurance x race
+
+```{r}
 # glm for logistic regression
 avastin_2.logm <- 
   glm(
@@ -548,8 +620,113 @@ avastin_2.logm <-
   ) 
 
 summary(avastin_2.logm)
+```
+
+Interpretation: 
+
+* The output of this model cannot be easily interpreted. The estimates (log-odds ratios) for the interaction terms reported by R are not their real log-odds ratios. Instead, we need to add the log-odds rations of all the predictors participating in the particular interaction to the interaction coefficient reported by the model to give us the real log-odds ration of an interaction. 
+
+
+We then manually construct a more interpretable dataset:
+
+```{r}
+
+# leverage the effects package to calculate the appropriate log-odds of each category
+modelsum_avastin2 <-
+  coef(avastin_2.logm) %>% 
+  tidy() %>% 
+  rename(wrong_log_OR = `x`) %>% 
+  add_column(
+    log_OR = c(
+      -0.362840480, 
+      0.074604515, 
+      0.541937215, 
+      0.063334512,
+      0.296132583,
+      -0.057308892,
+      -0.107450836,
+      -0.011315890,
+      0.007005235,
+      -0.035573295,
+      0.180788307,
+      -0.001602338,
+      0.014444630, 
+      0.292340917 + 0.074604515 + 0.063334512, # Black*Medicare + Black + Medicare 
+      0.224539672 + 0.541937215 + 0.063334512, # Hisp*Medicare + Hisp + Medidcare 
+      0.249940709 + 0.074604515 + 0.296132583, # Black*Medicaid + Black + Medicaid
+      0.319317837 + 0.541937215 + 0.296132583), # Hisp*Medicaid + Hisp + Medicaid
+  ) %>% 
+  add_column( 
+    log_odds = c(
+      -0.362840480, 
+      0.074604515 - 0.362840480, 
+      0.541937215 - 0.362840480, 
+      0.063334512 - 0.362840480,
+      0.296132583 - 0.362840480,
+      -0.057308892 - 0.362840480,
+      -0.107450836 - 0.362840480,
+      -0.011315890 - 0.362840480,
+      0.007005235 - 0.362840480,
+      -0.035573295 - 0.362840480,
+      0.180788307 - 0.362840480,
+      -0.001602338 - 0.362840480,
+      0.014444630 - 0.362840480, 
+      0.292340917 + 0.074604515 + 0.063334512 - 0.362840480, # Black*Medicare + Black + Medicare 
+      0.224539672 + 0.541937215 + 0.063334512 - 0.362840480, # Hisp*Medicare + Hisp + Medidcare 
+      0.249940709 + 0.074604515 + 0.296132583 - 0.362840480, # Black*Medicaid + Black + Medicaid
+      0.319317837 + 0.541937215 + 0.296132583 - 0.362840480), # Hisp*Medicaid + Hisp + Medicaid
+  ) %>% 
+  add_column(wrong_OR = exp(coef(avastin_2.logm))) %>% 
+  mutate(
+    OR = exp(log_OR),
+    `%_change`  = ifelse(OR < 1, (1/OR - 1)*-100, (OR - 1)*100),
+    odds = exp(log_odds),
+    probability = odds / (1 + odds)
+  ) %>%
+  mutate_if(is.numeric, ~round(., 3)) %>%
+  kable()
+
+modelsum_avastin2
 
 ```
+
+Interpretation: 
+
+* The intercept becomes the base level and takes all the first (alphabetically, numerically, or in ordered factor) values of any variable, e.g., "female" from gender. With respect to race and insurance, the Intercept represents White patients on Private insurance.
+
+* When we add the interaction term between race and insurance, we find that Hispanic patients on Medicaid (with vision worse than 20/50) are 218% more likely to receive Bevacizumab as compared to White patients on Private insurance. 
+
+* We find that Hispanic patients on Medicare (with vision worse than 20/50) are 129% more likely to receive Bevacizumab as compared to White patients on Private insurance. 
+
+
+
+* The model also suggests that Black patients on private insurance are only slightly more likely to receive Bevacizumab treatment as compared with White patients. 
+
+* However, this table cannot provide us with measures of significance. Thus, we turn to the emmeans packages to dig into the specific differences between different groups: 
+
+```{r}
+
+emmeans_results <- emmeans(avastin_2.logm, ~ race_ethnicity*insurance)
+emmeans_results
+
+```
+```{r}
+pairs(emmeans_results)
+```
+
+```{r}
+contrast(emmeans_results, "revpairwise", by="insurance",adjust="holm")
+
+```
+
+Interpretation:
+
+* The measures above offer pairwise comparisons between patients of different races, controlling for insurance. 
+* Even comparing patients with the same insurance type, Hispanic patients are significantly more likely to receive Bevacizumab as compared to White patients
+* However, significant differential treatment between Black and White patients is only observed among patients on Medicare. 
+* There are also significant differences in treatment between Black and Hispanic patients who are on Medicare and Medicaid.
+
+
 
 
 ## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
@@ -1556,6 +1733,16 @@ vif(hispanic_only_one_year_va_delta.lm)
 #   Racial differences in VA change, after controlling for insurance, are evident in the privately-insured population for both Black/Hispanic patients and the Medicaid population for Hispanic patients.
 
 ```
+
+## Regression XX: Likelihood of receiving bevacizumab
+
+```{r}
+
+log
+
+```
+
+
 
 ## Forest Plots on VA change
 
@@ -3286,7 +3473,7 @@ treatment_sev_race <-
   select(severity_score, race_ethnicity, proc_group_28, prop, count = n)
 
 treatment_sev_race %>% 
-  arrange(desc(severity_score, race_ethnicity))
+  arrange(desc(severity_score))
 ```
 
 ```{r}
@@ -3350,8 +3537,7 @@ drug_sev_race <-
   ungroup() %>% 
   select(severity_score, race_ethnicity, vegf_group_365, prop, count = n)
 
-drug_sev_race %>% 
-  arrange(desc(severity_score, race_ethnicity))
+
 
 ```
 
@@ -3432,7 +3618,7 @@ drug_sev_cat_race <-
   select(vision_category, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_sev_cat_race %>% 
-  arrange(desc(vision_category, race_ethnicity))
+  arrange(desc(vision_category))
 
 ```
 
@@ -3512,7 +3698,7 @@ drug_va_race <-
   select(baseline_va_r10, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_va_race %>% 
-  arrange(desc(baseline_va_r10, race_ethnicity))
+  arrange(desc(baseline_va_r10))
 
 ```
 
@@ -3553,7 +3739,7 @@ drug_sev_cat_insurance <-
   select(vision_category, insurance, vegf_group_365, prop, count = n)
 
 drug_sev_cat_insurance %>% 
-  arrange(desc(vision_category, insurance))
+  arrange(desc(vision_category))
 
 ```
 
@@ -3634,7 +3820,7 @@ drug_sev_race_ins <-
   select(severity_score, race_ethnicity, insurance, vegf_group_28, prop, count = n)
 
 drug_sev_race_ins %>% 
-  arrange(desc(severity_score, race_ethnicity, insurance))
+  arrange(desc(severity_score))
 
 ```
 

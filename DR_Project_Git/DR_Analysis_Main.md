@@ -57,6 +57,14 @@ Vikas Maturi
   id="toc-regression-x2-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment-for-patients-with-less-than-2050-vision">Regression
   X.2: Variables that influence likelihood of receiving Bevacizumab
   treatment for patients with less than 20/50 vision</a>
+  - <a
+    href="#bevacizumab-regression-no-interaction-between-insurance-x-race"
+    id="toc-bevacizumab-regression-no-interaction-between-insurance-x-race">Bevacizumab
+    Regression: NO interaction between insurance x race</a>
+  - <a
+    href="#bevacizumab-regression-interaction-model-between-insurance-x-race"
+    id="toc-bevacizumab-regression-interaction-model-between-insurance-x-race">Bevacizumab
+    Regression: Interaction model between insurance x race</a>
 - <a
   href="#regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment"
   id="toc-regression-y-using-no-intercept-model-to-determine-variables-that-influence-likelihood-of-receiving-bevacizumab-treatment">Regression
@@ -91,6 +99,9 @@ Vikas Maturi
   id="toc-regression-y-variables-that-influence-change-in-vision-after-one-year-stratified-by-race-and-insurance-status">Regression
   Y: Variables that influence change in vision after one year: stratified
   by race and insurance status</a>
+- <a href="#regression-xx-likelihood-of-receiving-bevacizumab"
+  id="toc-regression-xx-likelihood-of-receiving-bevacizumab">Regression
+  XX: Likelihood of receiving bevacizumab</a>
 - <a href="#forest-plots-on-va-change"
   id="toc-forest-plots-on-va-change">Forest Plots on VA change</a>
   - <a
@@ -232,6 +243,9 @@ visits_severity <- read_csv(file = "data_clean/maturi_all_cleaned.csv")
 
 # read in cleaned data on timeservies visual acuity
 va_progression <- read_csv(file = "data_clean/va_progression.csv")
+
+
+test1 <- read_csv(file = "data_clean/registration_gap.csv")
 ```
 
 #### Join severity and timeseries patient/visit data
@@ -337,25 +351,25 @@ tbl_data
 ```
 
     ## # A tibble: 43,274 × 40
-    ##    pt_code_name   eye first_problem_c… severity_score gender race_ethnicity
-    ##    <chr>        <dbl> <chr>                     <dbl> <chr>  <ord>         
-    ##  1 00022808cb4…     1 362.02                       73 Male   White         
-    ##  2 0002d4cc5f7…     1 362.02                       73 Male   Hispanic      
-    ##  3 000340244d4…     1 E11.3411                     58 Male   White         
-    ##  4 0003859ca8d…     1 E11.351                      78 Female White         
-    ##  5 000406a5939…     1 362.05                       44 Male   White         
-    ##  6 0007e418646…     1 362.02                       73 Female Black         
-    ##  7 000944c41d8…     1 362.05                       44 Male   White         
-    ##  8 00096924cfb…     1 E11.3211                     40 Male   White         
-    ##  9 000aadb4949…     2 362.02                       73 Female White         
-    ## 10 000b59b304e…     2 362.04                       35 Male   White         
-    ## # … with 43,264 more rows, and 34 more variables: first_dr_age <dbl>,
-    ## #   age_group <dbl>, insurance <chr>, region <chr>, smoke_status <chr>,
+    ##    pt_code…¹   eye first…² sever…³ gender race_…⁴ first…⁵ age_g…⁶ insur…⁷ region
+    ##    <chr>     <dbl> <chr>     <dbl> <chr>  <ord>     <dbl>   <dbl> <chr>   <chr> 
+    ##  1 00022808…     1 362.02       73 Male   White        51      50 Private South 
+    ##  2 0002d4cc…     1 362.02       73 Male   Hispan…      52      50 Medica… South 
+    ##  3 00034024…     2 E11.34…      53 Male   White        59      60 Private South 
+    ##  4 0003859c…     1 E11.351      78 Female White        74      75 Medica… Midwe…
+    ##  5 000406a5…     1 362.05       44 Male   White        68      70 Medica… North…
+    ##  6 0007e418…     1 362.02       73 Female Black        47      45 Govt    North…
+    ##  7 000944c4…     1 362.05       44 Male   White        68      70 Medica… South 
+    ##  8 00096924…     1 E11.32…      40 Male   White        39      40 Private West  
+    ##  9 000aadb4…     2 362.02       73 Female White        57      55 Medica… South 
+    ## 10 000b59b3…     1 362.04       35 Male   White        62      60 Medica… West  
+    ## # … with 43,264 more rows, 30 more variables: smoke_status <chr>,
     ## #   new_class <dbl>, valid_class <dbl>, include_given_code <dbl>,
     ## #   vision_category <chr>, vision_threatening <dbl>, index_date <date>,
     ## #   baseline_va_letter <dbl>, proc_group_28 <chr>, proc_group_365 <chr>,
     ## #   proc_group_any <chr>, vegf_group_28 <chr>, vegf_group_365 <chr>,
-    ## #   vegf_group_any <chr>, retina_speciality <dbl>, baseline_iop <dbl>, …
+    ## #   vegf_group_any <chr>, retina_speciality <dbl>, baseline_iop <dbl>,
+    ## #   pdr_group <chr>, cat_eyes <dbl>, one_month <dbl>, six_month <dbl>, …
 
 #### Table: Age by race and insurance
 
@@ -373,11 +387,11 @@ kable(tbl_age_race)
 
 | age_tbl | White        | Black        | Hispanic     |
 |:--------|:-------------|:-------------|:-------------|
-| \< 53   | 5856 (18.897 | 1258 (21.243 | 1705 (26.796 |
-| \> 70   | 6508 (21.001 | 1148 (19.385 | 911 (14.317  |
-| 53 - 58 | 4986 (16.09  | 996 (16.819  | 1191 (18.718 |
-| 59 - 64 | 6591 (21.269 | 1260 (21.277 | 1381 (21.704 |
-| 65 - 70 | 7048 (22.744 | 1260 (21.277 | 1175 (18.466 |
+| \< 53   | 5856 (18.897 | 1256 (21.209 | 1704 (26.78  |
+| \> 70   | 6507 (20.998 | 1147 (19.368 | 911 (14.317  |
+| 53 - 58 | 4995 (16.119 | 999 (16.869  | 1191 (18.718 |
+| 59 - 64 | 6590 (21.266 | 1258 (21.243 | 1383 (21.735 |
+| 65 - 70 | 7041 (22.721 | 1262 (21.31  | 1174 (18.45  |
 
 ``` r
 tbl_age_insurance <-
@@ -393,11 +407,11 @@ kable(tbl_age_insurance)
 
 | age_tbl | Medicaid     | Medicare     | Other        | Private      |
 |:--------|:-------------|:-------------|:-------------|:-------------|
-| \< 53   | 1195 (48.283 | 2534 (9.505  | 1041 (30.927 | 4049 (37.581 |
-| \> 70   | 94 (3.798    | 7687 (28.835 | 294 (8.734   | 492 (4.567   |
-| 53 - 58 | 654 (26.424  | 2433 (9.126  | 872 (25.906  | 3214 (29.831 |
-| 59 - 64 | 444 (17.939  | 5835 (21.888 | 695 (20.648  | 2258 (20.958 |
-| 65 - 70 | 88 (3.556    | 8170 (30.646 | 464 (13.785  | 761 (7.063   |
+| \< 53   | 1194 (48.242 | 2534 (9.505  | 1040 (30.897 | 4048 (37.572 |
+| \> 70   | 94 (3.798    | 7685 (28.827 | 294 (8.734   | 492 (4.567   |
+| 53 - 58 | 658 (26.586  | 2435 (9.134  | 872 (25.906  | 3220 (29.887 |
+| 59 - 64 | 442 (17.859  | 5838 (21.899 | 697 (20.707  | 2254 (20.921 |
+| 65 - 70 | 87 (3.515    | 8167 (30.635 | 463 (13.755  | 760 (7.054   |
 
 #### Table: Gender by race and insurance
 
@@ -453,10 +467,10 @@ kable(tbl_va_race)
 
 | va_tbl          | White         | Black        | Hispanic     |
 |:----------------|:--------------|:-------------|:-------------|
-| 20/201 or worse | 221 (0.713    | 53 (0.895    | 64 (1.006    |
-| 20/40 or better | 17545 (56.617 | 3164 (53.428 | 3128 (49.159 |
-| 20/41 - 20/70   | 8471 (27.336  | 1650 (27.862 | 1899 (29.844 |
-| 20/71 - 20/200  | 4752 (15.334  | 1055 (17.815 | 1272 (19.991 |
+| 20/201 or worse | 225 (0.726    | 56 (0.946    | 60 (0.943    |
+| 20/40 or better | 17473 (56.385 | 3134 (52.921 | 3124 (49.096 |
+| 20/41 - 20/70   | 8468 (27.326  | 1682 (28.403 | 1894 (29.766 |
+| 20/71 - 20/200  | 4823 (15.564  | 1050 (17.73  | 1285 (20.195 |
 
 ``` r
 tbl_va_insurance <-
@@ -472,10 +486,10 @@ kable(tbl_va_insurance)
 
 | va_tbl          | Medicaid     | Medicare      | Other        | Private      |
 |:----------------|:-------------|:--------------|:-------------|:-------------|
-| 20/201 or worse | 23 (0.929    | 229 (0.859    | 33 (0.98     | 53 (0.492    |
-| 20/40 or better | 1335 (53.939 | 13799 (51.761 | 1952 (57.992 | 6751 (62.66  |
-| 20/41 - 20/70   | 672 (27.152  | 7934 (29.761  | 865 (25.698  | 2549 (23.659 |
-| 20/71 - 20/200  | 445 (17.98   | 4697 (17.619  | 516 (15.33   | 1421 (13.189 |
+| 20/201 or worse | 26 (1.051    | 228 (0.855    | 30 (0.891    | 57 (0.529    |
+| 20/40 or better | 1331 (53.778 | 13721 (51.469 | 1965 (58.378 | 6714 (62.317 |
+| 20/41 - 20/70   | 664 (26.828  | 7931 (29.75   | 866 (25.728  | 2583 (23.974 |
+| 20/71 - 20/200  | 454 (18.343  | 4779 (17.926  | 505 (15.003  | 1420 (13.18  |
 
 #### Table: VEGF drug by race and insurance
 
@@ -493,10 +507,10 @@ kable(tbl_vegf_race)
 
 | vegf_tbl    | White         | Black        | Hispanic     |
 |:------------|:--------------|:-------------|:-------------|
-| aflibercept | 6241 (20.139  | 984 (16.616  | 673 (10.577  |
-| bevacizumab | 14036 (45.293 | 3078 (51.976 | 4175 (65.614 |
-| combo       | 6408 (20.678  | 1157 (19.537 | 1051 (16.517 |
-| ranibizumab | 4304 (13.889  | 703 (11.871  | 464 (7.292   |
+| aflibercept | 6223 (20.081  | 984 (16.616  | 669 (10.514  |
+| bevacizumab | 14029 (45.271 | 3078 (51.976 | 4175 (65.614 |
+| combo       | 6412 (20.691  | 1156 (19.52  | 1058 (16.627 |
+| ranibizumab | 4325 (13.957  | 704 (11.888  | 461 (7.245   |
 
 ``` r
 tbl_vegf_insurance <-
@@ -512,10 +526,10 @@ kable(tbl_vegf_insurance)
 
 | vegf_tbl    | Medicaid     | Medicare      | Other        | Private      |
 |:------------|:-------------|:--------------|:-------------|:-------------|
-| aflibercept | 268 (10.828  | 5152 (19.326  | 500 (14.854  | 1978 (18.359 |
-| bevacizumab | 1578 (63.758 | 12610 (47.301 | 1935 (57.487 | 5166 (47.949 |
-| combo       | 462 (18.667  | 5281 (19.809  | 586 (17.409  | 2287 (21.227 |
-| ranibizumab | 167 (6.747   | 3616 (13.564  | 345 (10.25   | 1343 (12.465 |
+| aflibercept | 275 (11.111  | 5144 (19.296  | 493 (14.646  | 1964 (18.229 |
+| bevacizumab | 1572 (63.515 | 12605 (47.282 | 1937 (57.546 | 5168 (47.967 |
+| combo       | 459 (18.545  | 5283 (19.817  | 587 (17.439  | 2297 (21.32  |
+| ranibizumab | 169 (6.828   | 3627 (13.605  | 349 (10.368  | 1345 (12.484 |
 
 #### Table: Smoke status by race and insurance
 
@@ -601,9 +615,9 @@ kable(mean_va_race)
 
 | race_ethnicity | mean_baseline_va_letter |       sd |
 |:---------------|------------------------:|---------:|
-| White          |                67.33531 | 12.61341 |
-| Black          |                66.34541 | 13.06954 |
-| Hispanic       |                65.21539 | 13.27573 |
+| White          |                67.27205 | 12.65379 |
+| Black          |                66.25329 | 13.10330 |
+| Hispanic       |                65.18113 | 13.31704 |
 
 ``` r
 mean_va_insurance <-
@@ -620,12 +634,12 @@ kable(mean_va_insurance)
 
 | insurance       | mean_baseline_va_letter |       sd |     n |
 |:----------------|------------------------:|---------:|------:|
-| Govt            |                68.75708 | 12.69992 |  1165 |
-| Medicaid        |                66.39798 | 13.39400 |  2475 |
-| Medicare        |                65.99012 | 12.72689 | 26659 |
-| Military        |                68.27509 | 12.66333 |   538 |
-| Private         |                68.99995 | 12.49771 | 10774 |
-| Unknown/Missing |                66.57366 | 13.32002 |  1663 |
+| Govt            |                68.81030 | 12.65409 |  1165 |
+| Medicaid        |                66.26768 | 13.49156 |  2475 |
+| Medicare        |                65.90407 | 12.77960 | 26659 |
+| Military        |                68.65799 | 12.28457 |   538 |
+| Private         |                68.95754 | 12.53751 | 10774 |
+| Unknown/Missing |                66.62267 | 13.16884 |  1663 |
 
 ## Calculation X: N after eliminating ICD-10 diagnostic codes
 
@@ -638,7 +652,7 @@ tbl_data %>%
     ## # A tibble: 1 × 1
     ##       n
     ##   <int>
-    ## 1 20787
+    ## 1 20763
 
 ## Figure 1A: Baseline Differences in Severity Score by Race
 
@@ -700,16 +714,16 @@ drug_sev_cat_race %>%
     ## # A tibble: 108 × 5
     ##    vision_category    race_ethnicity vegf_group_365   prop count
     ##    <chr>              <ord>          <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema White          Avastin        0.506   1848
-    ##  2 8 - PDR with edema White          combo          0.191    699
-    ##  3 8 - PDR with edema White          Eylea          0.209    762
-    ##  4 8 - PDR with edema White          Lucentis       0.0939   343
-    ##  5 8 - PDR with edema Black          Avastin        0.588    446
-    ##  6 8 - PDR with edema Black          combo          0.182    138
-    ##  7 8 - PDR with edema Black          Eylea          0.146    111
-    ##  8 8 - PDR with edema Black          Lucentis       0.0831    63
-    ##  9 8 - PDR with edema Hispanic       Avastin        0.678    729
-    ## 10 8 - PDR with edema Hispanic       combo          0.156    168
+    ##  1 8 - PDR with edema White          Avastin        0.502   1830
+    ##  2 8 - PDR with edema White          Eylea          0.207    755
+    ##  3 8 - PDR with edema White          Lucentis       0.0945   345
+    ##  4 8 - PDR with edema White          combo          0.197    719
+    ##  5 8 - PDR with edema Black          Avastin        0.590    443
+    ##  6 8 - PDR with edema Black          Eylea          0.142    107
+    ##  7 8 - PDR with edema Black          Lucentis       0.0812    61
+    ##  8 8 - PDR with edema Black          combo          0.186    140
+    ##  9 8 - PDR with edema Hispanic       Avastin        0.684    735
+    ## 10 8 - PDR with edema Hispanic       Eylea          0.108    116
     ## # … with 98 more rows
 
 ``` r
@@ -769,16 +783,16 @@ drug_sev_cat_insurance %>%
     ## # A tibble: 107 × 5
     ##    vision_category    insurance vegf_group_365   prop count
     ##    <chr>              <ord>     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Private   Avastin        0.535    824
-    ##  2 8 - PDR with edema Private   combo          0.192    296
-    ##  3 8 - PDR with edema Private   Eylea          0.182    281
-    ##  4 8 - PDR with edema Private   Lucentis       0.0909   140
-    ##  5 8 - PDR with edema Medicare  Avastin        0.528   1561
-    ##  6 8 - PDR with edema Medicare  combo          0.185    547
-    ##  7 8 - PDR with edema Medicare  Eylea          0.197    583
-    ##  8 8 - PDR with edema Medicare  Lucentis       0.0890   263
-    ##  9 8 - PDR with edema Medicaid  Avastin        0.680    329
-    ## 10 8 - PDR with edema Medicaid  combo          0.151     73
+    ##  1 8 - PDR with edema Private   Avastin        0.530    819
+    ##  2 8 - PDR with edema Private   Eylea          0.183    283
+    ##  3 8 - PDR with edema Private   Lucentis       0.0920   142
+    ##  4 8 - PDR with edema Private   combo          0.194    300
+    ##  5 8 - PDR with edema Medicare  Avastin        0.530   1561
+    ##  6 8 - PDR with edema Medicare  Eylea          0.192    565
+    ##  7 8 - PDR with edema Medicare  Lucentis       0.0879   259
+    ##  8 8 - PDR with edema Medicare  combo          0.190    561
+    ##  9 8 - PDR with edema Medicaid  Avastin        0.683    330
+    ## 10 8 - PDR with edema Medicaid  Eylea          0.126     61
     ## # … with 97 more rows
 
 ``` r
@@ -859,93 +873,78 @@ summary(avastin_1.logm)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.9075  -1.0986  -0.9093   1.1740   1.5986  
+    ## -1.9064  -1.0988  -0.9094   1.1737   1.5980  
     ## 
     ## Coefficients:
     ##                                                               Estimate
-    ## (Intercept)                                                 -0.8304549
-    ## race_ethnicityBlack                                          0.1180342
-    ## race_ethnicityHispanic                                       0.6143160
-    ## insuranceMedicare                                            0.0985570
-    ## insuranceMedicaid                                            0.4330683
-    ## genderMale                                                  -0.0942642
-    ## genderUnknown                                               -0.0997580
-    ## first_dr_age                                                -0.0096645
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0202601
-    ## smoke_statusUnknown / Unclassified                           0.1026341
-    ## smoke_statusYes / Active                                     0.1370671
-    ## baseline_va_letter                                           0.0051258
-    ## severity_score                                               0.0142757
-    ## race_ethnicityBlack:insuranceMedicare                        0.1777931
-    ## race_ethnicityHispanic:insuranceMedicare                     0.1260080
-    ## race_ethnicityBlack:insuranceMedicaid                        0.1872070
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.1661550
-    ##                                                             Std. Error
-    ## (Intercept)                                                  0.1055185
-    ## race_ethnicityBlack                                          0.0611981
-    ## race_ethnicityHispanic                                       0.0573083
-    ## insuranceMedicare                                            0.0299273
-    ## insuranceMedicaid                                            0.0596638
-    ## genderMale                                                   0.0209544
-    ## genderUnknown                                                0.1565012
-    ## first_dr_age                                                 0.0010703
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0240504
-    ## smoke_statusUnknown / Unclassified                           0.1008541
-    ## smoke_statusYes / Active                                     0.0339618
-    ## baseline_va_letter                                           0.0008153
-    ## severity_score                                               0.0006960
-    ## race_ethnicityBlack:insuranceMedicare                        0.0709378
-    ## race_ethnicityHispanic:insuranceMedicare                     0.0695434
-    ## race_ethnicityBlack:insuranceMedicaid                        0.1368319
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.1173484
-    ##                                                             z value
-    ## (Intercept)                                                  -7.870
-    ## race_ethnicityBlack                                           1.929
-    ## race_ethnicityHispanic                                       10.720
-    ## insuranceMedicare                                             3.293
-    ## insuranceMedicaid                                             7.258
-    ## genderMale                                                   -4.499
-    ## genderUnknown                                                -0.637
-    ## first_dr_age                                                 -9.030
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.842
-    ## smoke_statusUnknown / Unclassified                            1.018
-    ## smoke_statusYes / Active                                      4.036
-    ## baseline_va_letter                                            6.287
-    ## severity_score                                               20.511
-    ## race_ethnicityBlack:insuranceMedicare                         2.506
-    ## race_ethnicityHispanic:insuranceMedicare                      1.812
-    ## race_ethnicityBlack:insuranceMedicaid                         1.368
-    ## race_ethnicityHispanic:insuranceMedicaid                      1.416
+    ## (Intercept)                                                 -0.8078209
+    ## race_ethnicityBlack                                          0.1294160
+    ## race_ethnicityHispanic                                       0.6059121
+    ## insuranceMedicare                                            0.1027022
+    ## insuranceMedicaid                                            0.4263705
+    ## genderMale                                                  -0.0897833
+    ## genderUnknown                                               -0.0959267
+    ## first_dr_age                                                -0.0099623
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0138680
+    ## smoke_statusUnknown / Unclassified                           0.1180483
+    ## smoke_statusYes / Active                                     0.1409853
+    ## baseline_va_letter                                           0.0050255
+    ## severity_score                                               0.0142587
+    ## race_ethnicityBlack:insuranceMedicare                        0.1599609
+    ## race_ethnicityHispanic:insuranceMedicare                     0.1343913
+    ## race_ethnicityBlack:insuranceMedicaid                        0.1486693
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.1749217
+    ##                                                             Std. Error z value
+    ## (Intercept)                                                  0.1053330  -7.669
+    ## race_ethnicityBlack                                          0.0611937   2.115
+    ## race_ethnicityHispanic                                       0.0572690  10.580
+    ## insuranceMedicare                                            0.0299268   3.432
+    ## insuranceMedicaid                                            0.0596480   7.148
+    ## genderMale                                                   0.0209546  -4.285
+    ## genderUnknown                                                0.1564935  -0.613
+    ## first_dr_age                                                 0.0010702  -9.309
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0240497   0.577
+    ## smoke_statusUnknown / Unclassified                           0.1008727   1.170
+    ## smoke_statusYes / Active                                     0.0339608   4.151
+    ## baseline_va_letter                                           0.0008121   6.189
+    ## severity_score                                               0.0006960  20.487
+    ## race_ethnicityBlack:insuranceMedicare                        0.0709361   2.255
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0695216   1.933
+    ## race_ethnicityBlack:insuranceMedicaid                        0.1364150   1.090
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.1172241   1.492
     ##                                                             Pr(>|z|)    
-    ## (Intercept)                                                 3.54e-15 ***
-    ## race_ethnicityBlack                                          0.05377 .  
+    ## (Intercept)                                                 1.73e-14 ***
+    ## race_ethnicityBlack                                           0.0344 *  
     ## race_ethnicityHispanic                                       < 2e-16 ***
-    ## insuranceMedicare                                            0.00099 ***
-    ## insuranceMedicaid                                           3.91e-13 ***
-    ## genderMale                                                  6.84e-06 ***
-    ## genderUnknown                                                0.52385    
+    ## insuranceMedicare                                             0.0006 ***
+    ## insuranceMedicaid                                           8.80e-13 ***
+    ## genderMale                                                  1.83e-05 ***
+    ## genderUnknown                                                 0.5399    
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.39956    
-    ## smoke_statusUnknown / Unclassified                           0.30884    
-    ## smoke_statusYes / Active                                    5.44e-05 ***
-    ## baseline_va_letter                                          3.24e-10 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.5642    
+    ## smoke_statusUnknown / Unclassified                            0.2419    
+    ## smoke_statusYes / Active                                    3.30e-05 ***
+    ## baseline_va_letter                                          6.07e-10 ***
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack:insuranceMedicare                        0.01220 *  
-    ## race_ethnicityHispanic:insuranceMedicare                     0.07000 .  
-    ## race_ethnicityBlack:insuranceMedicaid                        0.17126    
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.15680    
+    ## race_ethnicityBlack:insuranceMedicare                         0.0241 *  
+    ## race_ethnicityHispanic:insuranceMedicare                      0.0532 .  
+    ## race_ethnicityBlack:insuranceMedicaid                         0.2758    
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.1356    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 55288  on 39907  degrees of freedom
-    ## Residual deviance: 53629  on 39891  degrees of freedom
-    ## AIC: 53663
+    ##     Null deviance: 55287  on 39907  degrees of freedom
+    ## Residual deviance: 53633  on 39891  degrees of freedom
+    ## AIC: 53667
     ## 
     ## Number of Fisher Scoring iterations: 4
 
 ## Regression X.2: Variables that influence likelihood of receiving Bevacizumab treatment for patients with less than 20/50 vision
+
+Create the dataset for the regression. Dataset only includes patients
+wiht less than a 20/50 vision.
 
 ``` r
 # create dataset for regression
@@ -967,7 +966,193 @@ data_avastin_reg_2 <-
     smoke_status = relevel(smoke_status, ref = "No / Never"),
     avastin = if_else(vegf_group_365 == "Avastin", 1, 0)
   ) 
+```
 
+#### Bevacizumab Regression: NO interaction between insurance x race
+
+``` r
+library(broom)      # for tidy model output
+library(questionr)  # for odds.ratios
+library(sjPlot)     # for plotting results of log.regr.
+```
+
+    ## Learn more about sjPlot with 'browseVignettes("sjPlot")'.
+
+``` r
+library(sjmisc)     # for plotting results of log.regr.
+```
+
+    ## 
+    ## Attaching package: 'sjmisc'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     is_empty
+
+    ## The following object is masked from 'package:tidyr':
+    ## 
+    ##     replace_na
+
+    ## The following object is masked from 'package:tibble':
+    ## 
+    ##     add_case
+
+We run a logistic regression model that predicts the likelihood of
+receiving bevacizumab treatment vs. not receiving bevacizumab treatment.
+The model does not include an interaction term.
+
+``` r
+avastin_3.logm <-
+  glm(
+    avastin ~ race_ethnicity + insurance + gender + first_dr_age + smoke_status + baseline_va_letter +  severity_score, 
+    data = data_avastin_reg_2, 
+    family = binomial
+  ) 
+
+summary(avastin_3.logm)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = avastin ~ race_ethnicity + insurance + gender + 
+    ##     first_dr_age + smoke_status + baseline_va_letter + severity_score, 
+    ##     family = binomial, data = data_avastin_reg_2)
+    ## 
+    ## Deviance Residuals: 
+    ##     Min       1Q   Median       3Q      Max  
+    ## -1.8530  -1.1016  -0.8924   1.1834   1.6352  
+    ## 
+    ## Coefficients:
+    ##                                                              Estimate
+    ## (Intercept)                                                 -0.404264
+    ## race_ethnicityBlack                                          0.304117
+    ## race_ethnicityHispanic                                       0.721877
+    ## insuranceMedicare                                            0.138984
+    ## insuranceMedicaid                                            0.393246
+    ## genderMale                                                  -0.058238
+    ## genderUnknown                                               -0.103045
+    ## first_dr_age                                                -0.011553
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.005483
+    ## smoke_statusUnknown / Unclassified                          -0.040662
+    ## smoke_statusYes / Active                                     0.179188
+    ## baseline_va_letter                                          -0.001602
+    ## severity_score                                               0.014412
+    ##                                                             Std. Error z value
+    ## (Intercept)                                                   0.152758  -2.646
+    ## race_ethnicityBlack                                           0.044002   6.911
+    ## race_ethnicityHispanic                                        0.043725  16.510
+    ## insuranceMedicare                                             0.040162   3.461
+    ## insuranceMedicaid                                             0.070338   5.591
+    ## genderMale                                                    0.031133  -1.871
+    ## genderUnknown                                                 0.216257  -0.476
+    ## first_dr_age                                                  0.001559  -7.413
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.035669   0.154
+    ## smoke_statusUnknown / Unclassified                            0.153624  -0.265
+    ## smoke_statusYes / Active                                      0.050714   3.533
+    ## baseline_va_letter                                            0.001490  -1.075
+    ## severity_score                                                0.001048  13.750
+    ##                                                             Pr(>|z|)    
+    ## (Intercept)                                                 0.008134 ** 
+    ## race_ethnicityBlack                                         4.80e-12 ***
+    ## race_ethnicityHispanic                                       < 2e-16 ***
+    ## insuranceMedicare                                           0.000539 ***
+    ## insuranceMedicaid                                           2.26e-08 ***
+    ## genderMale                                                  0.061395 .  
+    ## genderUnknown                                               0.633722    
+    ## first_dr_age                                                1.24e-13 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.877828    
+    ## smoke_statusUnknown / Unclassified                          0.791253    
+    ## smoke_statusYes / Active                                    0.000410 ***
+    ## baseline_va_letter                                          0.282258    
+    ## severity_score                                               < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 24988  on 18049  degrees of freedom
+    ## Residual deviance: 24178  on 18037  degrees of freedom
+    ## AIC: 24204
+    ## 
+    ## Number of Fisher Scoring iterations: 4
+
+We then translate the output of the glm model into interpretable terms
+(specifically, odds ratios)
+
+``` r
+modelsum_avastin3 <-
+  coef(avastin_3.logm) %>% 
+  tidy() %>% 
+  rename(log_OR = `x`) %>% 
+  left_join(confint(avastin_3.logm) %>% as_tibble(rownames = "names"), by = ("names")) %>% 
+  rename(lower_log_OR    = `2.5 %`,
+         upper_log_OR    = `97.5 %`) %>%
+  left_join(odds.ratio(avastin_3.logm) %>% as_tibble(rownames = "names"), by = ("names")) %>% 
+  rename(lower_OR        = `2.5 %`,
+         upper_OR        = `97.5 %`) %>% 
+  mutate(percent_change  = ifelse(OR < 1, (1/OR - 1)*-100, (OR - 1)*100  ),
+         lower_percent_change = ifelse(lower_OR < 1, (1/lower_OR - 1)*-100, (lower_OR - 1)*100  ),
+         upper_percent_change = ifelse(upper_OR < 1, (1/upper_OR - 1)*-100, (upper_OR - 1)*100  )) %>%
+  mutate_if(is.numeric, ~round(., 3)) %>% 
+  select(names, log_OR, OR, percent_change, p, everything()) %>% 
+  kable()
+```
+
+    ## Warning: 'tidy.numeric' is deprecated.
+    ## See help("Deprecated")
+
+    ## Waiting for profiling to be done...
+    ## Waiting for profiling to be done...
+
+``` r
+modelsum_avastin3
+```
+
+| names                                                       | log_OR |    OR | percent_change |     p | lower_log_OR | upper_log_OR | lower_OR | upper_OR | lower_percent_change | upper_percent_change |
+|:------------------------------------------------------------|-------:|------:|---------------:|------:|-------------:|-------------:|---------:|---------:|---------------------:|---------------------:|
+| (Intercept)                                                 | -0.404 | 0.667 |        -49.820 | 0.008 |       -0.704 |       -0.105 |    0.495 |    0.900 |             -102.125 |              -11.058 |
+| race_ethnicityBlack                                         |  0.304 | 1.355 |         35.543 | 0.000 |        0.218 |        0.390 |    1.243 |    1.478 |               24.346 |               47.757 |
+| race_ethnicityHispanic                                      |  0.722 | 2.058 |        105.829 | 0.000 |        0.636 |        0.808 |    1.890 |    2.243 |               88.961 |              124.293 |
+| insuranceMedicare                                           |  0.139 | 1.149 |         14.911 | 0.001 |        0.060 |        0.218 |    1.062 |    1.243 |                6.217 |               24.329 |
+| insuranceMedicaid                                           |  0.393 | 1.482 |         48.178 | 0.000 |        0.256 |        0.532 |    1.291 |    1.702 |               29.142 |               70.150 |
+| genderMale                                                  | -0.058 | 0.943 |         -5.997 | 0.061 |       -0.119 |        0.003 |    0.888 |    1.003 |              -12.667 |                0.278 |
+| genderUnknown                                               | -0.103 | 0.902 |        -10.854 | 0.634 |       -0.529 |        0.321 |    0.589 |    1.379 |              -69.765 |               37.870 |
+| first_dr_age                                                | -0.012 | 0.989 |         -1.162 | 0.000 |       -0.015 |       -0.009 |    0.985 |    0.992 |               -1.472 |               -0.854 |
+| smoke_statusFormer / No longer active / Past History / Quit |  0.005 | 1.005 |          0.550 | 0.878 |       -0.064 |        0.075 |    0.938 |    1.078 |               -6.656 |                7.830 |
+| smoke_statusUnknown / Unclassified                          | -0.041 | 0.960 |         -4.150 | 0.791 |       -0.343 |        0.260 |    0.709 |    1.297 |              -40.944 |               29.690 |
+| smoke_statusYes / Active                                    |  0.179 | 1.196 |         19.625 | 0.000 |        0.080 |        0.279 |    1.083 |    1.321 |                8.310 |               32.134 |
+| baseline_va_letter                                          | -0.002 | 0.998 |         -0.160 | 0.282 |       -0.005 |        0.001 |    0.995 |    1.001 |               -0.453 |                0.132 |
+| severity_score                                              |  0.014 | 1.015 |          1.452 | 0.000 |        0.012 |        0.016 |    1.012 |    1.017 |                1.244 |                1.660 |
+
+Interpretation:
+
+- The intercept becomes the base level and takes all the first
+  (alphabetically, numerically, or in ordered factor) values of any
+  variable, e.g., “female” from gender. With respect to race and
+  insurance, the Intercept represents White patients on Private
+  insurance.
+
+- Hispanic patients (with vision lower than 20/50) are 106% more likely
+  to receive Bevacizumab as compared to their White counterparts. The
+  odds ratio of 2.058 represents the ratio of the odds of Hispanic
+  patients receiving Bevacizumab as compared to the odds of White
+  patients receiving Bevacizumab.
+
+- Black patients (with vision lower than 20/50) are 35.5% more likely to
+  receive Bevacizumab as compared to their White counterparts
+
+- Patients on Medicare (with vision lower than 20/50) are 14.9% more
+  likely to receive Bevacizumab as compared to their White counterparts
+
+- Patients on Medicaid (with vision lower than 20/50) are 48.2% more
+  likely to receive Bevacizumab as compared to their White counterparts
+
+Notably, in this regression, all of these values have p values \< .01
+(and for all but Medicare patients, \< .001)
+
+#### Bevacizumab Regression: Interaction model between insurance x race
+
+``` r
 # glm for logistic regression
 avastin_2.logm <- 
   glm(
@@ -987,91 +1172,297 @@ summary(avastin_2.logm)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.8677  -1.1014  -0.8908   1.1833   1.6056  
+    ## -1.8950  -1.1009  -0.8906   1.1839   1.6065  
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 -0.433788
-    ## race_ethnicityBlack                                          0.061896
-    ## race_ethnicityHispanic                                       0.517063
-    ## insuranceMedicare                                            0.029217
-    ## insuranceMedicaid                                            0.314106
-    ## genderMale                                                  -0.074026
-    ## genderUnknown                                               -0.064045
-    ## first_dr_age                                                -0.010220
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.030236
-    ## smoke_statusUnknown / Unclassified                           0.081639
-    ## smoke_statusYes / Active                                     0.178632
-    ## baseline_va_letter                                          -0.001437
-    ## severity_score                                               0.014717
-    ## race_ethnicityBlack:insuranceMedicare                        0.319253
-    ## race_ethnicityHispanic:insuranceMedicare                     0.256201
-    ## race_ethnicityBlack:insuranceMedicaid                        0.347384
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.299243
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.153996
-    ## race_ethnicityBlack                                           0.099145
-    ## race_ethnicityHispanic                                        0.087962
-    ## insuranceMedicare                                             0.047018
-    ## insuranceMedicaid                                             0.090836
-    ## genderMale                                                    0.031263
-    ## genderUnknown                                                 0.228908
-    ## first_dr_age                                                  0.001565
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.035875
-    ## smoke_statusUnknown / Unclassified                            0.151752
-    ## smoke_statusYes / Active                                      0.051099
-    ## baseline_va_letter                                            0.001501
-    ## severity_score                                                0.001052
-    ## race_ethnicityBlack:insuranceMedicare                         0.111591
-    ## race_ethnicityHispanic:insuranceMedicare                      0.103056
-    ## race_ethnicityBlack:insuranceMedicaid                         0.206207
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.170674
-    ##                                                             z value
-    ## (Intercept)                                                  -2.817
-    ## race_ethnicityBlack                                           0.624
-    ## race_ethnicityHispanic                                        5.878
-    ## insuranceMedicare                                             0.621
-    ## insuranceMedicaid                                             3.458
-    ## genderMale                                                   -2.368
-    ## genderUnknown                                                -0.280
-    ## first_dr_age                                                 -6.529
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.843
-    ## smoke_statusUnknown / Unclassified                            0.538
-    ## smoke_statusYes / Active                                      3.496
-    ## baseline_va_letter                                           -0.958
-    ## severity_score                                               13.994
-    ## race_ethnicityBlack:insuranceMedicare                         2.861
-    ## race_ethnicityHispanic:insuranceMedicare                      2.486
-    ## race_ethnicityBlack:insuranceMedicaid                         1.685
-    ## race_ethnicityHispanic:insuranceMedicaid                      1.753
+    ## (Intercept)                                                 -0.362840
+    ## race_ethnicityBlack                                          0.074605
+    ## race_ethnicityHispanic                                       0.541937
+    ## insuranceMedicare                                            0.063335
+    ## insuranceMedicaid                                            0.296133
+    ## genderMale                                                  -0.057309
+    ## genderUnknown                                               -0.107451
+    ## first_dr_age                                                -0.011316
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.007005
+    ## smoke_statusUnknown / Unclassified                          -0.035573
+    ## smoke_statusYes / Active                                     0.180788
+    ## baseline_va_letter                                          -0.001602
+    ## severity_score                                               0.014445
+    ## race_ethnicityBlack:insuranceMedicare                        0.292341
+    ## race_ethnicityHispanic:insuranceMedicare                     0.224540
+    ## race_ethnicityBlack:insuranceMedicaid                        0.249941
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.319318
+    ##                                                             Std. Error z value
+    ## (Intercept)                                                   0.153321  -2.367
+    ## race_ethnicityBlack                                           0.098158   0.760
+    ## race_ethnicityHispanic                                        0.088590   6.117
+    ## insuranceMedicare                                             0.046838   1.352
+    ## insuranceMedicaid                                             0.090515   3.272
+    ## genderMale                                                    0.031146  -1.840
+    ## genderUnknown                                                 0.216475  -0.496
+    ## first_dr_age                                                  0.001563  -7.240
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.035693   0.196
+    ## smoke_statusUnknown / Unclassified                            0.153605  -0.232
+    ## smoke_statusYes / Active                                      0.050769   3.561
+    ## baseline_va_letter                                            0.001490  -1.075
+    ## severity_score                                                0.001049  13.769
+    ## race_ethnicityBlack:insuranceMedicare                         0.110632   2.642
+    ## race_ethnicityHispanic:insuranceMedicare                      0.103467   2.170
+    ## race_ethnicityBlack:insuranceMedicaid                         0.201646   1.240
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.171659   1.860
     ##                                                             Pr(>|z|)    
-    ## (Intercept)                                                 0.004849 ** 
-    ## race_ethnicityBlack                                         0.532429    
-    ## race_ethnicityHispanic                                      4.15e-09 ***
-    ## insuranceMedicare                                           0.534335    
-    ## insuranceMedicaid                                           0.000544 ***
-    ## genderMale                                                  0.017891 *  
-    ## genderUnknown                                               0.779643    
-    ## first_dr_age                                                6.64e-11 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.399336    
-    ## smoke_statusUnknown / Unclassified                          0.590594    
-    ## smoke_statusYes / Active                                    0.000473 ***
-    ## baseline_va_letter                                          0.338233    
+    ## (Intercept)                                                 0.017955 *  
+    ## race_ethnicityBlack                                         0.447229    
+    ## race_ethnicityHispanic                                      9.51e-10 ***
+    ## insuranceMedicare                                           0.176313    
+    ## insuranceMedicaid                                           0.001069 ** 
+    ## genderMale                                                  0.065766 .  
+    ## genderUnknown                                               0.619636    
+    ## first_dr_age                                                4.47e-13 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.844403    
+    ## smoke_statusUnknown / Unclassified                          0.816857    
+    ## smoke_statusYes / Active                                    0.000369 ***
+    ## baseline_va_letter                                          0.282276    
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack:insuranceMedicare                       0.004224 ** 
-    ## race_ethnicityHispanic:insuranceMedicare                    0.012918 *  
-    ## race_ethnicityBlack:insuranceMedicaid                       0.092058 .  
-    ## race_ethnicityHispanic:insuranceMedicaid                    0.079551 .  
+    ## race_ethnicityBlack:insuranceMedicare                       0.008230 ** 
+    ## race_ethnicityHispanic:insuranceMedicare                    0.029996 *  
+    ## race_ethnicityBlack:insuranceMedicaid                       0.215159    
+    ## race_ethnicityHispanic:insuranceMedicaid                    0.062859 .  
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 24815  on 17925  degrees of freedom
-    ## Residual deviance: 23999  on 17909  degrees of freedom
-    ## AIC: 24033
+    ##     Null deviance: 24988  on 18049  degrees of freedom
+    ## Residual deviance: 24167  on 18033  degrees of freedom
+    ## AIC: 24201
     ## 
     ## Number of Fisher Scoring iterations: 4
+
+Interpretation:
+
+- The output of this model cannot be easily interpreted. The estimates
+  (log-odds ratios) for the interaction terms reported by R are not
+  their real log-odds ratios. Instead, we need to add the log-odds
+  rations of all the predictors participating in the particular
+  interaction to the interaction coefficient reported by the model to
+  give us the real log-odds ration of an interaction.
+
+We then manually construct a more interpretable dataset:
+
+``` r
+# leverage the effects package to calculate the appropriate log-odds of each category
+modelsum_avastin2 <-
+  coef(avastin_2.logm) %>% 
+  tidy() %>% 
+  rename(wrong_log_OR = `x`) %>% 
+  add_column(
+    log_OR = c(
+      -0.362840480, 
+      0.074604515, 
+      0.541937215, 
+      0.063334512,
+      0.296132583,
+      -0.057308892,
+      -0.107450836,
+      -0.011315890,
+      0.007005235,
+      -0.035573295,
+      0.180788307,
+      -0.001602338,
+      0.014444630, 
+      0.292340917 + 0.074604515 + 0.063334512, # Black*Medicare + Black + Medicare 
+      0.224539672 + 0.541937215 + 0.063334512, # Hisp*Medicare + Hisp + Medidcare 
+      0.249940709 + 0.074604515 + 0.296132583, # Black*Medicaid + Black + Medicaid
+      0.319317837 + 0.541937215 + 0.296132583), # Hisp*Medicaid + Hisp + Medicaid
+  ) %>% 
+  add_column( 
+    log_odds = c(
+      -0.362840480, 
+      0.074604515 - 0.362840480, 
+      0.541937215 - 0.362840480, 
+      0.063334512 - 0.362840480,
+      0.296132583 - 0.362840480,
+      -0.057308892 - 0.362840480,
+      -0.107450836 - 0.362840480,
+      -0.011315890 - 0.362840480,
+      0.007005235 - 0.362840480,
+      -0.035573295 - 0.362840480,
+      0.180788307 - 0.362840480,
+      -0.001602338 - 0.362840480,
+      0.014444630 - 0.362840480, 
+      0.292340917 + 0.074604515 + 0.063334512 - 0.362840480, # Black*Medicare + Black + Medicare 
+      0.224539672 + 0.541937215 + 0.063334512 - 0.362840480, # Hisp*Medicare + Hisp + Medidcare 
+      0.249940709 + 0.074604515 + 0.296132583 - 0.362840480, # Black*Medicaid + Black + Medicaid
+      0.319317837 + 0.541937215 + 0.296132583 - 0.362840480), # Hisp*Medicaid + Hisp + Medicaid
+  ) %>% 
+  add_column(wrong_OR = exp(coef(avastin_2.logm))) %>% 
+  mutate(
+    OR = exp(log_OR),
+    `%_change`  = ifelse(OR < 1, (1/OR - 1)*-100, (OR - 1)*100),
+    odds = exp(log_odds),
+    probability = odds / (1 + odds)
+  ) %>%
+  mutate_if(is.numeric, ~round(., 3)) %>%
+  kable()
+```
+
+    ## Warning: 'tidy.numeric' is deprecated.
+    ## See help("Deprecated")
+
+``` r
+modelsum_avastin2
+```
+
+| names                                                       | wrong_log_OR | log_OR | log_odds | wrong_OR |    OR | %\_change |  odds | probability |
+|:------------------------------------------------------------|-------------:|-------:|---------:|---------:|------:|----------:|------:|------------:|
+| (Intercept)                                                 |       -0.363 | -0.363 |   -0.363 |    0.696 | 0.696 |   -43.741 | 0.696 |       0.410 |
+| race_ethnicityBlack                                         |        0.075 |  0.075 |   -0.288 |    1.077 | 1.077 |     7.746 | 0.750 |       0.428 |
+| race_ethnicityHispanic                                      |        0.542 |  0.542 |    0.179 |    1.719 | 1.719 |    71.933 | 1.196 |       0.545 |
+| insuranceMedicare                                           |        0.063 |  0.063 |   -0.300 |    1.065 | 1.065 |     6.538 | 0.741 |       0.426 |
+| insuranceMedicaid                                           |        0.296 |  0.296 |   -0.067 |    1.345 | 1.345 |    34.465 | 0.935 |       0.483 |
+| genderMale                                                  |       -0.057 | -0.057 |   -0.420 |    0.944 | 0.944 |    -5.898 | 0.657 |       0.396 |
+| genderUnknown                                               |       -0.107 | -0.107 |   -0.470 |    0.898 | 0.898 |   -11.344 | 0.625 |       0.385 |
+| first_dr_age                                                |       -0.011 | -0.011 |   -0.374 |    0.989 | 0.989 |    -1.138 | 0.688 |       0.408 |
+| smoke_statusFormer / No longer active / Past History / Quit |        0.007 |  0.007 |   -0.356 |    1.007 | 1.007 |     0.703 | 0.701 |       0.412 |
+| smoke_statusUnknown / Unclassified                          |       -0.036 | -0.036 |   -0.398 |    0.965 | 0.965 |    -3.621 | 0.671 |       0.402 |
+| smoke_statusYes / Active                                    |        0.181 |  0.181 |   -0.182 |    1.198 | 1.198 |    19.816 | 0.834 |       0.455 |
+| baseline_va_letter                                          |       -0.002 | -0.002 |   -0.364 |    0.998 | 0.998 |    -0.160 | 0.695 |       0.410 |
+| severity_score                                              |        0.014 |  0.014 |   -0.348 |    1.015 | 1.015 |     1.455 | 0.706 |       0.414 |
+| race_ethnicityBlack:insuranceMedicare                       |        0.292 |  0.430 |    0.067 |    1.340 | 1.538 |    53.769 | 1.070 |       0.517 |
+| race_ethnicityHispanic:insuranceMedicare                    |        0.225 |  0.830 |    0.467 |    1.252 | 2.293 |   129.289 | 1.595 |       0.615 |
+| race_ethnicityBlack:insuranceMedicaid                       |        0.250 |  0.621 |    0.258 |    1.284 | 1.860 |    86.019 | 1.294 |       0.564 |
+| race_ethnicityHispanic:insuranceMedicaid                    |        0.319 |  1.157 |    0.795 |    1.376 | 3.182 |   218.161 | 2.213 |       0.689 |
+
+Interpretation:
+
+- The intercept becomes the base level and takes all the first
+  (alphabetically, numerically, or in ordered factor) values of any
+  variable, e.g., “female” from gender. With respect to race and
+  insurance, the Intercept represents White patients on Private
+  insurance.
+
+- When we add the interaction term between race and insurance, we find
+  that Hispanic patients on Medicaid (with vision worse than 20/50) are
+  218% more likely to receive Bevacizumab as compared to White patients
+  on Private insurance.
+
+- We find that Hispanic patients on Medicare (with vision worse than
+  20/50) are 129% more likely to receive Bevacizumab as compared to
+  White patients on Private insurance.
+
+- The model also suggests that Black patients on private insurance are
+  only slightly more likely to receive Bevacizumab treatment as compared
+  with White patients.
+
+- However, this table cannot provide us with measures of significance.
+  Thus, we turn to the emmeans packages to dig into the specific
+  differences between different groups:
+
+``` r
+emmeans_results <- emmeans(avastin_2.logm, ~ race_ethnicity*insurance)
+emmeans_results
+```
+
+    ##  race_ethnicity insurance  emmean     SE  df asymp.LCL asymp.UCL
+    ##  White          Private   -0.3190 0.0898 Inf -4.95e-01  -0.14301
+    ##  Black          Private   -0.2444 0.1213 Inf -4.82e-01  -0.00674
+    ##  Hispanic       Private    0.2229 0.1137 Inf  1.76e-05   0.44581
+    ##  White          Medicare  -0.2557 0.0833 Inf -4.19e-01  -0.09248
+    ##  Black          Medicare   0.1113 0.0924 Inf -6.99e-02   0.29245
+    ##  Hispanic       Medicare   0.5108 0.0937 Inf  3.27e-01   0.69437
+    ##  White          Medicaid  -0.0229 0.1157 Inf -2.50e-01   0.20385
+    ##  Black          Medicaid   0.3017 0.1768 Inf -4.49e-02   0.64818
+    ##  Hispanic       Medicaid   0.8384 0.1467 Inf  5.51e-01   1.12588
+    ## 
+    ## Results are averaged over the levels of: gender, smoke_status 
+    ## Results are given on the logit (not the response) scale. 
+    ## Confidence level used: 0.95
+
+``` r
+pairs(emmeans_results)
+```
+
+    ##  contrast                              estimate     SE  df z.ratio p.value
+    ##  White Private - Black Private          -0.0746 0.0982 Inf  -0.760  0.9978
+    ##  White Private - Hispanic Private       -0.5419 0.0886 Inf  -6.117  <.0001
+    ##  White Private - White Medicare         -0.0633 0.0468 Inf  -1.352  0.9153
+    ##  White Private - Black Medicare         -0.4303 0.0622 Inf  -6.918  <.0001
+    ##  White Private - Hispanic Medicare      -0.8298 0.0636 Inf -13.054  <.0001
+    ##  White Private - White Medicaid         -0.2961 0.0905 Inf  -3.272  0.0296
+    ##  White Private - Black Medicaid         -0.6207 0.1606 Inf  -3.864  0.0036
+    ##  White Private - Hispanic Medicaid      -1.1574 0.1278 Inf  -9.055  <.0001
+    ##  Black Private - Hispanic Private       -0.4673 0.1208 Inf  -3.869  0.0035
+    ##  Black Private - White Medicare          0.0113 0.0942 Inf   0.120  1.0000
+    ##  Black Private - Black Medicare         -0.3557 0.1026 Inf  -3.468  0.0154
+    ##  Black Private - Hispanic Medicare      -0.7552 0.1035 Inf  -7.296  <.0001
+    ##  Black Private - White Medicaid         -0.2215 0.1224 Inf  -1.809  0.6760
+    ##  Black Private - Black Medicaid         -0.5461 0.1804 Inf  -3.027  0.0622
+    ##  Black Private - Hispanic Medicaid      -1.0828 0.1519 Inf  -7.127  <.0001
+    ##  Hispanic Private - White Medicare       0.4786 0.0841 Inf   5.691  <.0001
+    ##  Hispanic Private - Black Medicare       0.1117 0.0935 Inf   1.194  0.9580
+    ##  Hispanic Private - Hispanic Medicare   -0.2879 0.0944 Inf  -3.050  0.0581
+    ##  Hispanic Private - White Medicaid       0.2458 0.1149 Inf   2.139  0.4464
+    ##  Hispanic Private - Black Medicaid      -0.0787 0.1754 Inf  -0.449  1.0000
+    ##  Hispanic Private - Hispanic Medicaid   -0.6155 0.1460 Inf  -4.215  0.0008
+    ##  White Medicare - Black Medicare        -0.3669 0.0512 Inf  -7.161  <.0001
+    ##  White Medicare - Hispanic Medicare     -0.7665 0.0536 Inf -14.307  <.0001
+    ##  White Medicare - White Medicaid        -0.2328 0.0876 Inf  -2.659  0.1628
+    ##  White Medicare - Black Medicaid        -0.5573 0.1586 Inf  -3.514  0.0131
+    ##  White Medicare - Hispanic Medicaid     -1.0941 0.1252 Inf  -8.739  <.0001
+    ##  Black Medicare - Hispanic Medicare     -0.3995 0.0675 Inf  -5.917  <.0001
+    ##  Black Medicare - White Medicaid         0.1341 0.0965 Inf   1.390  0.9020
+    ##  Black Medicare - Black Medicaid        -0.1904 0.1636 Inf  -1.164  0.9640
+    ##  Black Medicare - Hispanic Medicaid     -0.7271 0.1316 Inf  -5.526  <.0001
+    ##  Hispanic Medicare - White Medicaid      0.5337 0.0974 Inf   5.478  <.0001
+    ##  Hispanic Medicare - Black Medicaid      0.2091 0.1642 Inf   1.273  0.9391
+    ##  Hispanic Medicare - Hispanic Medicaid  -0.3276 0.1323 Inf  -2.476  0.2437
+    ##  White Medicaid - Black Medicaid        -0.3245 0.1763 Inf  -1.841  0.6548
+    ##  White Medicaid - Hispanic Medicaid     -0.8613 0.1471 Inf  -5.853  <.0001
+    ##  Black Medicaid - Hispanic Medicaid     -0.5367 0.1981 Inf  -2.710  0.1441
+    ## 
+    ## Results are averaged over the levels of: gender, smoke_status 
+    ## Results are given on the log odds ratio (not the response) scale. 
+    ## P value adjustment: tukey method for comparing a family of 9 estimates
+
+``` r
+contrast(emmeans_results, "revpairwise", by="insurance",adjust="holm")
+```
+
+    ## insurance = Private:
+    ##  contrast         estimate     SE  df z.ratio p.value
+    ##  Black - White      0.0746 0.0982 Inf   0.760  0.4472
+    ##  Hispanic - White   0.5419 0.0886 Inf   6.117  <.0001
+    ##  Hispanic - Black   0.4673 0.1208 Inf   3.869  0.0002
+    ## 
+    ## insurance = Medicare:
+    ##  contrast         estimate     SE  df z.ratio p.value
+    ##  Black - White      0.3669 0.0512 Inf   7.161  <.0001
+    ##  Hispanic - White   0.7665 0.0536 Inf  14.307  <.0001
+    ##  Hispanic - Black   0.3995 0.0675 Inf   5.917  <.0001
+    ## 
+    ## insurance = Medicaid:
+    ##  contrast         estimate     SE  df z.ratio p.value
+    ##  Black - White      0.3245 0.1763 Inf   1.841  0.0657
+    ##  Hispanic - White   0.8613 0.1471 Inf   5.853  <.0001
+    ##  Hispanic - Black   0.5367 0.1981 Inf   2.710  0.0135
+    ## 
+    ## Results are averaged over the levels of: gender, smoke_status 
+    ## Results are given on the log odds ratio (not the response) scale. 
+    ## P value adjustment: holm method for 3 tests
+
+Interpretation:
+
+- The measures above offer pairwise comparisons between patients of
+  different races, controlling for insurance.
+- Even comparing patients with the same insurance type, Hispanic
+  patients are significantly more likely to receive Bevacizumab as
+  compared to White patients
+- However, significant differential treatment between Black and White
+  patients is only observed among patients on Medicare.
+- There are also significant differences in treatment between Black and
+  Hispanic patients who are on Medicare and Medicaid.
 
 ## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
 
@@ -1112,89 +1503,71 @@ summary(no_intercept_avastin)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -1.9272  -1.0992  -0.9095   1.1741   1.6015  
+    ## -1.9253  -1.0994  -0.9096   1.1738   1.6008  
     ## 
     ## Coefficients:
     ##                                                               Estimate
-    ## genderFemale                                                -0.5182405
-    ## genderMale                                                  -0.5769336
-    ## genderUnknown                                               -0.5819260
-    ## race_ethnicityBlack                                          0.0740645
-    ## race_ethnicityHispanic                                       0.3823148
-    ## insuranceMedicare                                            0.0608310
-    ## insuranceMedicaid                                            0.2703450
-    ## first_dr_age                                                -0.0059686
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0125240
-    ## smoke_statusUnknown / Unclassified                           0.0638353
-    ## smoke_statusYes / Active                                     0.0851868
-    ## baseline_va_letter                                           0.0031772
-    ## severity_score                                               0.0088792
-    ## race_ethnicityBlack:insuranceMedicare                        0.1106431
-    ## race_ethnicityHispanic:insuranceMedicare                     0.0778363
-    ## race_ethnicityBlack:insuranceMedicaid                        0.1146698
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.0924488
-    ##                                                             Std. Error
-    ## genderFemale                                                 0.0655382
-    ## genderMale                                                   0.0656205
-    ## genderUnknown                                                0.1167629
-    ## race_ethnicityBlack                                          0.0381844
-    ## race_ethnicityHispanic                                       0.0354531
-    ## insuranceMedicare                                            0.0186220
-    ## insuranceMedicaid                                            0.0370648
-    ## first_dr_age                                                 0.0006639
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0149404
-    ## smoke_statusUnknown / Unclassified                           0.0627204
-    ## smoke_statusYes / Active                                     0.0210994
-    ## baseline_va_letter                                           0.0005061
-    ## severity_score                                               0.0004327
-    ## race_ethnicityBlack:insuranceMedicare                        0.0442570
-    ## race_ethnicityHispanic:insuranceMedicare                     0.0429474
-    ## race_ethnicityBlack:insuranceMedicaid                        0.0843732
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.0709398
-    ##                                                             z value
-    ## genderFemale                                                 -7.907
-    ## genderMale                                                   -8.792
-    ## genderUnknown                                                -4.984
-    ## race_ethnicityBlack                                           1.940
-    ## race_ethnicityHispanic                                       10.784
-    ## insuranceMedicare                                             3.267
-    ## insuranceMedicaid                                             7.294
-    ## first_dr_age                                                 -8.991
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.838
-    ## smoke_statusUnknown / Unclassified                            1.018
-    ## smoke_statusYes / Active                                      4.037
-    ## baseline_va_letter                                            6.278
-    ## severity_score                                               20.521
-    ## race_ethnicityBlack:insuranceMedicare                         2.500
-    ## race_ethnicityHispanic:insuranceMedicare                      1.812
-    ## race_ethnicityBlack:insuranceMedicaid                         1.359
-    ## race_ethnicityHispanic:insuranceMedicaid                      1.303
+    ## genderFemale                                                -0.5037932
+    ## genderMale                                                  -0.5597391
+    ## genderUnknown                                               -0.5650720
+    ## race_ethnicityBlack                                          0.0810885
+    ## race_ethnicityHispanic                                       0.3771049
+    ## insuranceMedicare                                            0.0633973
+    ## insuranceMedicaid                                            0.2662283
+    ## first_dr_age                                                -0.0061557
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0085563
+    ## smoke_statusUnknown / Unclassified                           0.0740108
+    ## smoke_statusYes / Active                                     0.0876460
+    ## baseline_va_letter                                           0.0031119
+    ## severity_score                                               0.0088683
+    ## race_ethnicityBlack:insuranceMedicare                        0.0995853
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0830372
+    ## race_ethnicityBlack:insuranceMedicaid                        0.0913260
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.0970483
+    ##                                                             Std. Error z value
+    ## genderFemale                                                 0.0654273  -7.700
+    ## genderMale                                                   0.0655236  -8.543
+    ## genderUnknown                                                0.1166996  -4.842
+    ## race_ethnicityBlack                                          0.0381826   2.124
+    ## race_ethnicityHispanic                                       0.0354371  10.642
+    ## insuranceMedicare                                            0.0186210   3.405
+    ## insuranceMedicaid                                            0.0370600   7.184
+    ## first_dr_age                                                 0.0006637  -9.274
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0149401   0.573
+    ## smoke_statusUnknown / Unclassified                           0.0627295   1.180
+    ## smoke_statusYes / Active                                     0.0210990   4.154
+    ## baseline_va_letter                                           0.0005041   6.174
+    ## severity_score                                               0.0004327  20.496
+    ## race_ethnicityBlack:insuranceMedicare                        0.0442568   2.250
+    ## race_ethnicityHispanic:insuranceMedicare                     0.0429408   1.934
+    ## race_ethnicityBlack:insuranceMedicaid                        0.0842259   1.084
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.0708902   1.369
     ##                                                             Pr(>|z|)    
-    ## genderFemale                                                2.63e-15 ***
+    ## genderFemale                                                1.36e-14 ***
     ## genderMale                                                   < 2e-16 ***
-    ## genderUnknown                                               6.23e-07 ***
-    ## race_ethnicityBlack                                          0.05242 .  
+    ## genderUnknown                                               1.28e-06 ***
+    ## race_ethnicityBlack                                         0.033695 *  
     ## race_ethnicityHispanic                                       < 2e-16 ***
-    ## insuranceMedicare                                            0.00109 ** 
-    ## insuranceMedicaid                                           3.01e-13 ***
+    ## insuranceMedicare                                           0.000663 ***
+    ## insuranceMedicaid                                           6.78e-13 ***
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.40188    
-    ## smoke_statusUnknown / Unclassified                           0.30878    
-    ## smoke_statusYes / Active                                    5.40e-05 ***
-    ## baseline_va_letter                                          3.42e-10 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.566844    
+    ## smoke_statusUnknown / Unclassified                          0.238064    
+    ## smoke_statusYes / Active                                    3.27e-05 ***
+    ## baseline_va_letter                                          6.67e-10 ***
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack:insuranceMedicare                        0.01242 *  
-    ## race_ethnicityHispanic:insuranceMedicare                     0.06993 .  
-    ## race_ethnicityBlack:insuranceMedicaid                        0.17412    
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.19251    
+    ## race_ethnicityBlack:insuranceMedicare                       0.024438 *  
+    ## race_ethnicityHispanic:insuranceMedicare                    0.053142 .  
+    ## race_ethnicityBlack:insuranceMedicaid                       0.278233    
+    ## race_ethnicityHispanic:insuranceMedicaid                    0.171001    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
     ##     Null deviance: 55324  on 39908  degrees of freedom
-    ## Residual deviance: 53630  on 39891  degrees of freedom
-    ## AIC: 53664
+    ## Residual deviance: 53635  on 39891  degrees of freedom
+    ## AIC: 53669
     ## 
     ## Number of Fisher Scoring iterations: 4
 
@@ -1204,78 +1577,78 @@ matrix_coef
 ```
 
     ##                                                genderFemale 
-    ##                                                0.0655382423 
+    ##                                                0.0654273445 
     ##                                                  genderMale 
-    ##                                                0.0656204919 
+    ##                                                0.0655236267 
     ##                                               genderUnknown 
-    ##                                                0.1167628953 
+    ##                                                0.1166995914 
     ##                                         race_ethnicityBlack 
-    ##                                                0.0381844271 
+    ##                                                0.0381826037 
     ##                                      race_ethnicityHispanic 
-    ##                                                0.0354530782 
+    ##                                                0.0354371405 
     ##                                           insuranceMedicare 
-    ##                                                0.0186219668 
+    ##                                                0.0186210376 
     ##                                           insuranceMedicaid 
-    ##                                                0.0370647984 
+    ##                                                0.0370600411 
     ##                                                first_dr_age 
-    ##                                                0.0006638559 
+    ##                                                0.0006637345 
     ## smoke_statusFormer / No longer active / Past History / Quit 
-    ##                                                0.0149403837 
+    ##                                                0.0149400591 
     ##                          smoke_statusUnknown / Unclassified 
-    ##                                                0.0627204391 
+    ##                                                0.0627295072 
     ##                                    smoke_statusYes / Active 
-    ##                                                0.0210994335 
+    ##                                                0.0210989641 
     ##                                          baseline_va_letter 
-    ##                                                0.0005060504 
+    ##                                                0.0005040566 
     ##                                              severity_score 
-    ##                                                0.0004326807 
+    ##                                                0.0004326813 
     ##                       race_ethnicityBlack:insuranceMedicare 
-    ##                                                0.0442569729 
+    ##                                                0.0442567651 
     ##                    race_ethnicityHispanic:insuranceMedicare 
-    ##                                                0.0429473582 
+    ##                                                0.0429407799 
     ##                       race_ethnicityBlack:insuranceMedicaid 
-    ##                                                0.0843731863 
+    ##                                                0.0842258559 
     ##                    race_ethnicityHispanic:insuranceMedicaid 
-    ##                                                0.0709397843
+    ##                                                0.0708901999
 
 ``` r
 inv.logit(matrix_coef)
 ```
 
     ##                                                genderFemale 
-    ##                                                   0.5163787 
+    ##                                                   0.5163510 
     ##                                                  genderMale 
-    ##                                                   0.5163992 
+    ##                                                   0.5163750 
     ##                                               genderUnknown 
-    ##                                                   0.5291576 
+    ##                                                   0.5291418 
     ##                                         race_ethnicityBlack 
-    ##                                                   0.5095449 
+    ##                                                   0.5095445 
     ##                                      race_ethnicityHispanic 
-    ##                                                   0.5088623 
+    ##                                                   0.5088584 
     ##                                           insuranceMedicare 
-    ##                                                   0.5046554 
+    ##                                                   0.5046551 
     ##                                           insuranceMedicaid 
-    ##                                                   0.5092651 
+    ##                                                   0.5092639 
     ##                                                first_dr_age 
-    ##                                                   0.5001660 
+    ##                                                   0.5001659 
     ## smoke_statusFormer / No longer active / Past History / Quit 
-    ##                                                   0.5037350 
+    ##                                                   0.5037349 
     ##                          smoke_statusUnknown / Unclassified 
-    ##                                                   0.5156750 
+    ##                                                   0.5156772 
     ##                                    smoke_statusYes / Active 
-    ##                                                   0.5052747 
+    ##                                                   0.5052745 
     ##                                          baseline_va_letter 
-    ##                                                   0.5001265 
+    ##                                                   0.5001260 
     ##                                              severity_score 
     ##                                                   0.5001082 
     ##                       race_ethnicityBlack:insuranceMedicare 
     ##                                                   0.5110624 
     ##                    race_ethnicityHispanic:insuranceMedicare 
-    ##                                                   0.5107352 
+    ##                                                   0.5107335 
     ##                       race_ethnicityBlack:insuranceMedicaid 
-    ##                                                   0.5210808 
+    ##                                                   0.5210440 
     ##                    race_ethnicityHispanic:insuranceMedicaid 
-    ##                                                   0.5177275
+    ##                                                   0.5177151
 
 #### Forest Plot Representing Effect of Race on Bevacizumab Administration by Insurance Status
 
@@ -1366,35 +1739,35 @@ bev_private
 ```
 
     ##                                                        FACTOR     Estimate
-    ## 1                                                 (Intercept) -1.405305056
-    ## 2                                         race_ethnicityBlack  0.090829928
-    ## 3                                      race_ethnicityHispanic  0.594751369
-    ## 4                                                  genderMale -0.141105791
-    ## 5                                                first_dr_age -0.002534082
-    ## 6 smoke_statusFormer / No longer active / Past History / Quit -0.004742439
-    ## 7                                    smoke_statusYes / Active  0.079740497
-    ## 8                                          baseline_va_letter  0.005050871
-    ## 9                                              severity_score  0.018310333
-    ##    Std. Error     z value     Pr(>|z|)     up_error   down_error      odds
-    ## 1 0.203218271 -6.91524953 4.670405e-12 -1.006997244 -1.803612868 0.2452922
-    ## 2 0.061986104  1.46532726 1.428317e-01  0.212322691 -0.030662836 1.0950827
-    ## 3 0.058171662 10.22407393 1.546995e-24  0.708767826  0.480734912 1.8125802
-    ## 4 0.040394522 -3.49319125 4.772846e-04 -0.061932528 -0.220279054 0.8683974
-    ## 5 0.002032842 -1.24657093 2.125549e-01  0.001450289 -0.006518453 0.9974691
-    ## 6 0.049595360 -0.09562263 9.238203e-01  0.092464467 -0.101949345 0.9952688
-    ## 7 0.065035776  1.22610203 2.201603e-01  0.207210618 -0.047729624 1.0830060
-    ## 8 0.001607349  3.14236192 1.675907e-03  0.008201275  0.001900468 1.0050636
-    ## 9 0.001361540 13.44825505 3.152234e-41  0.020978951  0.015641715 1.0184790
+    ## 1                                                 (Intercept) -1.355822078
+    ## 2                                         race_ethnicityBlack  0.104751637
+    ## 3                                      race_ethnicityHispanic  0.586654132
+    ## 4                                                  genderMale -0.119050313
+    ## 5                                                first_dr_age -0.003133658
+    ## 6 smoke_statusFormer / No longer active / Past History / Quit  0.005555526
+    ## 7                                    smoke_statusYes / Active  0.058685193
+    ## 8                                          baseline_va_letter  0.004792970
+    ## 9                                              severity_score  0.018112175
+    ##    Std. Error    z value     Pr(>|z|)      up_error   down_error      odds
+    ## 1 0.202673691 -6.6896797 2.236596e-11 -0.9585816439 -1.753062512 0.2577353
+    ## 2 0.061957237  1.6907087 9.089246e-02  0.2261878223 -0.016684547 1.1104348
+    ## 3 0.058097909 10.0976806 5.656416e-24  0.7005260342  0.472782230 1.7979626
+    ## 4 0.040383076 -2.9480249 3.198113e-03 -0.0398994842 -0.198201142 0.8877631
+    ## 5 0.002032872 -1.5414930 1.231968e-01  0.0008507713 -0.007118088 0.9968712
+    ## 6 0.049565841  0.1120838 9.107570e-01  0.1027045732 -0.091593522 1.0055710
+    ## 7 0.065026972  0.9024746 3.668048e-01  0.1861380586 -0.068767672 1.0604414
+    ## 8 0.001598574  2.9982781 2.715098e-03  0.0079261758  0.001659765 1.0048045
+    ## 9 0.001360307 13.3147735 1.899476e-40  0.0207783766  0.015445974 1.0182772
     ##   upper_limit lower_limit
-    ## 1   0.3653143   0.1647028
-    ## 2   1.2365468   0.9698025
-    ## 3   2.0314866   1.6172625
-    ## 4   0.9399463   0.8022949
-    ## 5   1.0014513   0.9935027
-    ## 6   1.0968742   0.9030753
-    ## 7   1.2302417   0.9533915
-    ## 8   1.0082350   1.0019023
-    ## 9   1.0212006   1.0157647
+    ## 1   0.3834363   0.1732426
+    ## 2   1.2538111   0.9834539
+    ## 3   2.0148123   1.6044519
+    ## 4   0.9608860   0.8202049
+    ## 5   1.0008511   0.9929072
+    ## 6   1.1081640   0.9124760
+    ## 7   1.2045886   0.9335435
+    ## 8   1.0079577   1.0016611
+    ## 9   1.0209958   1.0155659
 
 ``` r
 #Add a group name
@@ -1422,35 +1795,35 @@ bev_private
 ```
 
     ##                                                        FACTOR     Estimate
-    ## 1                                                 (Intercept) -1.405305056
-    ## 2                                         race_ethnicityBlack  0.090829928
-    ## 3                                      race_ethnicityHispanic  0.594751369
-    ## 4                                                  genderMale -0.141105791
-    ## 5                                                first_dr_age -0.002534082
-    ## 6 smoke_statusFormer / No longer active / Past History / Quit -0.004742439
-    ## 7                                    smoke_statusYes / Active  0.079740497
-    ## 8                                          baseline_va_letter  0.005050871
-    ## 9                                              severity_score  0.018310333
-    ##    Std. Error     z value     Pr(>|z|)     up_error   down_error      odds
-    ## 1 0.203218271 -6.91524953 4.670405e-12 -1.006997244 -1.803612868 0.2452922
-    ## 2 0.061986104  1.46532726 1.428317e-01  0.212322691 -0.030662836 1.0950827
-    ## 3 0.058171662 10.22407393 1.546995e-24  0.708767826  0.480734912 1.8125802
-    ## 4 0.040394522 -3.49319125 4.772846e-04 -0.061932528 -0.220279054 0.8683974
-    ## 5 0.002032842 -1.24657093 2.125549e-01  0.001450289 -0.006518453 0.9974691
-    ## 6 0.049595360 -0.09562263 9.238203e-01  0.092464467 -0.101949345 0.9952688
-    ## 7 0.065035776  1.22610203 2.201603e-01  0.207210618 -0.047729624 1.0830060
-    ## 8 0.001607349  3.14236192 1.675907e-03  0.008201275  0.001900468 1.0050636
-    ## 9 0.001361540 13.44825505 3.152234e-41  0.020978951  0.015641715 1.0184790
+    ## 1                                                 (Intercept) -1.355822078
+    ## 2                                         race_ethnicityBlack  0.104751637
+    ## 3                                      race_ethnicityHispanic  0.586654132
+    ## 4                                                  genderMale -0.119050313
+    ## 5                                                first_dr_age -0.003133658
+    ## 6 smoke_statusFormer / No longer active / Past History / Quit  0.005555526
+    ## 7                                    smoke_statusYes / Active  0.058685193
+    ## 8                                          baseline_va_letter  0.004792970
+    ## 9                                              severity_score  0.018112175
+    ##    Std. Error    z value     Pr(>|z|)      up_error   down_error      odds
+    ## 1 0.202673691 -6.6896797 2.236596e-11 -0.9585816439 -1.753062512 0.2577353
+    ## 2 0.061957237  1.6907087 9.089246e-02  0.2261878223 -0.016684547 1.1104348
+    ## 3 0.058097909 10.0976806 5.656416e-24  0.7005260342  0.472782230 1.7979626
+    ## 4 0.040383076 -2.9480249 3.198113e-03 -0.0398994842 -0.198201142 0.8877631
+    ## 5 0.002032872 -1.5414930 1.231968e-01  0.0008507713 -0.007118088 0.9968712
+    ## 6 0.049565841  0.1120838 9.107570e-01  0.1027045732 -0.091593522 1.0055710
+    ## 7 0.065026972  0.9024746 3.668048e-01  0.1861380586 -0.068767672 1.0604414
+    ## 8 0.001598574  2.9982781 2.715098e-03  0.0079261758  0.001659765 1.0048045
+    ## 9 0.001360307 13.3147735 1.899476e-40  0.0207783766  0.015445974 1.0182772
     ##   upper_limit lower_limit   group                       FACTOR_clean
-    ## 1   0.3653143   0.1647028 private                          Intercept
-    ## 2   1.2365468   0.9698025 private               Black (rel to White)
-    ## 3   2.0314866   1.6172625 private            Hispanic (rel to White)
-    ## 4   0.9399463   0.8022949 private               Male (rel to Female)
-    ## 5   1.0014513   0.9935027 private                       DR Diag. Age
-    ## 6   1.0968742   0.9030753 private  Former Smoker (rel to Non-Smoker)
-    ## 7   1.2302417   0.9533915 private Current Smoker (rel to Non-Smoker)
-    ## 8   1.0082350   1.0019023 private                        Baseline VA
-    ## 9   1.0212006   1.0157647 private                     Severity Score
+    ## 1   0.3834363   0.1732426 private                          Intercept
+    ## 2   1.2538111   0.9834539 private               Black (rel to White)
+    ## 3   2.0148123   1.6044519 private            Hispanic (rel to White)
+    ## 4   0.9608860   0.8202049 private               Male (rel to Female)
+    ## 5   1.0008511   0.9929072 private                       DR Diag. Age
+    ## 6   1.1081640   0.9124760 private  Former Smoker (rel to Non-Smoker)
+    ## 7   1.2045886   0.9335435 private Current Smoker (rel to Non-Smoker)
+    ## 8   1.0079577   1.0016611 private                        Baseline VA
+    ## 9   1.0209958   1.0155659 private                     Severity Score
 
 ``` r
 #Add a group name
@@ -1515,7 +1888,7 @@ plot_forest_bev_insurance <-
 plot_forest_bev_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/plot_forest_bev_insurance.png", plot_forest_bev_insurance, width = 10, height = 5)
@@ -1561,58 +1934,48 @@ summary(White_avastin_logreg)
     ##         "Avastin", 1, 0)))
     ## 
     ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -1.6073  -1.0641  -0.9423   1.2191   1.6057  
+    ##    Min      1Q  Median      3Q     Max  
+    ## -1.609  -1.066  -0.942   1.221   1.604  
     ## 
     ## Coefficients:
     ##                                                               Estimate
-    ## (Intercept)                                                 -0.9262526
-    ## insuranceMedicare                                            0.0880002
-    ## insuranceMedicaid                                            0.4264501
-    ## genderMale                                                  -0.0926253
-    ## first_dr_age                                                -0.0089711
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0494319
-    ## smoke_statusYes / Active                                     0.1324540
-    ## baseline_va_letter                                           0.0057675
-    ## severity_score                                               0.0144313
-    ##                                                             Std. Error
-    ## (Intercept)                                                  0.1248362
-    ## insuranceMedicare                                            0.0313183
-    ## insuranceMedicaid                                            0.0601459
-    ## genderMale                                                   0.0245241
-    ## first_dr_age                                                 0.0012818
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.0278325
-    ## smoke_statusYes / Active                                     0.0389534
-    ## baseline_va_letter                                           0.0009743
-    ## severity_score                                               0.0008229
-    ##                                                             z value
-    ## (Intercept)                                                  -7.420
-    ## insuranceMedicare                                             2.810
-    ## insuranceMedicaid                                             7.090
-    ## genderMale                                                   -3.777
-    ## first_dr_age                                                 -6.999
-    ## smoke_statusFormer / No longer active / Past History / Quit   1.776
-    ## smoke_statusYes / Active                                      3.400
-    ## baseline_va_letter                                            5.920
-    ## severity_score                                               17.537
+    ## (Intercept)                                                 -0.8897386
+    ## insuranceMedicare                                            0.0925886
+    ## insuranceMedicaid                                            0.4196275
+    ## genderMale                                                  -0.0862764
+    ## first_dr_age                                                -0.0093570
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0421730
+    ## smoke_statusYes / Active                                     0.1407622
+    ## baseline_va_letter                                           0.0056805
+    ## severity_score                                               0.0142264
+    ##                                                             Std. Error z value
+    ## (Intercept)                                                  0.1244960  -7.147
+    ## insuranceMedicare                                            0.0313126   2.957
+    ## insuranceMedicaid                                            0.0601243   6.979
+    ## genderMale                                                   0.0245280  -3.517
+    ## first_dr_age                                                 0.0012814  -7.302
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.0278326   1.515
+    ## smoke_statusYes / Active                                     0.0389402   3.615
+    ## baseline_va_letter                                           0.0009696   5.858
+    ## severity_score                                               0.0008229  17.289
     ##                                                             Pr(>|z|)    
-    ## (Intercept)                                                 1.17e-13 ***
-    ## insuranceMedicare                                           0.004956 ** 
-    ## insuranceMedicaid                                           1.34e-12 ***
-    ## genderMale                                                  0.000159 ***
-    ## first_dr_age                                                2.59e-12 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.075725 .  
-    ## smoke_statusYes / Active                                    0.000673 ***
-    ## baseline_va_letter                                          3.22e-09 ***
+    ## (Intercept)                                                 8.89e-13 ***
+    ## insuranceMedicare                                           0.003107 ** 
+    ## insuranceMedicaid                                           2.97e-12 ***
+    ## genderMale                                                  0.000436 ***
+    ## first_dr_age                                                2.84e-13 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.129711    
+    ## smoke_statusYes / Active                                    0.000301 ***
+    ## baseline_va_letter                                          4.68e-09 ***
     ## severity_score                                               < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
     ## (Dispersion parameter for binomial family taken to be 1)
     ## 
-    ##     Null deviance: 39165  on 28478  degrees of freedom
-    ## Residual deviance: 38550  on 28470  degrees of freedom
-    ## AIC: 38568
+    ##     Null deviance: 39164  on 28478  degrees of freedom
+    ## Residual deviance: 38555  on 28470  degrees of freedom
+    ## AIC: 38573
     ## 
     ## Number of Fisher Scoring iterations: 4
 
@@ -1762,7 +2125,7 @@ plot_forest_bev_race <-
 plot_forest_bev_race 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/plot_forest_bev_race.png", plot_forest_bev_race, width = 10, height = 5)
@@ -1810,7 +2173,7 @@ drug_sev_cat_race_2 %>%
 plot_drug_sev_cat_race_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_race_all.png", plot_drug_sev_cat_race_all, width = 10, height = 7)
@@ -1859,7 +2222,7 @@ drug_sev_cat_insurance_2 %>%
 plot_drug_sev_cat_insurance_all
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/SUPPLEMENT_plot_drug_sev_cat_insurance_all.png", plot_drug_sev_cat_insurance_all, width = 10, height = 7)
@@ -1934,7 +2297,7 @@ loss_15_race %>%
 plot_loss_15_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/3A_plot_loss_15_race.png", plot_loss_15_race, width = 7, height = 5)
@@ -2015,7 +2378,7 @@ plot_va_race_diff <-
 plot_va_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/3B_plot_va_race_diff.png", plot_va_race_diff, width = 7, height = 5)
@@ -2075,7 +2438,7 @@ loss_15_insurance %>%
 plot_loss_15_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/4A_plot_loss_15_insurance.png", plot_loss_15_insurance, width = 7, height = 5)
@@ -2143,7 +2506,7 @@ va_insurance_diff %>%
 plot_va_insurance_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/4B_plot_va_insurance_diff.png", plot_va_insurance_diff, width = 7, height = 5)
@@ -2157,7 +2520,8 @@ insurance_race_va <-
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 va_insurance_race_diff_tbl <-
@@ -2205,7 +2569,8 @@ va_insurance_race_diff_ci <-
   )
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 plot_va_insurance_race_diff <-
@@ -2237,7 +2602,7 @@ va_insurance_race_diff %>%
 plot_va_insurance_race_diff
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/4C_plot_va_insurance_race_diff.png", plot_va_insurance_race_diff, width = 10, height = 5)
@@ -2280,114 +2645,96 @@ summary(one_year_va_delta_4.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -96.894  -4.372   1.666   6.483  42.577 
+    ## -97.003  -4.411   1.641   6.476  42.528 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 36.411416
-    ## race_ethnicityBlack                                         -1.456907
-    ## race_ethnicityHispanic                                      -1.316521
-    ## insuranceMedicare                                           -1.780485
-    ## insuranceMedicaid                                           -2.128057
-    ## genderMale                                                   0.405336
-    ## genderUnknown                                               -1.214586
-    ## first_dr_age                                                -0.057780
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.125248
-    ## smoke_statusUnknown / Unclassified                           0.601629
-    ## smoke_statusYes / Active                                    -0.658016
-    ## baseline_va_letter                                          -0.395993
-    ## vegf_group_365combo                                         -0.027556
-    ## vegf_group_365Eylea                                          0.561849
-    ## vegf_group_365Lucentis                                       0.767506
-    ## severity_score                                              -0.063302
-    ## race_ethnicityBlack:insuranceMedicare                        1.348333
-    ## race_ethnicityHispanic:insuranceMedicare                    -0.078540
-    ## race_ethnicityBlack:insuranceMedicaid                       -0.067253
-    ## race_ethnicityHispanic:insuranceMedicaid                     0.602269
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.634959
-    ## race_ethnicityBlack                                           0.368723
-    ## race_ethnicityHispanic                                        0.338773
-    ## insuranceMedicare                                             0.179176
-    ## insuranceMedicaid                                             0.355968
-    ## genderMale                                                    0.124870
-    ## genderUnknown                                                 0.930065
-    ## first_dr_age                                                  0.006362
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.143352
-    ## smoke_statusUnknown / Unclassified                            0.602615
-    ## smoke_statusYes / Active                                      0.202426
-    ## baseline_va_letter                                            0.004856
-    ## vegf_group_365combo                                           0.163024
-    ## vegf_group_365Eylea                                           0.169126
-    ## vegf_group_365Lucentis                                        0.192941
-    ## severity_score                                                0.004181
-    ## race_ethnicityBlack:insuranceMedicare                         0.427327
-    ## race_ethnicityHispanic:insuranceMedicare                      0.408718
-    ## race_ethnicityBlack:insuranceMedicaid                         0.801029
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.655178
-    ##                                                             t value
-    ## (Intercept)                                                  57.345
-    ## race_ethnicityBlack                                          -3.951
-    ## race_ethnicityHispanic                                       -3.886
-    ## insuranceMedicare                                            -9.937
-    ## insuranceMedicaid                                            -5.978
-    ## genderMale                                                    3.246
-    ## genderUnknown                                                -1.306
-    ## first_dr_age                                                 -9.082
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.874
-    ## smoke_statusUnknown / Unclassified                            0.998
-    ## smoke_statusYes / Active                                     -3.251
-    ## baseline_va_letter                                          -81.539
-    ## vegf_group_365combo                                          -0.169
-    ## vegf_group_365Eylea                                           3.322
-    ## vegf_group_365Lucentis                                        3.978
-    ## severity_score                                              -15.142
-    ## race_ethnicityBlack:insuranceMedicare                         3.155
-    ## race_ethnicityHispanic:insuranceMedicare                     -0.192
-    ## race_ethnicityBlack:insuranceMedicaid                        -0.084
-    ## race_ethnicityHispanic:insuranceMedicaid                      0.919
+    ## (Intercept)                                                 35.796414
+    ## race_ethnicityBlack                                         -1.415187
+    ## race_ethnicityHispanic                                      -1.279069
+    ## insuranceMedicare                                           -1.658148
+    ## insuranceMedicaid                                           -2.094126
+    ## genderMale                                                   0.499426
+    ## genderUnknown                                               -1.349028
+    ## first_dr_age                                                -0.055824
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.172152
+    ## smoke_statusUnknown / Unclassified                           0.373918
+    ## smoke_statusYes / Active                                    -0.574961
+    ## baseline_va_letter                                          -0.394888
+    ## vegf_group_365combo                                         -0.018251
+    ## vegf_group_365Eylea                                          0.541154
+    ## vegf_group_365Lucentis                                       0.733181
+    ## severity_score                                              -0.058738
+    ## race_ethnicityBlack:insuranceMedicare                        1.281941
+    ## race_ethnicityHispanic:insuranceMedicare                    -0.080459
+    ## race_ethnicityBlack:insuranceMedicaid                        0.424601
+    ## race_ethnicityHispanic:insuranceMedicaid                     0.457069
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   0.632711  56.576
+    ## race_ethnicityBlack                                           0.368043  -3.845
+    ## race_ethnicityHispanic                                        0.338092  -3.783
+    ## insuranceMedicare                                             0.178840  -9.272
+    ## insuranceMedicaid                                             0.355306  -5.894
+    ## genderMale                                                    0.124640   4.007
+    ## genderUnknown                                                 0.928360  -1.453
+    ## first_dr_age                                                  0.006349  -8.793
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.143086   1.203
+    ## smoke_statusUnknown / Unclassified                            0.601501   0.622
+    ## smoke_statusYes / Active                                      0.202052  -2.846
+    ## baseline_va_letter                                            0.004829 -81.770
+    ## vegf_group_365combo                                           0.162653  -0.112
+    ## vegf_group_365Eylea                                           0.168939   3.203
+    ## vegf_group_365Lucentis                                        0.192395   3.811
+    ## severity_score                                                0.004173 -14.076
+    ## race_ethnicityBlack:insuranceMedicare                         0.426547   3.005
+    ## race_ethnicityHispanic:insuranceMedicare                      0.407997  -0.197
+    ## race_ethnicityBlack:insuranceMedicaid                         0.799547   0.531
+    ## race_ethnicityHispanic:insuranceMedicaid                      0.653977   0.699
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         7.79e-05 ***
-    ## race_ethnicityHispanic                                      0.000102 ***
+    ## race_ethnicityBlack                                         0.000121 ***
+    ## race_ethnicityHispanic                                      0.000155 ***
     ## insuranceMedicare                                            < 2e-16 ***
-    ## insuranceMedicaid                                           2.27e-09 ***
-    ## genderMale                                                  0.001171 ** 
-    ## genderUnknown                                               0.191589    
+    ## insuranceMedicaid                                           3.80e-09 ***
+    ## genderMale                                                  6.16e-05 ***
+    ## genderUnknown                                               0.146196    
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.382281    
-    ## smoke_statusUnknown / Unclassified                          0.318110    
-    ## smoke_statusYes / Active                                    0.001152 ** 
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.228932    
+    ## smoke_statusUnknown / Unclassified                          0.534182    
+    ## smoke_statusYes / Active                                    0.004435 ** 
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.865775    
-    ## vegf_group_365Eylea                                         0.000894 ***
-    ## vegf_group_365Lucentis                                      6.96e-05 ***
+    ## vegf_group_365combo                                         0.910657    
+    ## vegf_group_365Eylea                                         0.001360 ** 
+    ## vegf_group_365Lucentis                                      0.000139 ***
     ## severity_score                                               < 2e-16 ***
-    ## race_ethnicityBlack:insuranceMedicare                       0.001605 ** 
-    ## race_ethnicityHispanic:insuranceMedicare                    0.847617    
-    ## race_ethnicityBlack:insuranceMedicaid                       0.933090    
-    ## race_ethnicityHispanic:insuranceMedicaid                    0.357973    
+    ## race_ethnicityBlack:insuranceMedicare                       0.002654 ** 
+    ## race_ethnicityHispanic:insuranceMedicare                    0.843668    
+    ## race_ethnicityBlack:insuranceMedicaid                       0.595386    
+    ## race_ethnicityHispanic:insuranceMedicaid                    0.484614    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 12.17 on 39888 degrees of freedom
-    ## Multiple R-squared:  0.1459, Adjusted R-squared:  0.1455 
-    ## F-statistic: 358.6 on 19 and 39888 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 12.15 on 39888 degrees of freedom
+    ## Multiple R-squared:  0.146,  Adjusted R-squared:  0.1456 
+    ## F-statistic: 358.9 on 19 and 39888 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(one_year_va_delta_4.lm)
 ```
 
+    ## there are higher-order terms (interactions) in this model
+    ## consider setting type = 'predictor'; see ?vif
+
     ##                               GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity           15.244230  2        1.975952
-    ## insurance                 3.059205  2        1.322520
-    ## gender                    1.042914  2        1.010560
-    ## first_dr_age              1.464462  1        1.210150
-    ## smoke_status              1.059461  3        1.009673
-    ## baseline_va_letter        1.037146  1        1.018404
-    ## vegf_group_365            1.050078  3        1.008177
-    ## severity_score            1.136036  1        1.065850
-    ## race_ethnicity:insurance 29.006857  4        1.523395
+    ## race_ethnicity           15.239096  2        1.975786
+    ## insurance                 3.058857  2        1.322482
+    ## gender                    1.042937  2        1.010566
+    ## first_dr_age              1.463765  1        1.209861
+    ## smoke_status              1.059389  3        1.009662
+    ## baseline_va_letter        1.038051  1        1.018848
+    ## vegf_group_365            1.049995  3        1.008164
+    ## severity_score            1.136024  1        1.065844
+    ## race_ethnicity:insurance 29.014594  4        1.523446
 
 ## Regression Y: Variables that influence change in vision after one year: stratified by race and insurance status
 
@@ -2423,88 +2770,73 @@ summary(private_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -93.375  -3.952   1.733   6.103  38.660 
+    ## -91.434  -4.004   1.800   6.194  38.702 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 43.899482
-    ## race_ethnicityBlack                                         -1.398298
-    ## race_ethnicityHispanic                                      -1.365116
-    ## genderMale                                                   0.546065
-    ## genderUnknown                                               -2.682725
-    ## first_dr_age                                                -0.129478
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.036922
-    ## smoke_statusUnknown / Unclassified                          -0.906734
-    ## smoke_statusYes / Active                                    -0.923314
-    ## baseline_va_letter                                          -0.454402
-    ## vegf_group_365combo                                          0.277906
-    ## vegf_group_365Eylea                                          0.708741
-    ## vegf_group_365Lucentis                                       0.954690
-    ## severity_score                                              -0.058369
-    ##                                                             Std. Error
-    ## (Intercept)                                                   1.145367
-    ## race_ethnicityBlack                                           0.347399
-    ## race_ethnicityHispanic                                        0.320933
-    ## genderMale                                                    0.225860
-    ## genderUnknown                                                 1.889086
-    ## first_dr_age                                                  0.011341
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.277729
-    ## smoke_statusUnknown / Unclassified                            0.959857
-    ## smoke_statusYes / Active                                      0.365577
-    ## baseline_va_letter                                            0.008943
-    ## vegf_group_365combo                                           0.290068
-    ## vegf_group_365Eylea                                           0.305916
-    ## vegf_group_365Lucentis                                        0.352139
-    ## severity_score                                                0.007636
-    ##                                                             t value
-    ## (Intercept)                                                  38.328
-    ## race_ethnicityBlack                                          -4.025
-    ## race_ethnicityHispanic                                       -4.254
-    ## genderMale                                                    2.418
-    ## genderUnknown                                                -1.420
-    ## first_dr_age                                                -11.417
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.133
-    ## smoke_statusUnknown / Unclassified                           -0.945
-    ## smoke_statusYes / Active                                     -2.526
-    ## baseline_va_letter                                          -50.811
-    ## vegf_group_365combo                                           0.958
-    ## vegf_group_365Eylea                                           2.317
-    ## vegf_group_365Lucentis                                        2.711
-    ## severity_score                                               -7.644
+    ## (Intercept)                                                 43.771647
+    ## race_ethnicityBlack                                         -1.374783
+    ## race_ethnicityHispanic                                      -1.328633
+    ## genderMale                                                   0.542346
+    ## genderUnknown                                               -3.185341
+    ## first_dr_age                                                -0.126832
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.041728
+    ## smoke_statusUnknown / Unclassified                          -1.214120
+    ## smoke_statusYes / Active                                    -0.894743
+    ## baseline_va_letter                                          -0.456970
+    ## vegf_group_365combo                                          0.267042
+    ## vegf_group_365Eylea                                          0.502567
+    ## vegf_group_365Lucentis                                       0.908965
+    ## severity_score                                              -0.056473
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   1.169853  37.416
+    ## race_ethnicityBlack                                           0.355329  -3.869
+    ## race_ethnicityHispanic                                        0.328065  -4.050
+    ## genderMale                                                    0.230981   2.348
+    ## genderUnknown                                                 1.932246  -1.649
+    ## first_dr_age                                                  0.011605 -10.929
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.284080   0.147
+    ## smoke_statusUnknown / Unclassified                            0.981755  -1.237
+    ## smoke_statusYes / Active                                      0.373932  -2.393
+    ## baseline_va_letter                                            0.009117 -50.124
+    ## vegf_group_365combo                                           0.296195   0.902
+    ## vegf_group_365Eylea                                           0.313487   1.603
+    ## vegf_group_365Lucentis                                        0.359964   2.525
+    ## severity_score                                                0.007806  -7.234
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         5.74e-05 ***
-    ## race_ethnicityHispanic                                      2.12e-05 ***
-    ## genderMale                                                   0.01564 *  
-    ## genderUnknown                                                0.15560    
+    ## race_ethnicityBlack                                          0.00011 ***
+    ## race_ethnicityHispanic                                      5.16e-05 ***
+    ## genderMale                                                   0.01889 *  
+    ## genderUnknown                                                0.09928 .  
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.89424    
-    ## smoke_statusUnknown / Unclassified                           0.34486    
-    ## smoke_statusYes / Active                                     0.01156 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.88322    
+    ## smoke_statusUnknown / Unclassified                           0.21623    
+    ## smoke_statusYes / Active                                     0.01674 *  
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                          0.33805    
-    ## vegf_group_365Eylea                                          0.02053 *  
-    ## vegf_group_365Lucentis                                       0.00672 ** 
-    ## severity_score                                              2.28e-14 ***
+    ## vegf_group_365combo                                          0.36730    
+    ## vegf_group_365Eylea                                          0.10893    
+    ## vegf_group_365Lucentis                                       0.01158 *  
+    ## severity_score                                              4.99e-13 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 11.43 on 10760 degrees of freedom
-    ## Multiple R-squared:  0.1983, Adjusted R-squared:  0.1973 
-    ## F-statistic: 204.7 on 13 and 10760 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 11.69 on 10760 degrees of freedom
+    ## Multiple R-squared:  0.1936, Adjusted R-squared:  0.1926 
+    ## F-statistic: 198.7 on 13 and 10760 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(private_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.032155  2        1.007944
-    ## gender             1.023887  2        1.005919
-    ## first_dr_age       1.115473  1        1.056159
-    ## smoke_status       1.029688  3        1.004888
-    ## baseline_va_letter 1.030087  1        1.014932
-    ## vegf_group_365     1.041352  3        1.006776
-    ## severity_score     1.119685  1        1.058152
+    ## race_ethnicity     1.030916  2        1.007641
+    ## gender             1.023550  2        1.005836
+    ## first_dr_age       1.116442  1        1.056618
+    ## smoke_status       1.029705  3        1.004891
+    ## baseline_va_letter 1.029752  1        1.014767
+    ## vegf_group_365     1.040199  3        1.006590
+    ## severity_score     1.119059  1        1.057856
 
 ``` r
 #Significant for both Black and Hispanic patients
@@ -2539,88 +2871,73 @@ summary(Medicare_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -97.200  -4.584   1.515   6.548  43.372 
+    ## -97.338  -4.656   1.473   6.474  43.359 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 30.678234
-    ## race_ethnicityBlack                                         -0.037361
-    ## race_ethnicityHispanic                                      -1.237036
-    ## genderMale                                                   0.386604
-    ## genderUnknown                                               -0.446759
-    ## first_dr_age                                                -0.027565
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.163537
-    ## smoke_statusUnknown / Unclassified                           1.151950
-    ## smoke_statusYes / Active                                    -0.703175
-    ## baseline_va_letter                                          -0.366463
-    ## vegf_group_365combo                                         -0.065183
-    ## vegf_group_365Eylea                                          0.493189
-    ## vegf_group_365Lucentis                                       0.722907
-    ## severity_score                                              -0.063018
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.814791
-    ## race_ethnicityBlack                                           0.218238
-    ## race_ethnicityHispanic                                        0.234182
-    ## genderMale                                                    0.153414
-    ## genderUnknown                                                 1.095833
-    ## first_dr_age                                                  0.007935
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.170677
-    ## smoke_statusUnknown / Unclassified                            0.776508
-    ## smoke_statusYes / Active                                      0.253981
-    ## baseline_va_letter                                            0.005945
-    ## vegf_group_365combo                                           0.201192
-    ## vegf_group_365Eylea                                           0.204698
-    ## vegf_group_365Lucentis                                        0.231756
-    ## severity_score                                                0.005097
-    ##                                                             t value
-    ## (Intercept)                                                  37.652
-    ## race_ethnicityBlack                                          -0.171
-    ## race_ethnicityHispanic                                       -5.282
-    ## genderMale                                                    2.520
-    ## genderUnknown                                                -0.408
-    ## first_dr_age                                                 -3.474
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.958
-    ## smoke_statusUnknown / Unclassified                            1.484
-    ## smoke_statusYes / Active                                     -2.769
-    ## baseline_va_letter                                          -61.641
-    ## vegf_group_365combo                                          -0.324
-    ## vegf_group_365Eylea                                           2.409
-    ## vegf_group_365Lucentis                                        3.119
-    ## severity_score                                              -12.365
+    ## (Intercept)                                                 30.198881
+    ## race_ethnicityBlack                                         -0.061325
+    ## race_ethnicityHispanic                                      -1.203384
+    ## genderMale                                                   0.501450
+    ## genderUnknown                                               -0.567570
+    ## first_dr_age                                                -0.027554
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.199439
+    ## smoke_statusUnknown / Unclassified                           1.085125
+    ## smoke_statusYes / Active                                    -0.610803
+    ## baseline_va_letter                                          -0.365196
+    ## vegf_group_365combo                                         -0.050357
+    ## vegf_group_365Eylea                                          0.555195
+    ## vegf_group_365Lucentis                                       0.682923
+    ## severity_score                                              -0.057047
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   0.805255  37.502
+    ## race_ethnicityBlack                                           0.216054  -0.284
+    ## race_ethnicityHispanic                                        0.231872  -5.190
+    ## genderMale                                                    0.151871   3.302
+    ## genderUnknown                                                 1.084838  -0.523
+    ## first_dr_age                                                  0.007853  -3.509
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.168961   1.180
+    ## smoke_statusUnknown / Unclassified                            0.768699   1.412
+    ## smoke_statusYes / Active                                      0.251426  -2.429
+    ## baseline_va_letter                                            0.005866 -62.262
+    ## vegf_group_365combo                                           0.199139  -0.253
+    ## vegf_group_365Eylea                                           0.202831   2.737
+    ## vegf_group_365Lucentis                                        0.229209   2.979
+    ## severity_score                                                0.005048 -11.300
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         0.864072    
-    ## race_ethnicityHispanic                                      1.29e-07 ***
-    ## genderMale                                                  0.011741 *  
-    ## genderUnknown                                               0.683505    
-    ## first_dr_age                                                0.000514 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.337987    
-    ## smoke_statusUnknown / Unclassified                          0.137953    
-    ## smoke_statusYes / Active                                    0.005633 ** 
+    ## race_ethnicityBlack                                         0.776533    
+    ## race_ethnicityHispanic                                      2.12e-07 ***
+    ## genderMale                                                  0.000962 ***
+    ## genderUnknown                                               0.600850    
+    ## first_dr_age                                                0.000451 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.237856    
+    ## smoke_statusUnknown / Unclassified                          0.158068    
+    ## smoke_statusYes / Active                                    0.015132 *  
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.745951    
-    ## vegf_group_365Eylea                                         0.015988 *  
-    ## vegf_group_365Lucentis                                      0.001815 ** 
+    ## vegf_group_365combo                                         0.800366    
+    ## vegf_group_365Eylea                                         0.006200 ** 
+    ## vegf_group_365Lucentis                                      0.002890 ** 
     ## severity_score                                               < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 12.19 on 26645 degrees of freedom
-    ## Multiple R-squared:  0.1266, Adjusted R-squared:  0.1262 
-    ## F-statistic: 297.2 on 13 and 26645 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 12.07 on 26645 degrees of freedom
+    ## Multiple R-squared:  0.1285, Adjusted R-squared:  0.1281 
+    ## F-statistic: 302.2 on 13 and 26645 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(Medicare_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.060166  2        1.014714
-    ## gender             1.050819  2        1.012470
-    ## first_dr_age       1.117137  1        1.056947
-    ## smoke_status       1.056458  3        1.009196
-    ## baseline_va_letter 1.027315  1        1.013565
-    ## vegf_group_365     1.044021  3        1.007206
-    ## severity_score     1.129783  1        1.062912
+    ## race_ethnicity     1.060584  2        1.014814
+    ## gender             1.050827  2        1.012471
+    ## first_dr_age       1.116251  1        1.056528
+    ## smoke_status       1.056396  3        1.009186
+    ## baseline_va_letter 1.028863  1        1.014329
+    ## vegf_group_365     1.044744  3        1.007322
+    ## severity_score     1.130493  1        1.063246
 
 ``` r
 #Significant for Hispanic patients (***)
@@ -2655,88 +2972,73 @@ summary(Medicaid_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -90.277  -3.999   2.641   8.007  37.517 
+    ## -89.802  -4.149   2.701   7.872  37.376 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 41.19569
-    ## race_ethnicityBlack                                         -1.53871
-    ## race_ethnicityHispanic                                      -0.69874
-    ## genderMale                                                   0.25909
-    ## genderUnknown                                               -3.55764
-    ## first_dr_age                                                -0.06422
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.05926
-    ## smoke_statusUnknown / Unclassified                           5.01472
-    ## smoke_statusYes / Active                                     0.62724
-    ## baseline_va_letter                                          -0.48018
-    ## vegf_group_365combo                                         -0.98410
-    ## vegf_group_365Eylea                                          0.59873
-    ## vegf_group_365Lucentis                                      -0.23930
-    ## severity_score                                              -0.07816
-    ##                                                             Std. Error
-    ## (Intercept)                                                    2.79012
-    ## race_ethnicityBlack                                            0.86336
-    ## race_ethnicityHispanic                                         0.69685
-    ## genderMale                                                     0.59321
-    ## genderUnknown                                                  4.41945
-    ## first_dr_age                                                   0.02783
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.74490
-    ## smoke_statusUnknown / Unclassified                             3.28962
-    ## smoke_statusYes / Active                                       0.80646
-    ## baseline_va_letter                                             0.02213
-    ## vegf_group_365combo                                            0.78374
-    ## vegf_group_365Eylea                                            0.97294
-    ## vegf_group_365Lucentis                                         1.19213
-    ## severity_score                                                 0.02046
-    ##                                                             t value
-    ## (Intercept)                                                  14.765
-    ## race_ethnicityBlack                                          -1.782
-    ## race_ethnicityHispanic                                       -1.003
-    ## genderMale                                                    0.437
-    ## genderUnknown                                                -0.805
-    ## first_dr_age                                                 -2.308
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.080
-    ## smoke_statusUnknown / Unclassified                            1.524
-    ## smoke_statusYes / Active                                      0.778
-    ## baseline_va_letter                                          -21.697
-    ## vegf_group_365combo                                          -1.256
-    ## vegf_group_365Eylea                                           0.615
-    ## vegf_group_365Lucentis                                       -0.201
-    ## severity_score                                               -3.819
+    ##                                                              Estimate
+    ## (Intercept)                                                 39.081369
+    ## race_ethnicityBlack                                         -0.971798
+    ## race_ethnicityHispanic                                      -0.770097
+    ## genderMale                                                   0.633317
+    ## genderUnknown                                               -2.508074
+    ## first_dr_age                                                -0.050771
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.433223
+    ## smoke_statusUnknown / Unclassified                           4.083183
+    ## smoke_statusYes / Active                                     0.804783
+    ## baseline_va_letter                                          -0.465305
+    ## vegf_group_365combo                                         -0.972597
+    ## vegf_group_365Eylea                                          0.458476
+    ## vegf_group_365Lucentis                                       0.005743
+    ## severity_score                                              -0.077166
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   2.753728  14.192
+    ## race_ethnicityBlack                                           0.857700  -1.133
+    ## race_ethnicityHispanic                                        0.692123  -1.113
+    ## genderMale                                                    0.589663   1.074
+    ## genderUnknown                                                 4.391231  -0.571
+    ## first_dr_age                                                  0.027629  -1.838
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.740059   0.585
+    ## smoke_statusUnknown / Unclassified                            3.269366   1.249
+    ## smoke_statusYes / Active                                      0.801719   1.004
+    ## baseline_va_letter                                            0.021817 -21.328
+    ## vegf_group_365combo                                           0.780471  -1.246
+    ## vegf_group_365Eylea                                           0.956500   0.479
+    ## vegf_group_365Lucentis                                        1.179018   0.005
+    ## severity_score                                                0.020275  -3.806
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         0.074833 .  
-    ## race_ethnicityHispanic                                      0.316096    
-    ## genderMale                                                  0.662321    
-    ## genderUnknown                                               0.420899    
-    ## first_dr_age                                                0.021073 *  
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.936596    
-    ## smoke_statusUnknown / Unclassified                          0.127535    
-    ## smoke_statusYes / Active                                    0.436779    
+    ## race_ethnicityBlack                                         0.257313    
+    ## race_ethnicityHispanic                                      0.265963    
+    ## genderMale                                                  0.282914    
+    ## genderUnknown                                               0.567947    
+    ## first_dr_age                                                0.066242 .  
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.558339    
+    ## smoke_statusUnknown / Unclassified                          0.211812    
+    ## smoke_statusYes / Active                                    0.315563    
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.209362    
-    ## vegf_group_365Eylea                                         0.538356    
-    ## vegf_group_365Lucentis                                      0.840922    
-    ## severity_score                                              0.000137 ***
+    ## vegf_group_365combo                                         0.212822    
+    ## vegf_group_365Eylea                                         0.631749    
+    ## vegf_group_365Lucentis                                      0.996114    
+    ## severity_score                                              0.000145 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 14.58 on 2461 degrees of freedom
-    ## Multiple R-squared:  0.1635, Adjusted R-squared:  0.1591 
-    ## F-statistic:    37 on 13 and 2461 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 14.48 on 2461 degrees of freedom
+    ## Multiple R-squared:  0.1581, Adjusted R-squared:  0.1537 
+    ## F-statistic: 35.55 on 13 and 2461 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(Medicaid_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.091364  2        1.022098
-    ## gender             1.020834  2        1.005168
-    ## first_dr_age       1.123947  1        1.060164
-    ## smoke_status       1.065120  3        1.010570
-    ## baseline_va_letter 1.023087  1        1.011478
-    ## vegf_group_365     1.053620  3        1.008743
-    ## severity_score     1.095844  1        1.046826
+    ## race_ethnicity     1.090547  2        1.021906
+    ## gender             1.021687  2        1.005378
+    ## first_dr_age       1.122245  1        1.059360
+    ## smoke_status       1.066316  3        1.010759
+    ## baseline_va_letter 1.021722  1        1.010803
+    ## vegf_group_365     1.052504  3        1.008565
+    ## severity_score     1.093542  1        1.045726
 
 ``` r
 #Not significant for either Hispanic and Black patients. 
@@ -2773,88 +3075,73 @@ summary(white_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -96.673  -4.310   1.593   6.293  41.544 
+    ## -96.801  -4.381   1.564   6.299  40.793 
     ## 
     ## Coefficients:
-    ##                                                              Estimate
-    ## (Intercept)                                                 36.678568
-    ## insuranceMedicare                                           -1.814743
-    ## insuranceMedicaid                                           -2.107611
-    ## genderMale                                                   0.545557
-    ## genderUnknown                                               -0.893200
-    ## first_dr_age                                                -0.055449
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.101759
-    ## smoke_statusUnknown / Unclassified                           0.721122
-    ## smoke_statusYes / Active                                    -0.824296
-    ## baseline_va_letter                                          -0.400982
-    ## vegf_group_365combo                                         -0.057933
-    ## vegf_group_365Eylea                                          0.520591
-    ## vegf_group_365Lucentis                                       0.592619
-    ## severity_score                                              -0.064501
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.723341
-    ## insuranceMedicare                                             0.179604
-    ## insuranceMedicaid                                             0.344032
-    ## genderMale                                                    0.141007
-    ## genderUnknown                                                 1.123991
-    ## first_dr_age                                                  0.007353
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.160224
-    ## smoke_statusUnknown / Unclassified                            0.673494
-    ## smoke_statusYes / Active                                      0.225337
-    ## baseline_va_letter                                            0.005573
-    ## vegf_group_365combo                                           0.184154
-    ## vegf_group_365Eylea                                           0.186347
-    ## vegf_group_365Lucentis                                        0.211954
-    ## severity_score                                                0.004751
-    ##                                                             t value
-    ## (Intercept)                                                  50.707
-    ## insuranceMedicare                                           -10.104
-    ## insuranceMedicaid                                            -6.126
-    ## genderMale                                                    3.869
-    ## genderUnknown                                                -0.795
-    ## first_dr_age                                                 -7.541
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.635
-    ## smoke_statusUnknown / Unclassified                            1.071
-    ## smoke_statusYes / Active                                     -3.658
-    ## baseline_va_letter                                          -71.946
-    ## vegf_group_365combo                                          -0.315
-    ## vegf_group_365Eylea                                           2.794
-    ## vegf_group_365Lucentis                                        2.796
-    ## severity_score                                              -13.577
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## insuranceMedicare                                            < 2e-16 ***
-    ## insuranceMedicaid                                           9.12e-10 ***
-    ## genderMale                                                  0.000110 ***
-    ## genderUnknown                                               0.426813    
-    ## first_dr_age                                                4.80e-14 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.525366    
-    ## smoke_statusUnknown / Unclassified                          0.284305    
-    ## smoke_statusYes / Active                                    0.000255 ***
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.753076    
-    ## vegf_group_365Eylea                                         0.005215 ** 
-    ## vegf_group_365Lucentis                                      0.005178 ** 
-    ## severity_score                                               < 2e-16 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 36.12606    0.72150
+    ## insuranceMedicare                                           -1.70150    0.17958
+    ## insuranceMedicaid                                           -2.06933    0.34399
+    ## genderMale                                                   0.61078    0.14101
+    ## genderUnknown                                               -0.89560    1.12389
+    ## first_dr_age                                                -0.05316    0.00735
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.13789    0.16020
+    ## smoke_statusUnknown / Unclassified                           0.44560    0.67344
+    ## smoke_statusYes / Active                                    -0.83899    0.22531
+    ## baseline_va_letter                                          -0.40117    0.00555
+    ## vegf_group_365combo                                         -0.17036    0.18418
+    ## vegf_group_365Eylea                                          0.50312    0.18645
+    ## vegf_group_365Lucentis                                       0.60855    0.21162
+    ## severity_score                                              -0.05893    0.00475
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  50.070  < 2e-16
+    ## insuranceMedicare                                            -9.475  < 2e-16
+    ## insuranceMedicaid                                            -6.016 1.81e-09
+    ## genderMale                                                    4.331 1.49e-05
+    ## genderUnknown                                                -0.797 0.425531
+    ## first_dr_age                                                 -7.233 4.83e-13
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.861 0.389407
+    ## smoke_statusUnknown / Unclassified                            0.662 0.508184
+    ## smoke_statusYes / Active                                     -3.724 0.000197
+    ## baseline_va_letter                                          -72.279  < 2e-16
+    ## vegf_group_365combo                                          -0.925 0.354982
+    ## vegf_group_365Eylea                                           2.698 0.006972
+    ## vegf_group_365Lucentis                                        2.876 0.004034
+    ## severity_score                                              -12.406  < 2e-16
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## insuranceMedicare                                           ***
+    ## insuranceMedicaid                                           ***
+    ## genderMale                                                  ***
+    ## genderUnknown                                                  
+    ## first_dr_age                                                ***
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusUnknown / Unclassified                             
+    ## smoke_statusYes / Active                                    ***
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                         ** 
+    ## vegf_group_365Lucentis                                      ** 
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 11.74 on 28884 degrees of freedom
-    ## Multiple R-squared:  0.155,  Adjusted R-squared:  0.1546 
-    ## F-statistic: 407.5 on 13 and 28884 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 11.73 on 28884 degrees of freedom
+    ## Multiple R-squared:  0.1556, Adjusted R-squared:  0.1552 
+    ## F-statistic: 409.5 on 13 and 28884 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(white_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.412262  2        1.090131
-    ## gender             1.028620  2        1.007079
-    ## first_dr_age       1.527044  1        1.235736
-    ## smoke_status       1.056349  3        1.009178
-    ## baseline_va_letter 1.034779  1        1.017241
-    ## vegf_group_365     1.028407  3        1.004679
-    ## severity_score     1.129030  1        1.062558
+    ## insurance          1.412047  2        1.090090
+    ## gender             1.028914  2        1.007151
+    ## first_dr_age       1.525838  1        1.235248
+    ## smoke_status       1.056282  3        1.009168
+    ## baseline_va_letter 1.035581  1        1.017635
+    ## vegf_group_365     1.028440  3        1.004685
+    ## severity_score     1.128845  1        1.062471
 
 ``` r
 #significant worse for both Medicaid and Medicare patients (***)
@@ -2889,88 +3176,73 @@ summary(black_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -93.414  -4.607   1.671   6.713  41.185 
+    ## -93.494  -4.701   1.690   6.708  40.669 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 31.68939
-    ## insuranceMedicare                                           -0.58305
-    ## insuranceMedicaid                                           -2.14705
-    ## genderMale                                                  -0.09339
-    ## genderUnknown                                               -0.78896
-    ## first_dr_age                                                -0.04156
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.61751
-    ## smoke_statusUnknown / Unclassified                           0.89748
-    ## smoke_statusYes / Active                                    -0.81305
-    ## baseline_va_letter                                          -0.37244
-    ## vegf_group_365combo                                         -0.16526
-    ## vegf_group_365Eylea                                          0.63878
-    ## vegf_group_365Lucentis                                       1.22107
-    ## severity_score                                              -0.04859
-    ##                                                             Std. Error
-    ## (Intercept)                                                    1.75279
-    ## insuranceMedicare                                              0.44362
-    ## insuranceMedicaid                                              0.75399
-    ## genderMale                                                     0.35681
-    ## genderUnknown                                                  2.59774
-    ## first_dr_age                                                   0.01734
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.41343
-    ## smoke_statusUnknown / Unclassified                             1.70826
-    ## smoke_statusYes / Active                                       0.59132
-    ## baseline_va_letter                                             0.01338
-    ## vegf_group_365combo                                            0.46055
-    ## vegf_group_365Eylea                                            0.48782
-    ## vegf_group_365Lucentis                                         0.55560
-    ## severity_score                                                 0.01152
-    ##                                                             t value
-    ## (Intercept)                                                  18.079
-    ## insuranceMedicare                                            -1.314
-    ## insuranceMedicaid                                            -2.848
-    ## genderMale                                                   -0.262
-    ## genderUnknown                                                -0.304
-    ## first_dr_age                                                 -2.396
-    ## smoke_statusFormer / No longer active / Past History / Quit   1.494
-    ## smoke_statusUnknown / Unclassified                            0.525
-    ## smoke_statusYes / Active                                     -1.375
-    ## baseline_va_letter                                          -27.830
-    ## vegf_group_365combo                                          -0.359
-    ## vegf_group_365Eylea                                           1.309
-    ## vegf_group_365Lucentis                                        2.198
-    ## severity_score                                               -4.217
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## insuranceMedicare                                            0.18880    
-    ## insuranceMedicaid                                            0.00442 ** 
-    ## genderMale                                                   0.79353    
-    ## genderUnknown                                                0.76136    
-    ## first_dr_age                                                 0.01659 *  
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.13533    
-    ## smoke_statusUnknown / Unclassified                           0.59935    
-    ## smoke_statusYes / Active                                     0.16919    
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                          0.71973    
-    ## vegf_group_365Eylea                                          0.19043    
-    ## vegf_group_365Lucentis                                       0.02801 *  
-    ## severity_score                                              2.52e-05 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 30.89348    1.75615
+    ## insuranceMedicare                                           -0.52084    0.44454
+    ## insuranceMedicaid                                           -1.62011    0.75546
+    ## genderMale                                                   0.07024    0.35757
+    ## genderUnknown                                               -1.56397    2.60280
+    ## first_dr_age                                                -0.03855    0.01738
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.61895    0.41420
+    ## smoke_statusUnknown / Unclassified                           1.58699    1.71141
+    ## smoke_statusYes / Active                                    -0.62547    0.59245
+    ## baseline_va_letter                                          -0.37018    0.01337
+    ## vegf_group_365combo                                         -0.01875    0.46112
+    ## vegf_group_365Eylea                                          0.44111    0.48910
+    ## vegf_group_365Lucentis                                       0.94301    0.55603
+    ## severity_score                                              -0.04271    0.01157
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  17.592  < 2e-16
+    ## insuranceMedicare                                            -1.172 0.241394
+    ## insuranceMedicaid                                            -2.145 0.032035
+    ## genderMale                                                    0.196 0.844274
+    ## genderUnknown                                                -0.601 0.547944
+    ## first_dr_age                                                 -2.218 0.026575
+    ## smoke_statusFormer / No longer active / Past History / Quit   1.494 0.135145
+    ## smoke_statusUnknown / Unclassified                            0.927 0.353813
+    ## smoke_statusYes / Active                                     -1.056 0.291137
+    ## baseline_va_letter                                          -27.697  < 2e-16
+    ## vegf_group_365combo                                          -0.041 0.967559
+    ## vegf_group_365Eylea                                           0.902 0.367157
+    ## vegf_group_365Lucentis                                        1.696 0.089948
+    ## severity_score                                               -3.692 0.000225
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## insuranceMedicare                                              
+    ## insuranceMedicaid                                           *  
+    ## genderMale                                                     
+    ## genderUnknown                                                  
+    ## first_dr_age                                                *  
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusUnknown / Unclassified                             
+    ## smoke_statusYes / Active                                       
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                            
+    ## vegf_group_365Lucentis                                      .  
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 12.67 on 5426 degrees of freedom
-    ## Multiple R-squared:  0.1271, Adjusted R-squared:  0.125 
-    ## F-statistic: 60.75 on 13 and 5426 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 12.69 on 5426 degrees of freedom
+    ## Multiple R-squared:  0.1252, Adjusted R-squared:  0.1231 
+    ## F-statistic: 59.74 on 13 and 5426 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(black_only_one_year_va_delta.lm) 
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.226919  2        1.052456
-    ## gender             1.036648  2        1.009039
-    ## first_dr_age       1.324696  1        1.150954
-    ## smoke_status       1.050856  3        1.008302
-    ## baseline_va_letter 1.036080  1        1.017880
-    ## vegf_group_365     1.035608  3        1.005849
-    ## severity_score     1.102943  1        1.050211
+    ## insurance          1.227481  2        1.052577
+    ## gender             1.037313  2        1.009200
+    ## first_dr_age       1.325501  1        1.151304
+    ## smoke_status       1.050873  3        1.008304
+    ## baseline_va_letter 1.035621  1        1.017654
+    ## vegf_group_365     1.036393  3        1.005976
+    ## severity_score     1.106235  1        1.051777
 
 ``` r
 #barely significant worse for Medicaid patients (*)
@@ -3005,88 +3277,73 @@ summary(hispanic_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -92.706  -4.615   2.099   7.195  43.092 
+    ## -91.119  -4.563   2.053   7.097  43.090 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 37.22589
-    ## insuranceMedicare                                           -1.61947
-    ## insuranceMedicaid                                           -1.58585
-    ## genderMale                                                   0.15789
-    ## genderUnknown                                               -2.48154
-    ## first_dr_age                                                -0.08614
-    ## smoke_statusFormer / No longer active / Past History / Quit -0.31908
-    ## smoke_statusUnknown / Unclassified                          -0.56906
-    ## smoke_statusYes / Active                                     0.58603
-    ## baseline_va_letter                                          -0.39655
-    ## vegf_group_365combo                                          0.18711
-    ## vegf_group_365Eylea                                          0.60123
-    ## vegf_group_365Lucentis                                       1.54138
-    ## severity_score                                              -0.07149
-    ##                                                             Std. Error
-    ## (Intercept)                                                    1.85642
-    ## insuranceMedicare                                              0.45297
-    ## insuranceMedicaid                                              0.62845
-    ## genderMale                                                     0.38394
-    ## genderUnknown                                                  2.22813
-    ## first_dr_age                                                   0.01820
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.46129
-    ## smoke_statusUnknown / Unclassified                             1.96602
-    ## smoke_statusYes / Active                                       0.65720
-    ## baseline_va_letter                                             0.01418
-    ## vegf_group_365combo                                            0.50524
-    ## vegf_group_365Eylea                                            0.61109
-    ## vegf_group_365Lucentis                                         0.71267
-    ## severity_score                                                 0.01282
-    ##                                                             t value
-    ## (Intercept)                                                  20.052
-    ## insuranceMedicare                                            -3.575
-    ## insuranceMedicaid                                            -2.523
-    ## genderMale                                                    0.411
-    ## genderUnknown                                                -1.114
-    ## first_dr_age                                                 -4.733
-    ## smoke_statusFormer / No longer active / Past History / Quit  -0.692
-    ## smoke_statusUnknown / Unclassified                           -0.289
-    ## smoke_statusYes / Active                                      0.892
-    ## baseline_va_letter                                          -27.965
-    ## vegf_group_365combo                                           0.370
-    ## vegf_group_365Eylea                                           0.984
-    ## vegf_group_365Lucentis                                        2.163
-    ## severity_score                                               -5.576
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## insuranceMedicare                                           0.000353 ***
-    ## insuranceMedicaid                                           0.011650 *  
-    ## genderMale                                                  0.680916    
-    ## genderUnknown                                               0.265442    
-    ## first_dr_age                                                2.26e-06 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.489152    
-    ## smoke_statusUnknown / Unclassified                          0.772250    
-    ## smoke_statusYes / Active                                    0.372589    
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.711150    
-    ## vegf_group_365Eylea                                         0.325231    
-    ## vegf_group_365Lucentis                                      0.030596 *  
-    ## severity_score                                              2.57e-08 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 36.67014    1.83430
+    ## insuranceMedicare                                           -1.46471    0.44787
+    ## insuranceMedicaid                                           -1.67683    0.62077
+    ## genderMale                                                   0.34578    0.37924
+    ## genderUnknown                                               -2.58824    2.20113
+    ## first_dr_age                                                -0.08633    0.01798
+    ## smoke_statusFormer / No longer active / Past History / Quit -0.19338    0.45567
+    ## smoke_statusUnknown / Unclassified                          -1.57050    1.94155
+    ## smoke_statusYes / Active                                     1.15389    0.64920
+    ## baseline_va_letter                                          -0.39033    0.01397
+    ## vegf_group_365combo                                          0.74704    0.49720
+    ## vegf_group_365Eylea                                          0.71021    0.60442
+    ## vegf_group_365Lucentis                                       1.27501    0.70645
+    ## severity_score                                              -0.07412    0.01264
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  19.991  < 2e-16
+    ## insuranceMedicare                                            -3.270  0.00108
+    ## insuranceMedicaid                                            -2.701  0.00693
+    ## genderMale                                                    0.912  0.36194
+    ## genderUnknown                                                -1.176  0.23970
+    ## first_dr_age                                                 -4.802 1.61e-06
+    ## smoke_statusFormer / No longer active / Past History / Quit  -0.424  0.67130
+    ## smoke_statusUnknown / Unclassified                           -0.809  0.41861
+    ## smoke_statusYes / Active                                      1.777  0.07556
+    ## baseline_va_letter                                          -27.933  < 2e-16
+    ## vegf_group_365combo                                           1.502  0.13303
+    ## vegf_group_365Eylea                                           1.175  0.24003
+    ## vegf_group_365Lucentis                                        1.805  0.07116
+    ## severity_score                                               -5.865 4.75e-09
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## insuranceMedicare                                           ** 
+    ## insuranceMedicaid                                           ** 
+    ## genderMale                                                     
+    ## genderUnknown                                                  
+    ## first_dr_age                                                ***
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusUnknown / Unclassified                             
+    ## smoke_statusYes / Active                                    .  
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                            
+    ## vegf_group_365Lucentis                                      .  
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 13.79 on 5556 degrees of freedom
-    ## Multiple R-squared:  0.1271, Adjusted R-squared:  0.1251 
-    ## F-statistic: 62.25 on 13 and 5556 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 13.62 on 5556 degrees of freedom
+    ## Multiple R-squared:  0.1276, Adjusted R-squared:  0.1256 
+    ## F-statistic: 62.53 on 13 and 5556 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(hispanic_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.200338  2        1.046709
-    ## gender             1.068676  2        1.016744
-    ## first_dr_age       1.274551  1        1.128960
-    ## smoke_status       1.068853  3        1.011159
-    ## baseline_va_letter 1.030526  1        1.015148
-    ## vegf_group_365     1.029944  3        1.004930
-    ## severity_score     1.097858  1        1.047787
+    ## insurance          1.201910  2        1.047051
+    ## gender             1.068483  2        1.016698
+    ## first_dr_age       1.274246  1        1.128825
+    ## smoke_status       1.068082  3        1.011038
+    ## baseline_va_letter 1.034518  1        1.017112
+    ## vegf_group_365     1.028981  3        1.004773
+    ## severity_score     1.097311  1        1.047526
 
 ``` r
 #significant worse for both Medicaid and Medicare patients (**)
@@ -3098,6 +3355,14 @@ vif(hispanic_only_one_year_va_delta.lm)
 # 
 #   Racial differences in VA change, after controlling for insurance, are evident in the privately-insured population for both Black/Hispanic patients and the Medicaid population for Hispanic patients.
 ```
+
+## Regression XX: Likelihood of receiving bevacizumab
+
+``` r
+log
+```
+
+    ## function (x, base = exp(1))  .Primitive("log")
 
 ## Forest Plots on VA change
 
@@ -3141,80 +3406,67 @@ summary(GRAPHprivate_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -93.328  -3.976   1.734   6.120  38.607 
+    ## -91.428  -4.020   1.800   6.199  38.642 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 44.022946
-    ## race_ethnicityBlack                                         -1.385677
-    ## race_ethnicityHispanic                                      -1.310448
-    ## genderMale                                                   0.553595
-    ## first_dr_age                                                -0.129471
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.036103
-    ## smoke_statusYes / Active                                    -0.893833
-    ## baseline_va_letter                                          -0.456108
-    ## vegf_group_365combo                                          0.294099
-    ## vegf_group_365Eylea                                          0.703746
-    ## vegf_group_365Lucentis                                       0.923121
-    ## severity_score                                              -0.058730
-    ##                                                             Std. Error
-    ## (Intercept)                                                   1.157521
-    ## race_ethnicityBlack                                           0.350807
-    ## race_ethnicityHispanic                                        0.324795
-    ## genderMale                                                    0.227560
-    ## first_dr_age                                                  0.011451
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.279049
-    ## smoke_statusYes / Active                                      0.366991
-    ## baseline_va_letter                                            0.009047
-    ## vegf_group_365combo                                           0.292897
-    ## vegf_group_365Eylea                                           0.309521
-    ## vegf_group_365Lucentis                                        0.355699
-    ## severity_score                                                0.007713
-    ##                                                             t value
-    ## (Intercept)                                                  38.032
-    ## race_ethnicityBlack                                          -3.950
-    ## race_ethnicityHispanic                                       -4.035
-    ## genderMale                                                    2.433
-    ## first_dr_age                                                -11.307
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.129
-    ## smoke_statusYes / Active                                     -2.436
-    ## baseline_va_letter                                          -50.415
-    ## vegf_group_365combo                                           1.004
-    ## vegf_group_365Eylea                                           2.274
-    ## vegf_group_365Lucentis                                        2.595
-    ## severity_score                                               -7.614
+    ## (Intercept)                                                 43.844016
+    ## race_ethnicityBlack                                         -1.351530
+    ## race_ethnicityHispanic                                      -1.244000
+    ## genderMale                                                   0.556610
+    ## first_dr_age                                                -0.125930
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.032643
+    ## smoke_statusYes / Active                                    -0.867247
+    ## baseline_va_letter                                          -0.459151
+    ## vegf_group_365combo                                          0.296461
+    ## vegf_group_365Eylea                                          0.515857
+    ## vegf_group_365Lucentis                                       0.868029
+    ## severity_score                                              -0.056447
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   1.181141  37.120
+    ## race_ethnicityBlack                                           0.358804  -3.767
+    ## race_ethnicityHispanic                                        0.332029  -3.747
+    ## genderMale                                                    0.232725   2.392
+    ## first_dr_age                                                  0.011717 -10.748
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.285422   0.114
+    ## smoke_statusYes / Active                                      0.375366  -2.310
+    ## baseline_va_letter                                            0.009209 -49.859
+    ## vegf_group_365combo                                           0.299072   0.991
+    ## vegf_group_365Eylea                                           0.317117   1.627
+    ## vegf_group_365Lucentis                                        0.363688   2.387
+    ## severity_score                                                0.007885  -7.159
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         7.87e-05 ***
-    ## race_ethnicityHispanic                                      5.51e-05 ***
-    ## genderMale                                                   0.01500 *  
+    ## race_ethnicityBlack                                         0.000166 ***
+    ## race_ethnicityHispanic                                      0.000180 ***
+    ## genderMale                                                  0.016787 *  
     ## first_dr_age                                                 < 2e-16 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.89706    
-    ## smoke_statusYes / Active                                     0.01488 *  
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.908949    
+    ## smoke_statusYes / Active                                    0.020885 *  
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                          0.31535    
-    ## vegf_group_365Eylea                                          0.02301 *  
-    ## vegf_group_365Lucentis                                       0.00947 ** 
-    ## severity_score                                              2.88e-14 ***
+    ## vegf_group_365combo                                         0.321577    
+    ## vegf_group_365Eylea                                         0.103828    
+    ## vegf_group_365Lucentis                                      0.017016 *  
+    ## severity_score                                              8.65e-13 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 11.45 on 10580 degrees of freedom
-    ## Multiple R-squared:  0.1981, Adjusted R-squared:  0.1973 
-    ## F-statistic: 237.6 on 11 and 10580 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 11.72 on 10580 degrees of freedom
+    ## Multiple R-squared:  0.1939, Adjusted R-squared:  0.1931 
+    ## F-statistic: 231.4 on 11 and 10580 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(GRAPHprivate_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.030891  2        1.007635
-    ## gender             1.020152  1        1.010026
-    ## first_dr_age       1.114218  1        1.055565
-    ## smoke_status       1.027619  2        1.006834
-    ## baseline_va_letter 1.030409  1        1.015091
-    ## vegf_group_365     1.040503  3        1.006639
-    ## severity_score     1.118573  1        1.057626
+    ## race_ethnicity     1.029813  2        1.007371
+    ## gender             1.019921  1        1.009911
+    ## first_dr_age       1.115093  1        1.055979
+    ## smoke_status       1.027669  2        1.006847
+    ## baseline_va_letter 1.029965  1        1.014872
+    ## vegf_group_365     1.039221  3        1.006433
+    ## severity_score     1.117812  1        1.057266
 
 ``` r
 #Significant for both Black and Hispanic patients
@@ -3253,80 +3505,67 @@ summary(GRAPHMedicare_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -97.178  -4.580   1.514   6.552  43.393 
+    ## -97.307  -4.661   1.473   6.489  43.382 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 30.526717
-    ## race_ethnicityBlack                                         -0.044052
-    ## race_ethnicityHispanic                                      -1.237605
-    ## genderMale                                                   0.400696
-    ## first_dr_age                                                -0.025807
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.150485
-    ## smoke_statusYes / Active                                    -0.683870
-    ## baseline_va_letter                                          -0.365665
-    ## vegf_group_365combo                                         -0.074501
-    ## vegf_group_365Eylea                                          0.482869
-    ## vegf_group_365Lucentis                                       0.697120
-    ## severity_score                                              -0.063248
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.820830
-    ## race_ethnicityBlack                                           0.219948
-    ## race_ethnicityHispanic                                        0.235887
-    ## genderMale                                                    0.154145
-    ## first_dr_age                                                  0.007998
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.171186
-    ## smoke_statusYes / Active                                      0.254749
-    ## baseline_va_letter                                            0.005994
-    ## vegf_group_365combo                                           0.202651
-    ## vegf_group_365Eylea                                           0.206214
-    ## vegf_group_365Lucentis                                        0.233334
-    ## severity_score                                                0.005130
-    ##                                                             t value
-    ## (Intercept)                                                  37.190
-    ## race_ethnicityBlack                                          -0.200
-    ## race_ethnicityHispanic                                       -5.247
-    ## genderMale                                                    2.599
-    ## first_dr_age                                                 -3.227
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.879
-    ## smoke_statusYes / Active                                     -2.684
-    ## baseline_va_letter                                          -61.001
-    ## vegf_group_365combo                                          -0.368
-    ## vegf_group_365Eylea                                           2.342
-    ## vegf_group_365Lucentis                                        2.988
-    ## severity_score                                              -12.329
+    ## (Intercept)                                                 30.063065
+    ## race_ethnicityBlack                                         -0.081947
+    ## race_ethnicityHispanic                                      -1.206288
+    ## genderMale                                                   0.517669
+    ## first_dr_age                                                -0.025886
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.184342
+    ## smoke_statusYes / Active                                    -0.580880
+    ## baseline_va_letter                                          -0.364439
+    ## vegf_group_365combo                                         -0.047728
+    ## vegf_group_365Eylea                                          0.552635
+    ## vegf_group_365Lucentis                                       0.659919
+    ## severity_score                                              -0.057463
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   0.811090  37.065
+    ## race_ethnicityBlack                                           0.217697  -0.376
+    ## race_ethnicityHispanic                                        0.233511  -5.166
+    ## genderMale                                                    0.152559   3.393
+    ## first_dr_age                                                  0.007913  -3.271
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.169426   1.088
+    ## smoke_statusYes / Active                                      0.252130  -2.304
+    ## baseline_va_letter                                            0.005911 -61.659
+    ## vegf_group_365combo                                           0.200545  -0.238
+    ## vegf_group_365Eylea                                           0.204250   2.706
+    ## vegf_group_365Lucentis                                        0.230690   2.861
+    ## severity_score                                                0.005081 -11.311
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                          0.84126    
-    ## race_ethnicityHispanic                                      1.56e-07 ***
-    ## genderMale                                                   0.00934 ** 
-    ## first_dr_age                                                 0.00125 ** 
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.37937    
-    ## smoke_statusYes / Active                                     0.00727 ** 
+    ## race_ethnicityBlack                                         0.706603    
+    ## race_ethnicityHispanic                                      2.41e-07 ***
+    ## genderMale                                                  0.000692 ***
+    ## first_dr_age                                                0.001071 ** 
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.276590    
+    ## smoke_statusYes / Active                                    0.021237 *  
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                          0.71315    
-    ## vegf_group_365Eylea                                          0.01921 *  
-    ## vegf_group_365Lucentis                                       0.00281 ** 
+    ## vegf_group_365combo                                         0.811888    
+    ## vegf_group_365Eylea                                         0.006821 ** 
+    ## vegf_group_365Lucentis                                      0.004231 ** 
     ## severity_score                                               < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 12.19 on 26272 degrees of freedom
-    ## Multiple R-squared:  0.1259, Adjusted R-squared:  0.1255 
-    ## F-statistic:   344 on 11 and 26272 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 12.07 on 26272 degrees of freedom
+    ## Multiple R-squared:  0.1279, Adjusted R-squared:  0.1275 
+    ## F-statistic: 350.3 on 11 and 26272 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(GRAPHMedicare_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.059675  2        1.014596
-    ## gender             1.049820  1        1.024607
-    ## first_dr_age       1.116705  1        1.056743
-    ## smoke_status       1.055533  2        1.013603
-    ## baseline_va_letter 1.027051  1        1.013435
-    ## vegf_group_365     1.043583  3        1.007135
-    ## severity_score     1.128220  1        1.062177
+    ## race_ethnicity     1.060121  2        1.014703
+    ## gender             1.049794  1        1.024595
+    ## first_dr_age       1.115898  1        1.056361
+    ## smoke_status       1.055481  2        1.013591
+    ## baseline_va_letter 1.028692  1        1.014245
+    ## vegf_group_365     1.044098  3        1.007218
+    ## severity_score     1.129020  1        1.062553
 
 ``` r
 #Significant for Hispanic patients (***)
@@ -3365,80 +3604,67 @@ summary(GRAPHMedicaid_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -90.218  -3.983   2.656   8.017  37.569 
+    ## -89.722  -4.115   2.731   7.875  37.286 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 40.86120
-    ## race_ethnicityBlack                                         -1.44693
-    ## race_ethnicityHispanic                                      -0.60882
-    ## genderMale                                                   0.22206
-    ## first_dr_age                                                -0.06296
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.13186
-    ## smoke_statusYes / Active                                     0.67077
-    ## baseline_va_letter                                          -0.47767
-    ## vegf_group_365combo                                         -0.90933
-    ## vegf_group_365Eylea                                          0.67655
-    ## vegf_group_365Lucentis                                      -0.21172
-    ## severity_score                                              -0.07763
-    ##                                                             Std. Error
-    ## (Intercept)                                                    2.81509
-    ## race_ethnicityBlack                                            0.87017
-    ## race_ethnicityHispanic                                         0.70384
-    ## genderMale                                                     0.59728
-    ## first_dr_age                                                   0.02805
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.74978
-    ## smoke_statusYes / Active                                       0.80960
-    ## baseline_va_letter                                             0.02235
-    ## vegf_group_365combo                                            0.79115
-    ## vegf_group_365Eylea                                            0.98398
-    ## vegf_group_365Lucentis                                         1.19648
-    ## severity_score                                                 0.02063
-    ##                                                             t value
-    ## (Intercept)                                                  14.515
-    ## race_ethnicityBlack                                          -1.663
-    ## race_ethnicityHispanic                                       -0.865
-    ## genderMale                                                    0.372
-    ## first_dr_age                                                 -2.244
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.176
-    ## smoke_statusYes / Active                                      0.829
-    ## baseline_va_letter                                          -21.375
-    ## vegf_group_365combo                                          -1.149
-    ## vegf_group_365Eylea                                           0.688
-    ## vegf_group_365Lucentis                                       -0.177
-    ## severity_score                                               -3.763
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## race_ethnicityBlack                                         0.096477 .  
-    ## race_ethnicityHispanic                                      0.387128    
-    ## genderMale                                                  0.710079    
-    ## first_dr_age                                                0.024898 *  
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.860416    
-    ## smoke_statusYes / Active                                    0.407457    
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.250510    
-    ## vegf_group_365Eylea                                         0.491794    
-    ## vegf_group_365Lucentis                                      0.859558    
-    ## severity_score                                              0.000172 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 38.95309    2.77636
+    ## race_ethnicityBlack                                         -0.85693    0.86500
+    ## race_ethnicityHispanic                                      -0.66600    0.69947
+    ## genderMale                                                   0.60984    0.59398
+    ## first_dr_age                                                -0.05068    0.02787
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.52370    0.74533
+    ## smoke_statusYes / Active                                     0.85106    0.80528
+    ## baseline_va_letter                                          -0.46504    0.02202
+    ## vegf_group_365combo                                         -0.90769    0.78824
+    ## vegf_group_365Eylea                                          0.52682    0.96773
+    ## vegf_group_365Lucentis                                       0.03281    1.18398
+    ## severity_score                                              -0.07684    0.02045
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  14.030  < 2e-16
+    ## race_ethnicityBlack                                          -0.991 0.321945
+    ## race_ethnicityHispanic                                       -0.952 0.341114
+    ## genderMale                                                    1.027 0.304663
+    ## first_dr_age                                                 -1.819 0.069101
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.703 0.482347
+    ## smoke_statusYes / Active                                      1.057 0.290687
+    ## baseline_va_letter                                          -21.119  < 2e-16
+    ## vegf_group_365combo                                          -1.152 0.249621
+    ## vegf_group_365Eylea                                           0.544 0.586229
+    ## vegf_group_365Lucentis                                        0.028 0.977897
+    ## severity_score                                               -3.758 0.000175
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## race_ethnicityBlack                                            
+    ## race_ethnicityHispanic                                         
+    ## genderMale                                                     
+    ## first_dr_age                                                .  
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusYes / Active                                       
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                            
+    ## vegf_group_365Lucentis                                         
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 14.63 on 2432 degrees of freedom
-    ## Multiple R-squared:  0.1598, Adjusted R-squared:  0.156 
-    ## F-statistic: 42.06 on 11 and 2432 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 14.54 on 2432 degrees of freedom
+    ## Multiple R-squared:  0.1567, Adjusted R-squared:  0.1529 
+    ## F-statistic: 41.08 on 11 and 2432 DF,  p-value: < 2.2e-16
 
 ``` r
 vif(GRAPHMedicaid_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## race_ethnicity     1.091406  2        1.022108
-    ## gender             1.016730  1        1.008330
-    ## first_dr_age       1.119974  1        1.058288
-    ## smoke_status       1.060295  2        1.014744
-    ## baseline_va_letter 1.024062  1        1.011959
-    ## vegf_group_365     1.054134  3        1.008825
-    ## severity_score     1.095238  1        1.046536
+    ## race_ethnicity     1.090776  2        1.021960
+    ## gender             1.017410  1        1.008667
+    ## first_dr_age       1.117917  1        1.057316
+    ## smoke_status       1.061057  2        1.014927
+    ## baseline_va_letter 1.021209  1        1.010549
+    ## vegf_group_365     1.052840  3        1.008619
+    ## severity_score     1.092616  1        1.045283
 
 ``` r
 #Not significant for either Hispanic and Black patients. 
@@ -3524,7 +3750,7 @@ forest_va_change_insurance <-
 forest_va_change_insurance
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/forest_va_change_insurance.png", forest_va_change_insurance, width = 10, height = 5)
@@ -3586,67 +3812,54 @@ summary(GRAPHwhite_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -96.635  -4.312   1.597   6.295  41.523 
+    ## -96.748  -4.372   1.568   6.312  40.793 
     ## 
     ## Coefficients:
     ##                                                              Estimate
-    ## (Intercept)                                                 36.597481
-    ## insuranceMedicare                                           -1.855450
-    ## insuranceMedicaid                                           -2.188447
-    ## genderMale                                                   0.549090
-    ## first_dr_age                                                -0.053679
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.091660
-    ## smoke_statusYes / Active                                    -0.786128
-    ## baseline_va_letter                                          -0.400699
-    ## vegf_group_365combo                                         -0.055629
-    ## vegf_group_365Eylea                                          0.506237
-    ## vegf_group_365Lucentis                                       0.576628
-    ## severity_score                                              -0.064761
-    ##                                                             Std. Error
-    ## (Intercept)                                                   0.729228
-    ## insuranceMedicare                                             0.181213
-    ## insuranceMedicaid                                             0.346726
-    ## genderMale                                                    0.141740
-    ## first_dr_age                                                  0.007413
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.160723
-    ## smoke_statusYes / Active                                      0.225874
-    ## baseline_va_letter                                            0.005622
-    ## vegf_group_365combo                                           0.185592
-    ## vegf_group_365Eylea                                           0.187919
-    ## vegf_group_365Lucentis                                        0.213541
-    ## severity_score                                                0.004787
-    ##                                                             t value
-    ## (Intercept)                                                  50.187
-    ## insuranceMedicare                                           -10.239
-    ## insuranceMedicaid                                            -6.312
-    ## genderMale                                                    3.874
-    ## first_dr_age                                                 -7.241
-    ## smoke_statusFormer / No longer active / Past History / Quit   0.570
-    ## smoke_statusYes / Active                                     -3.480
-    ## baseline_va_letter                                          -71.272
-    ## vegf_group_365combo                                          -0.300
-    ## vegf_group_365Eylea                                           2.694
-    ## vegf_group_365Lucentis                                        2.700
-    ## severity_score                                              -13.528
+    ## (Intercept)                                                 36.093816
+    ## insuranceMedicare                                           -1.735831
+    ## insuranceMedicaid                                           -2.148004
+    ## genderMale                                                   0.616449
+    ## first_dr_age                                                -0.051671
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.126711
+    ## smoke_statusYes / Active                                    -0.795408
+    ## baseline_va_letter                                          -0.401309
+    ## vegf_group_365combo                                         -0.157992
+    ## vegf_group_365Eylea                                          0.495099
+    ## vegf_group_365Lucentis                                       0.591658
+    ## severity_score                                              -0.059408
+    ##                                                             Std. Error t value
+    ## (Intercept)                                                   0.726969  49.650
+    ## insuranceMedicare                                             0.181130  -9.583
+    ## insuranceMedicaid                                             0.346585  -6.198
+    ## genderMale                                                    0.141706   4.350
+    ## first_dr_age                                                  0.007407  -6.976
+    ## smoke_statusFormer / No longer active / Past History / Quit   0.160656   0.789
+    ## smoke_statusYes / Active                                      0.225783  -3.523
+    ## baseline_va_letter                                            0.005595 -71.729
+    ## vegf_group_365combo                                           0.185556  -0.851
+    ## vegf_group_365Eylea                                           0.187959   2.634
+    ## vegf_group_365Lucentis                                        0.213137   2.776
+    ## severity_score                                                0.004785 -12.415
     ##                                                             Pr(>|t|)    
     ## (Intercept)                                                  < 2e-16 ***
     ## insuranceMedicare                                            < 2e-16 ***
-    ## insuranceMedicaid                                           2.80e-10 ***
-    ## genderMale                                                  0.000107 ***
-    ## first_dr_age                                                4.56e-13 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.568483    
-    ## smoke_statusYes / Active                                    0.000501 ***
+    ## insuranceMedicaid                                           5.81e-10 ***
+    ## genderMale                                                  1.36e-05 ***
+    ## first_dr_age                                                3.11e-12 ***
+    ## smoke_statusFormer / No longer active / Past History / Quit 0.430287    
+    ## smoke_statusYes / Active                                    0.000428 ***
     ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.764379    
-    ## vegf_group_365Eylea                                         0.007066 ** 
-    ## vegf_group_365Lucentis                                      0.006932 ** 
+    ## vegf_group_365combo                                         0.394525    
+    ## vegf_group_365Eylea                                         0.008441 ** 
+    ## vegf_group_365Lucentis                                      0.005508 ** 
     ## severity_score                                               < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 11.75 on 28467 degrees of freedom
-    ## Multiple R-squared:  0.1544, Adjusted R-squared:  0.1541 
-    ## F-statistic: 472.7 on 11 and 28467 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 11.74 on 28467 degrees of freedom
+    ## Multiple R-squared:  0.1555, Adjusted R-squared:  0.1552 
+    ## F-statistic: 476.6 on 11 and 28467 DF,  p-value: < 2.2e-16
 
 ``` r
 #Extract values from regression output
@@ -3701,67 +3914,54 @@ summary(GRAPHblack_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -93.351  -4.609   1.661   6.726  41.145 
+    ## -93.448  -4.717   1.667   6.721  40.688 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 31.45010
-    ## insuranceMedicare                                           -0.66277
-    ## insuranceMedicaid                                           -2.12972
-    ## genderMale                                                  -0.05514
-    ## first_dr_age                                                -0.03718
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.62566
-    ## smoke_statusYes / Active                                    -0.81742
-    ## baseline_va_letter                                          -0.37356
-    ## vegf_group_365combo                                         -0.17280
-    ## vegf_group_365Eylea                                          0.65992
-    ## vegf_group_365Lucentis                                       1.16720
-    ## severity_score                                              -0.04714
-    ##                                                             Std. Error
-    ## (Intercept)                                                    1.77072
-    ## insuranceMedicare                                              0.44839
-    ## insuranceMedicaid                                              0.75943
-    ## genderMale                                                     0.35963
-    ## first_dr_age                                                   0.01753
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.41569
-    ## smoke_statusYes / Active                                       0.59437
-    ## baseline_va_letter                                             0.01353
-    ## vegf_group_365combo                                            0.46442
-    ## vegf_group_365Eylea                                            0.49254
-    ## vegf_group_365Lucentis                                         0.56101
-    ## severity_score                                                 0.01162
-    ##                                                             t value
-    ## (Intercept)                                                  17.761
-    ## insuranceMedicare                                            -1.478
-    ## insuranceMedicaid                                            -2.804
-    ## genderMale                                                   -0.153
-    ## first_dr_age                                                 -2.121
-    ## smoke_statusFormer / No longer active / Past History / Quit   1.505
-    ## smoke_statusYes / Active                                     -1.375
-    ## baseline_va_letter                                          -27.607
-    ## vegf_group_365combo                                          -0.372
-    ## vegf_group_365Eylea                                           1.340
-    ## vegf_group_365Lucentis                                        2.081
-    ## severity_score                                               -4.056
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## insuranceMedicare                                            0.13944    
-    ## insuranceMedicaid                                            0.00506 ** 
-    ## genderMale                                                   0.87816    
-    ## first_dr_age                                                 0.03397 *  
-    ## smoke_statusFormer / No longer active / Past History / Quit  0.13235    
-    ## smoke_statusYes / Active                                     0.16911    
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                          0.70985    
-    ## vegf_group_365Eylea                                          0.18036    
-    ## vegf_group_365Lucentis                                       0.03752 *  
-    ## severity_score                                              5.07e-05 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 30.48115    1.77380
+    ## insuranceMedicare                                           -0.63715    0.44933
+    ## insuranceMedicaid                                           -1.59371    0.76101
+    ## genderMale                                                   0.10530    0.36040
+    ## first_dr_age                                                -0.03282    0.01757
+    ## smoke_statusFormer / No longer active / Past History / Quit  0.61913    0.41649
+    ## smoke_statusYes / Active                                    -0.61017    0.59556
+    ## baseline_va_letter                                          -0.36985    0.01351
+    ## vegf_group_365combo                                         -0.03915    0.46523
+    ## vegf_group_365Eylea                                          0.46190    0.49362
+    ## vegf_group_365Lucentis                                       0.88922    0.56144
+    ## severity_score                                              -0.04086    0.01167
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  17.184  < 2e-16
+    ## insuranceMedicare                                            -1.418 0.156250
+    ## insuranceMedicaid                                            -2.094 0.036288
+    ## genderMale                                                    0.292 0.770164
+    ## first_dr_age                                                 -1.868 0.061809
+    ## smoke_statusFormer / No longer active / Past History / Quit   1.487 0.137192
+    ## smoke_statusYes / Active                                     -1.025 0.305632
+    ## baseline_va_letter                                          -27.372  < 2e-16
+    ## vegf_group_365combo                                          -0.084 0.932937
+    ## vegf_group_365Eylea                                           0.936 0.349444
+    ## vegf_group_365Lucentis                                        1.584 0.113293
+    ## severity_score                                               -3.502 0.000465
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## insuranceMedicare                                              
+    ## insuranceMedicaid                                           *  
+    ## genderMale                                                     
+    ## first_dr_age                                                .  
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusYes / Active                                       
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                            
+    ## vegf_group_365Lucentis                                         
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 12.7 on 5348 degrees of freedom
-    ## Multiple R-squared:  0.1268, Adjusted R-squared:  0.125 
-    ## F-statistic: 70.62 on 11 and 5348 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 12.72 on 5348 degrees of freedom
+    ## Multiple R-squared:  0.1241, Adjusted R-squared:  0.1223 
+    ## F-statistic: 68.87 on 11 and 5348 DF,  p-value: < 2.2e-16
 
 ``` r
 #Extract values from regression output
@@ -3813,67 +4013,54 @@ summary(GRAPHhispanic_only_one_year_va_delta.lm)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -92.750  -4.592   2.082   7.150  43.141 
+    ## -91.120  -4.582   2.017   7.097  43.097 
     ## 
     ## Coefficients:
-    ##                                                             Estimate
-    ## (Intercept)                                                 37.34084
-    ## insuranceMedicare                                           -1.66855
-    ## insuranceMedicaid                                           -1.61652
-    ## genderMale                                                   0.15340
-    ## first_dr_age                                                -0.08835
-    ## smoke_statusFormer / No longer active / Past History / Quit -0.29726
-    ## smoke_statusYes / Active                                     0.55467
-    ## baseline_va_letter                                          -0.39415
-    ## vegf_group_365combo                                          0.19229
-    ## vegf_group_365Eylea                                          0.62016
-    ## vegf_group_365Lucentis                                       1.49365
-    ## severity_score                                              -0.07319
-    ##                                                             Std. Error
-    ## (Intercept)                                                    1.86951
-    ## insuranceMedicare                                              0.45793
-    ## insuranceMedicaid                                              0.63389
-    ## genderMale                                                     0.38618
-    ## first_dr_age                                                   0.01833
-    ## smoke_statusFormer / No longer active / Past History / Quit    0.46393
-    ## smoke_statusYes / Active                                       0.66157
-    ## baseline_va_letter                                             0.01433
-    ## vegf_group_365combo                                            0.51006
-    ## vegf_group_365Eylea                                            0.61778
-    ## vegf_group_365Lucentis                                         0.71701
-    ## severity_score                                                 0.01291
-    ##                                                             t value
-    ## (Intercept)                                                  19.974
-    ## insuranceMedicare                                            -3.644
-    ## insuranceMedicaid                                            -2.550
-    ## genderMale                                                    0.397
-    ## first_dr_age                                                 -4.820
-    ## smoke_statusFormer / No longer active / Past History / Quit  -0.641
-    ## smoke_statusYes / Active                                      0.838
-    ## baseline_va_letter                                          -27.514
-    ## vegf_group_365combo                                           0.377
-    ## vegf_group_365Eylea                                           1.004
-    ## vegf_group_365Lucentis                                        2.083
-    ## severity_score                                               -5.669
-    ##                                                             Pr(>|t|)    
-    ## (Intercept)                                                  < 2e-16 ***
-    ## insuranceMedicare                                           0.000271 ***
-    ## insuranceMedicaid                                           0.010794 *  
-    ## genderMale                                                  0.691212    
-    ## first_dr_age                                                1.48e-06 ***
-    ## smoke_statusFormer / No longer active / Past History / Quit 0.521711    
-    ## smoke_statusYes / Active                                    0.401836    
-    ## baseline_va_letter                                           < 2e-16 ***
-    ## vegf_group_365combo                                         0.706191    
-    ## vegf_group_365Eylea                                         0.315497    
-    ## vegf_group_365Lucentis                                      0.037283 *  
-    ## severity_score                                              1.51e-08 ***
+    ##                                                             Estimate Std. Error
+    ## (Intercept)                                                 36.87331    1.84717
+    ## insuranceMedicare                                           -1.55582    0.45305
+    ## insuranceMedicaid                                           -1.72433    0.62658
+    ## genderMale                                                   0.36443    0.38171
+    ## first_dr_age                                                -0.08787    0.01812
+    ## smoke_statusFormer / No longer active / Past History / Quit -0.17994    0.45859
+    ## smoke_statusYes / Active                                     1.12214    0.65397
+    ## baseline_va_letter                                          -0.39010    0.01410
+    ## vegf_group_365combo                                          0.77529    0.50218
+    ## vegf_group_365Eylea                                          0.77216    0.61098
+    ## vegf_group_365Lucentis                                       1.23365    0.71126
+    ## severity_score                                              -0.07549    0.01274
+    ##                                                             t value Pr(>|t|)
+    ## (Intercept)                                                  19.962  < 2e-16
+    ## insuranceMedicare                                            -3.434 0.000599
+    ## insuranceMedicaid                                            -2.752 0.005943
+    ## genderMale                                                    0.955 0.339755
+    ## first_dr_age                                                 -4.849 1.27e-06
+    ## smoke_statusFormer / No longer active / Past History / Quit  -0.392 0.694792
+    ## smoke_statusYes / Active                                      1.716 0.086240
+    ## baseline_va_letter                                          -27.676  < 2e-16
+    ## vegf_group_365combo                                           1.544 0.122685
+    ## vegf_group_365Eylea                                           1.264 0.206353
+    ## vegf_group_365Lucentis                                        1.734 0.082891
+    ## severity_score                                               -5.927 3.27e-09
+    ##                                                                
+    ## (Intercept)                                                 ***
+    ## insuranceMedicare                                           ***
+    ## insuranceMedicaid                                           ** 
+    ## genderMale                                                     
+    ## first_dr_age                                                ***
+    ## smoke_statusFormer / No longer active / Past History / Quit    
+    ## smoke_statusYes / Active                                    .  
+    ## baseline_va_letter                                          ***
+    ## vegf_group_365combo                                            
+    ## vegf_group_365Eylea                                            
+    ## vegf_group_365Lucentis                                      .  
+    ## severity_score                                              ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 13.8 on 5469 degrees of freedom
-    ## Multiple R-squared:  0.1254, Adjusted R-squared:  0.1236 
-    ## F-statistic: 71.28 on 11 and 5469 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 13.65 on 5469 degrees of freedom
+    ## Multiple R-squared:  0.1273, Adjusted R-squared:  0.1255 
+    ## F-statistic: 72.51 on 11 and 5469 DF,  p-value: < 2.2e-16
 
 ``` r
 #Extract values from regression output
@@ -3911,39 +4098,39 @@ vif(GRAPHwhite_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.412988  2        1.090271
-    ## gender             1.026969  1        1.013395
-    ## first_dr_age       1.527236  1        1.235814
-    ## smoke_status       1.055012  2        1.013478
-    ## baseline_va_letter 1.034570  1        1.017138
-    ## vegf_group_365     1.028014  3        1.004615
-    ## severity_score     1.128246  1        1.062189
+    ## insurance          1.412768  2        1.090229
+    ## gender             1.027293  1        1.013555
+    ## first_dr_age       1.526020  1        1.235322
+    ## smoke_status       1.054912  2        1.013454
+    ## baseline_va_letter 1.035299  1        1.017497
+    ## vegf_group_365     1.027938  3        1.004603
+    ## severity_score     1.128000  1        1.062073
 
 ``` r
 vif(GRAPHblack_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.228659  2        1.052829
-    ## gender             1.033992  1        1.016854
-    ## first_dr_age       1.328362  1        1.152546
-    ## smoke_status       1.048800  2        1.011983
-    ## baseline_va_letter 1.036600  1        1.018135
-    ## vegf_group_365     1.034459  3        1.005662
-    ## severity_score     1.102111  1        1.049815
+    ## insurance          1.229325  2        1.052972
+    ## gender             1.034418  1        1.017064
+    ## first_dr_age       1.329181  1        1.152901
+    ## smoke_status       1.048916  2        1.012011
+    ## baseline_va_letter 1.035670  1        1.017679
+    ## vegf_group_365     1.035240  3        1.005789
+    ## severity_score     1.105188  1        1.051279
 
 ``` r
 vif(GRAPHhispanic_only_one_year_va_delta.lm)
 ```
 
     ##                        GVIF Df GVIF^(1/(2*Df))
-    ## insurance          1.201247  2        1.046907
-    ## gender             1.067911  1        1.033398
-    ## first_dr_age       1.273472  1        1.128482
-    ## smoke_status       1.066041  2        1.016116
-    ## baseline_va_letter 1.030726  1        1.015247
-    ## vegf_group_365     1.029631  3        1.004879
-    ## severity_score     1.095979  1        1.046890
+    ## insurance          1.202671  2        1.047217
+    ## gender             1.067670  1        1.033281
+    ## first_dr_age       1.273275  1        1.128395
+    ## smoke_status       1.065953  2        1.016095
+    ## baseline_va_letter 1.034687  1        1.017195
+    ## vegf_group_365     1.028203  3        1.004646
+    ## severity_score     1.095429  1        1.046627
 
 ``` r
 forest_va_change_race <- 
@@ -3968,7 +4155,7 @@ forest_va_change_race <-
 forest_va_change_race
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
 
 ``` r
 ggsave("graphs/forest_va_change_race.png", forest_va_change_race, width = 10, height = 5)
@@ -4035,7 +4222,8 @@ severity_race_vision <-
   arrange(desc(avg_severity))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_vision
@@ -4045,16 +4233,16 @@ severity_race_vision
     ## # Groups:   race_ethnicity [3]
     ##    race_ethnicity baseline_va_r5 avg_severity count
     ##    <ord>                   <dbl>        <dbl> <int>
-    ##  1 Hispanic                   40         65.9   144
-    ##  2 Hispanic                   35         64.1   373
-    ##  3 Hispanic                   50         64.0   359
-    ##  4 Hispanic                   55         63.8   361
-    ##  5 Hispanic                   60         62.9  1024
-    ##  6 White                      25         62.6   147
-    ##  7 Hispanic                   85         62.5   374
-    ##  8 White                      45         62.3   175
-    ##  9 Black                      35         62.2   317
-    ## 10 Hispanic                   65         62.2   866
+    ##  1 Hispanic                   40         65.6   137
+    ##  2 Hispanic                   35         64.0   388
+    ##  3 Hispanic                   55         63.9   362
+    ##  4 Hispanic                   50         63.6   363
+    ##  5 White                      25         63.0   158
+    ##  6 White                      45         62.9   182
+    ##  7 Hispanic                   60         62.8  1034
+    ##  8 Hispanic                   65         62.5   853
+    ##  9 Black                      35         62.1   325
+    ## 10 White                      40         62.1   463
     ## # … with 21 more rows
 
 ``` r
@@ -4081,7 +4269,7 @@ plot_sev_race_va <-
 plot_sev_race_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/5_plot_sev_race_va.png", plot_sev_race_va, width = 7, height = 5)
@@ -4101,7 +4289,8 @@ severity_insurance_vision <-
   arrange(desc(avg_severity))
 ```
 
-    ## `summarise()` has grouped output by 'insurance'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'insurance'. You can override using the
+    ## `.groups` argument.
 
 ``` r
 severity_insurance_vision
@@ -4111,16 +4300,16 @@ severity_insurance_vision
     ## # Groups:   insurance [6]
     ##    insurance       baseline_va_r5 avg_severity count
     ##    <ord>                    <dbl>        <dbl> <int>
-    ##  1 Medicaid                    35         65.9   133
-    ##  2 Medicaid                    50         65.8   132
-    ##  3 Medicaid                    55         63.4   103
-    ##  4 Medicare                    25         63.3   155
-    ##  5 Govt                        60         63.0   144
-    ##  6 Unknown/Missing             65         62.8   203
-    ##  7 Medicaid                    65         62.6   340
-    ##  8 Private                     40         62.6   137
-    ##  9 Private                     35         62.6   422
-    ## 10 Medicaid                    70         62.4   457
+    ##  1 Medicaid                    50         66.2   141
+    ##  2 Medicaid                    35         64.7   134
+    ##  3 Medicare                    25         63.3   160
+    ##  4 Private                     40         63.2   132
+    ##  5 Medicaid                    65         63.1   329
+    ##  6 Unknown/Missing             60         62.9   245
+    ##  7 Medicaid                    55         62.8   106
+    ##  8 Unknown/Missing             65         62.7   203
+    ##  9 Govt                        60         62.6   136
+    ## 10 Private                     55         62.5   410
     ## # … with 34 more rows
 
 ``` r
@@ -4147,7 +4336,7 @@ plot_sev_insurance_va <-
 plot_sev_insurance_va
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
 
 ``` r
 #ggsave("graphs/6_plot_sev_insurance_va.png", plot_sev_insurance_va, width = 7, height = 5)
@@ -4169,7 +4358,8 @@ race_distribution <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 race_distribution %>% 
@@ -4195,7 +4385,7 @@ timeseries_analysis %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
 
 ``` r
 race_distribution %>% 
@@ -4211,7 +4401,7 @@ race_distribution %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
 
 #### Timeseries VA by race and severity
 
@@ -4224,7 +4414,8 @@ severity_race_va <-
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 timeseries_analysis %>% 
@@ -4237,16 +4428,16 @@ timeseries_analysis %>%
     ## # Groups:   race_ethnicity [3]
     ##    severity_score race_ethnicity     n   prop
     ##             <dbl> <ord>          <int>  <dbl>
-    ##  1             35 White           3349 0.108 
-    ##  2             35 Black            596 0.101 
-    ##  3             35 Hispanic         442 0.0695
-    ##  4             40 White           1887 0.0609
-    ##  5             40 Black            323 0.0545
-    ##  6             40 Hispanic         226 0.0355
-    ##  7             43 White            840 0.0271
-    ##  8             43 Black            148 0.0250
-    ##  9             43 Hispanic         141 0.0222
-    ## 10             44 White           4545 0.147 
+    ##  1             35 White           3361 0.108 
+    ##  2             35 Black            591 0.0998
+    ##  3             35 Hispanic         448 0.0704
+    ##  4             40 White           1871 0.0604
+    ##  5             40 Black            321 0.0542
+    ##  6             40 Hispanic         225 0.0354
+    ##  7             43 White            836 0.0270
+    ##  8             43 Black            151 0.0255
+    ##  9             43 Hispanic         140 0.0220
+    ## 10             44 White           4535 0.146 
     ## # … with 23 more rows
 
 ``` r
@@ -4257,7 +4448,7 @@ timeseries_analysis %>%
   theme_light()
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
 
 This chart shows the density of patients by severity score. There are
 two peaks - first at around severity scores between 40-48, and a second
@@ -4299,7 +4490,7 @@ va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-53-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-62-1.png)<!-- -->
 
 ``` r
 va_race_diff <-
@@ -4328,7 +4519,7 @@ va_race_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-54-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-63-1.png)<!-- -->
 
 ``` r
 # plot change in visual acuity by race at one and two yeaars
@@ -4348,7 +4539,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-55-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-64-1.png)<!-- -->
 
 Patients with starting severity score of 73, split by race, with visual
 acuity measured over time. It appears that visual acuity changes seem to
@@ -4373,7 +4564,10 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-56-1.png)<!-- -->
+    ## Warning: ggrepel: 2 unlabeled data points (too many overlaps). Consider
+    ## increasing max.overlaps
+
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
 
 ``` r
 # average two year visual acuity by starting severity and race
@@ -4397,7 +4591,7 @@ severity_race_va %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-57-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-66-1.png)<!-- -->
 
 This chart confirms our expectation that visual acuity two years after
 index date typically is lower for patients with a higher starting
@@ -4438,7 +4632,7 @@ va_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-58-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
 
 ``` r
 va_insurance_diff <-
@@ -4467,7 +4661,7 @@ va_insurance_diff %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-59-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-68-1.png)<!-- -->
 
 #### Percentage with 15 letter loss by race
 
@@ -4519,7 +4713,7 @@ loss_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-1.png)<!-- -->
 
 ``` r
 gain_15_race <-
@@ -4548,7 +4742,7 @@ gain_15_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-60-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-69-2.png)<!-- -->
 
 #### Percentage with 15 letter loss by insurance
 
@@ -4584,7 +4778,7 @@ loss_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
 
 ``` r
 gain_15_insurance <-
@@ -4614,7 +4808,7 @@ gain_15_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-61-2.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-2.png)<!-- -->
 
 #### Timeseries VA by insurance and race
 
@@ -4706,7 +4900,8 @@ smoking_race_va <-
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 ## NOTE - be sure to combine the two medicare datasets rather than eliminating one
@@ -4726,7 +4921,7 @@ smoking_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-65-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
 
 #### Timeseries VA by gender and race
 
@@ -4738,7 +4933,8 @@ gender_race_va <-
   gather(key = "timepoint", value = "va_plot", baseline_va, one_year_va, two_year_va)
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 gender_race_va %>% 
@@ -4756,7 +4952,7 @@ gender_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-67-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
 
 Female patients appear to have lower baseline VA as compared to their
 male counterparts of the same race. The raw gain or loss in VA over time
@@ -4790,7 +4986,8 @@ race_va <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r'. You can override using the
+    ## `.groups` argument.
 
 ``` r
 race_va %>%
@@ -4805,7 +5002,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-70-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
 
 This graph is hard to interpret, but is showing the differential
 progression of va for people of different races that start at the same
@@ -4837,7 +5034,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-71-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-80-1.png)<!-- -->
 
 We observe that Hispanic patients experience starting with \~65 visual
 acuity, they experiences much less gain in vision over two years as
@@ -4868,7 +5065,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-72-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-81-1.png)<!-- -->
 
 At this level, the dispairities in improvements are much more stark.
 Whie people with baseline va of 50 are 3 additional points of VA gain as
@@ -4899,7 +5096,7 @@ race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-73-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
 
 #### Race VA timeseries bucketed by 10
 
@@ -4913,7 +5110,8 @@ race_va_10 <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r10'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r10'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 ## Same as above - split by ten 
@@ -4935,7 +5133,7 @@ race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-74-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-83-1.png)<!-- -->
 
 ``` r
 severity_race_va_10 <-
@@ -4947,7 +5145,8 @@ severity_race_va_10 <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r10', 'severity_score'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r10', 'severity_score'. You
+    ## can override using the `.groups` argument.
 
 ``` r
 severity_race_va_10_sd <-
@@ -4959,27 +5158,28 @@ severity_race_va_10_sd <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r10', 'severity_score'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r10', 'severity_score'. You
+    ## can override using the `.groups` argument.
 
 ``` r
 severity_race_va_10 %>% 
   arrange(desc(count))
 ```
 
-    ## # A tibble: 669 × 6
+    ## # A tibble: 666 × 6
     ##    baseline_va_r10 severity_score race_ethnicity count timepoint   va_plot
     ##              <dbl>          <dbl> <ord>          <int> <chr>         <dbl>
-    ##  1              80             73 White           2863 baseline_va    79.3
-    ##  2              80             73 White           2863 one_year_va    76.2
-    ##  3              80             73 White           2863 two_year_va    74.8
-    ##  4              60             73 White           2648 baseline_va    61.1
-    ##  5              60             73 White           2648 one_year_va    64.0
-    ##  6              60             73 White           2648 two_year_va    64.1
-    ##  7              80             44 White           1729 baseline_va    78.9
-    ##  8              80             44 White           1729 one_year_va    76.9
-    ##  9              80             44 White           1729 two_year_va    75.4
-    ## 10              70             73 White           1532 baseline_va    70.0
-    ## # … with 659 more rows
+    ##  1              80             73 White           2853 baseline_va    79.3
+    ##  2              80             73 White           2853 one_year_va    76.1
+    ##  3              80             73 White           2853 two_year_va    74.7
+    ##  4              60             73 White           2665 baseline_va    61.1
+    ##  5              60             73 White           2665 one_year_va    64.1
+    ##  6              60             73 White           2665 two_year_va    64.1
+    ##  7              80             44 White           1709 baseline_va    78.9
+    ##  8              80             44 White           1709 one_year_va    76.9
+    ##  9              80             44 White           1709 two_year_va    75.4
+    ## 10              70             73 White           1510 baseline_va    70.0
+    ## # … with 656 more rows
 
 ``` r
 severity_race_va_10 %>%
@@ -5005,7 +5205,7 @@ severity_race_va_10 %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-76-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-85-1.png)<!-- -->
 
 #### Severity race VA timeseries
 
@@ -5023,7 +5223,8 @@ severity_race_va <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r', 'severity_score'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r', 'severity_score'. You can
+    ## override using the `.groups` argument.
 
 ``` r
 severity_race_va %>%
@@ -5048,7 +5249,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-87-1.png)<!-- -->
 
 For patients that start with a baseline visual acuity close to 50, the
 change in visual acuity over one to two years is associated with race.
@@ -5093,7 +5294,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-79-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
 
 The trend identified for patients with a baseline VA of 50 (the prior
 chart) partially holds for those patients with starting VA of 35. We see
@@ -5133,7 +5334,7 @@ severity_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-80-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
 
 #### Severity insurance race VA timeseries
 
@@ -5151,7 +5352,8 @@ severity_ins_race_va <-
   ungroup()
 ```
 
-    ## `summarise()` has grouped output by 'baseline_va_r', 'severity_score', 'insurance'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'baseline_va_r', 'severity_score',
+    ## 'insurance'. You can override using the `.groups` argument.
 
 ``` r
 severity_ins_race_va %>%
@@ -5176,7 +5378,7 @@ severity_ins_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
 
 ## Injections by VA analysis
 
@@ -5286,9 +5488,9 @@ severity_race %>% kable()
 
 | race_ethnicity |  average | count |
 |:---------------|---------:|------:|
-| Hispanic       | 62.39353 |  6363 |
-| Black          | 58.56974 |  5922 |
-| White          | 57.03453 | 30989 |
+| Hispanic       | 62.34559 |  6363 |
+| Black          | 58.60132 |  5922 |
+| White          | 57.03485 | 30989 |
 
 Hispanic people have the highest severity of all racial groups, nearaly
 5 points higher than White people. Black, Asian, and Caucasian people
@@ -5305,7 +5507,8 @@ severity_race_reg <-
   arrange(desc(average))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 # Print severity by race and region table
@@ -5316,21 +5519,21 @@ severity_race_reg
     ## # Groups:   race_ethnicity [3]
     ##    race_ethnicity region    average count
     ##    <ord>          <chr>       <dbl> <int>
-    ##  1 Hispanic       <NA>         68.3    98
-    ##  2 Hispanic       Midwest      63.7   491
-    ##  3 Hispanic       West         63.1  2269
-    ##  4 Hispanic       South        62.3  2633
-    ##  5 Hispanic       Northeast    59.6   872
-    ##  6 Black          South        58.8  3409
-    ##  7 Black          Northeast    58.4  1125
-    ##  8 Black          Midwest      58.1   981
-    ##  9 Black          West         58.0   339
-    ## 10 White          South        57.8 10792
-    ## 11 White          West         57.3  5058
-    ## 12 Black          <NA>         56.8    68
-    ## 13 White          Midwest      56.5  8652
-    ## 14 White          <NA>         56.4   334
-    ## 15 White          Northeast    56.3  6153
+    ##  1 Hispanic       <NA>         67.6   101
+    ##  2 Hispanic       Midwest      63.5   493
+    ##  3 Hispanic       West         63.1  2265
+    ##  4 Hispanic       South        62.2  2633
+    ##  5 Hispanic       Northeast    59.6   871
+    ##  6 Black          South        58.9  3405
+    ##  7 Black          Northeast    58.5  1126
+    ##  8 Black          Midwest      58.2   981
+    ##  9 Black          West         57.9   342
+    ## 10 White          South        57.8 10790
+    ## 11 White          West         57.3  5055
+    ## 12 Black          <NA>         57.1    68
+    ## 13 White          Midwest      56.5  8657
+    ## 14 White          Northeast    56.3  6152
+    ## 15 White          <NA>         55.9   335
 
 ``` r
 # graph severity by race and region
@@ -5346,7 +5549,7 @@ severity_race_reg %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-89-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
 
 While there is some regional variation, Hispanic people are most likely
 among all racial groups to have higher severity at time of diagnosis as
@@ -5364,7 +5567,8 @@ severity_race_age <-
   arrange(desc(avg_severity))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_age %>% head(10) %>% kable()
@@ -5373,15 +5577,15 @@ severity_race_age %>% head(10) %>% kable()
 | race_ethnicity | age_group | avg_severity | count |
 |:---------------|----------:|-------------:|------:|
 | Black          |        25 |     72.25926 |    27 |
-| Hispanic       |        35 |     68.89744 |   156 |
-| White          |        35 |     68.50963 |   571 |
-| White          |        20 |     68.33333 |    33 |
-| Hispanic       |        45 |     68.32414 |   435 |
+| Hispanic       |        35 |     68.81290 |   155 |
+| Hispanic       |        20 |     68.71429 |     7 |
+| Hispanic       |        45 |     68.30575 |   435 |
 | Hispanic       |        25 |     68.27273 |    33 |
-| Hispanic       |        40 |     68.19355 |   279 |
+| White          |        35 |     68.20490 |   571 |
+| White          |        20 |     68.03030 |    33 |
+| Hispanic       |        40 |     68.01792 |   279 |
 | Black          |        20 |     68.00000 |     3 |
-| Hispanic       |        20 |     68.00000 |     7 |
-| White          |        30 |     67.95183 |   436 |
+| White          |        25 |     67.81659 |   229 |
 
 ``` r
 # graph severity by race and age group
@@ -5397,7 +5601,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-91-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-100-1.png)<!-- -->
 
 \[All data\] Analysis
 
@@ -5426,7 +5630,7 @@ severity_race_age %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
 
 \[New classification\] Average severity at time of diagnosis is \~1.5-2
 pts higher for Black people vs. Caucasian people, and \~3-4 pts higher
@@ -5448,11 +5652,11 @@ severity_reg %>% kable()
 
 | region    |  average |     n |
 |:----------|---------:|------:|
-| West      | 59.06822 |  7666 |
-| NA        | 58.78200 |   500 |
-| South     | 58.68968 | 16834 |
-| Midwest   | 57.01274 | 10124 |
-| Northeast | 56.92221 |  8150 |
+| West      | 59.01801 |  7662 |
+| South     | 58.70680 | 16828 |
+| NA        | 58.40873 |   504 |
+| Midwest   | 56.99862 | 10131 |
+| Northeast | 56.96282 |  8149 |
 
 Severity in the West does appear to be a few points higher than in other
 regions - perhaps due to a higher number of Hispanic people being from
@@ -5470,7 +5674,8 @@ severity_race_ins <-
   arrange(desc(average))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_ins
@@ -5481,22 +5686,22 @@ severity_race_ins
     ##    race_ethnicity insurance       average count
     ##    <ord>          <ord>             <dbl> <int>
     ##  1 Hispanic       Govt               65.2   123
-    ##  2 Hispanic       Unknown/Missing    63.3   640
-    ##  3 Hispanic       Medicaid           63.2   712
+    ##  2 Hispanic       Unknown/Missing    63.4   640
+    ##  3 Hispanic       Medicaid           63.0   712
     ##  4 Hispanic       Private            62.5  1553
     ##  5 White          Medicaid           61.9  1392
     ##  6 Hispanic       Medicare           61.9  3305
     ##  7 Black          Medicaid           61.6   371
-    ##  8 White          Unknown/Missing    60.5   794
-    ##  9 Black          Unknown/Missing    60.1   229
+    ##  8 Black          Unknown/Missing    60.6   229
+    ##  9 White          Unknown/Missing    60.3   794
     ## 10 Hispanic       Military           59.3    30
-    ## 11 White          Govt               59.2   862
+    ## 11 White          Govt               59.1   862
     ## 12 Black          Private            59.0  1266
     ## 13 White          Private            58.9  7955
-    ## 14 Black          Govt               58.7   180
-    ## 15 Black          Medicare           58.0  3803
-    ## 16 Black          Military           57.3    73
-    ## 17 White          Military           55.9   435
+    ## 14 Black          Govt               58.5   180
+    ## 15 Black          Medicare           58.1  3803
+    ## 16 Black          Military           56.8    73
+    ## 17 White          Military           56.0   435
     ## 18 White          Medicare           55.7 19551
 
 ``` r
@@ -5518,7 +5723,7 @@ severity_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-95-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
 
 We see large Hispanic/white gaps for those on Govt,Medicare FFS, Private
 or with Unknown/Missing insurance information. Smaller Hispanic/white
@@ -5536,7 +5741,8 @@ severity_race_sex <-
   arrange(desc(average))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_sex %>% head(5) %>% kable()
@@ -5544,11 +5750,11 @@ severity_race_sex %>% head(5) %>% kable()
 
 | race_ethnicity | gender  |  average | count |
 |:---------------|:--------|---------:|------:|
-| Hispanic       | Unknown | 64.34783 |    46 |
-| Hispanic       | Male    | 63.22544 |  3389 |
-| Hispanic       | Female  | 61.39993 |  2928 |
-| White          | Unknown | 59.69298 |   114 |
-| Black          | Male    | 59.69193 |  2441 |
+| Hispanic       | Unknown | 64.45652 |    46 |
+| Hispanic       | Male    | 63.18265 |  3389 |
+| Hispanic       | Female  | 61.34358 |  2928 |
+| White          | Unknown | 59.86842 |   114 |
+| Black          | Male    | 59.71938 |  2441 |
 
 ``` r
 # graphing severity by race and sex
@@ -5566,7 +5772,7 @@ severity_race_sex %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-97-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
 
 Male patients have higher severity at the time of diagnosis than female
 patients among all racial groups.
@@ -5583,7 +5789,8 @@ severity_race_first_treatment <-
   arrange(desc(average))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 # severity_race_first_treatment
@@ -5604,7 +5811,7 @@ severity_race_first_treatment %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-99-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
 
 Physicians are treating people with higher severity within their racial
 group with antivegf or combo drugs for their first treatment, as
@@ -5622,22 +5829,22 @@ treatment_sev_race <-
   select(severity_score, race_ethnicity, proc_group_28, prop, count = n)
 
 treatment_sev_race %>% 
-  arrange(desc(severity_score, race_ethnicity))
+  arrange(desc(severity_score))
 ```
 
     ## # A tibble: 33 × 5
     ##    severity_score race_ethnicity proc_group_28  prop count
     ##             <dbl> <ord>          <chr>         <dbl> <int>
-    ##  1             85 White          antivegf          1    16
-    ##  2             85 Black          antivegf          1    13
+    ##  1             85 White          antivegf          1    17
+    ##  2             85 Black          antivegf          1    12
     ##  3             85 Hispanic       antivegf          1     9
-    ##  4             81 White          antivegf          1    34
-    ##  5             81 Black          antivegf          1    16
+    ##  4             81 White          antivegf          1    31
+    ##  5             81 Black          antivegf          1    18
     ##  6             81 Hispanic       antivegf          1    11
-    ##  7             78 White          antivegf          1  4075
-    ##  8             78 Black          antivegf          1   863
-    ##  9             78 Hispanic       antivegf          1  1276
-    ## 10             73 White          antivegf          1  8274
+    ##  7             78 White          antivegf          1  4074
+    ##  8             78 Black          antivegf          1   853
+    ##  9             78 Hispanic       antivegf          1  1273
+    ## 10             73 White          antivegf          1  8277
     ## # … with 23 more rows
 
 ``` r
@@ -5656,7 +5863,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-110-1.png)<!-- -->
 \[New classification\] At this level, it is difficult to see how race
 may be impacting treatment assigment. In the next graph, we look more
 closely at the likelihood of receiving an anti-vegf treatment, based on
@@ -5679,7 +5886,7 @@ treatment_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-102-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
 
 \[New classification\] Black people appear to be 2-5% points less likely
 to receive antivegf treatment as compared to Caucasian people at several
@@ -5701,25 +5908,7 @@ drug_sev_race <-
   mutate(prop = n / count_severity_race) %>% 
   ungroup() %>% 
   select(severity_score, race_ethnicity, vegf_group_365, prop, count = n)
-
-drug_sev_race %>% 
-  arrange(desc(severity_score, race_ethnicity))
 ```
-
-    ## # A tibble: 129 × 5
-    ##    severity_score race_ethnicity vegf_group_365   prop count
-    ##             <dbl> <ord>          <chr>           <dbl> <int>
-    ##  1             85 White          Avastin        0.6        9
-    ##  2             85 White          combo          0.2        3
-    ##  3             85 White          Eylea          0.133      2
-    ##  4             85 White          Lucentis       0.0667     1
-    ##  5             85 Black          Avastin        0.8        8
-    ##  6             85 Black          combo          0.2        2
-    ##  7             85 Hispanic       Avastin        0.333      3
-    ##  8             85 Hispanic       combo          0.333      3
-    ##  9             85 Hispanic       Eylea          0.333      3
-    ## 10             81 White          Avastin        0.727     24
-    ## # … with 119 more rows
 
 ``` r
 # Graphing likelihood of first drug type by severity and race
@@ -5736,7 +5925,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-104-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-113-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -5754,7 +5943,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-105-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-114-1.png)<!-- -->
 
 Caucasian people are 5-10% more likely to receive Eylea treatment
 (first) as compared to Hispanic people at the same level of severity,
@@ -5778,7 +5967,7 @@ drug_sev_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-115-1.png)<!-- -->
 
 At lower levels of severity, Hispanic people are far more likely
 (15-25%) to receive Bevacizumab as compared to their Caucasian
@@ -5801,22 +5990,22 @@ drug_sev_cat_race <-
   select(vision_category, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_sev_cat_race %>% 
-  arrange(desc(vision_category, race_ethnicity))
+  arrange(desc(vision_category))
 ```
 
     ## # A tibble: 108 × 5
     ##    vision_category    race_ethnicity vegf_group_365   prop count
     ##    <chr>              <ord>          <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema White          Avastin        0.506   1848
-    ##  2 8 - PDR with edema White          combo          0.191    699
-    ##  3 8 - PDR with edema White          Eylea          0.209    762
-    ##  4 8 - PDR with edema White          Lucentis       0.0939   343
-    ##  5 8 - PDR with edema Black          Avastin        0.588    446
-    ##  6 8 - PDR with edema Black          combo          0.182    138
-    ##  7 8 - PDR with edema Black          Eylea          0.146    111
-    ##  8 8 - PDR with edema Black          Lucentis       0.0831    63
-    ##  9 8 - PDR with edema Hispanic       Avastin        0.678    729
-    ## 10 8 - PDR with edema Hispanic       combo          0.156    168
+    ##  1 8 - PDR with edema White          Avastin        0.502   1830
+    ##  2 8 - PDR with edema White          Eylea          0.207    755
+    ##  3 8 - PDR with edema White          Lucentis       0.0945   345
+    ##  4 8 - PDR with edema White          combo          0.197    719
+    ##  5 8 - PDR with edema Black          Avastin        0.590    443
+    ##  6 8 - PDR with edema Black          Eylea          0.142    107
+    ##  7 8 - PDR with edema Black          Lucentis       0.0812    61
+    ##  8 8 - PDR with edema Black          combo          0.186    140
+    ##  9 8 - PDR with edema Hispanic       Avastin        0.684    735
+    ## 10 8 - PDR with edema Hispanic       Eylea          0.108    116
     ## # … with 98 more rows
 
 ``` r
@@ -5839,7 +6028,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-117-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and race
@@ -5856,7 +6045,7 @@ drug_sev_cat_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-109-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and race
@@ -5874,10 +6063,10 @@ drug_sev_cat_race %>%
   )
 ```
 
-    ## geom_path: Each group consists of only one observation. Do you need to
-    ## adjust the group aesthetic?
+    ## `geom_line()`: Each group consists of only one observation.
+    ## ℹ Do you need to adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-110-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-119-1.png)<!-- -->
 
 #### Likelihood of drug received by baseline VA and race (given that patient recieved anti-vegf treatment)
 
@@ -5894,23 +6083,23 @@ drug_va_race <-
   select(baseline_va_r10, race_ethnicity, vegf_group_365, prop, count = n)
 
 drug_va_race %>% 
-  arrange(desc(baseline_va_r10, race_ethnicity))
+  arrange(desc(baseline_va_r10))
 ```
 
-    ## # A tibble: 94 × 5
-    ##    baseline_va_r10 race_ethnicity vegf_group_365   prop count
-    ##              <dbl> <ord>          <chr>           <dbl> <int>
-    ##  1             100 Black          Eylea          1          2
-    ##  2             100 Hispanic       Avastin        1          1
-    ##  3              90 White          Avastin        0.452     19
-    ##  4              90 White          combo          0.0952     4
-    ##  5              90 White          Eylea          0.238     10
-    ##  6              90 White          Lucentis       0.214      9
-    ##  7              90 Black          Avastin        0.4        2
-    ##  8              90 Black          combo          0.2        1
-    ##  9              90 Black          Eylea          0.2        1
-    ## 10              90 Black          Lucentis       0.2        1
-    ## # … with 84 more rows
+    ## # A tibble: 93 × 5
+    ##    baseline_va_r10 race_ethnicity vegf_group_365  prop count
+    ##              <dbl> <ord>          <chr>          <dbl> <int>
+    ##  1             100 Black          Eylea          1         1
+    ##  2             100 Hispanic       Avastin        1         1
+    ##  3              90 White          Avastin        0.521    25
+    ##  4              90 White          Eylea          0.188     9
+    ##  5              90 White          Lucentis       0.188     9
+    ##  6              90 White          combo          0.104     5
+    ##  7              90 Black          Avastin        0.5       3
+    ##  8              90 Black          Eylea          0.167     1
+    ##  9              90 Black          Lucentis       0.167     1
+    ## 10              90 Black          combo          0.167     1
+    ## # … with 83 more rows
 
 ``` r
 # Graphing likelihood of first drug type by severity and race
@@ -5928,7 +6117,7 @@ drug_va_race %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-112-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-121-1.png)<!-- -->
 
 #### Likelihood of drug received by severity score CATEGORY and insurance (given that patient recieved anti-vegf treatment)
 
@@ -5945,22 +6134,22 @@ drug_sev_cat_insurance <-
   select(vision_category, insurance, vegf_group_365, prop, count = n)
 
 drug_sev_cat_insurance %>% 
-  arrange(desc(vision_category, insurance))
+  arrange(desc(vision_category))
 ```
 
     ## # A tibble: 107 × 5
     ##    vision_category    insurance vegf_group_365   prop count
     ##    <chr>              <ord>     <chr>           <dbl> <int>
-    ##  1 8 - PDR with edema Private   Avastin        0.535    824
-    ##  2 8 - PDR with edema Private   combo          0.192    296
-    ##  3 8 - PDR with edema Private   Eylea          0.182    281
-    ##  4 8 - PDR with edema Private   Lucentis       0.0909   140
-    ##  5 8 - PDR with edema Medicare  Avastin        0.528   1561
-    ##  6 8 - PDR with edema Medicare  combo          0.185    547
-    ##  7 8 - PDR with edema Medicare  Eylea          0.197    583
-    ##  8 8 - PDR with edema Medicare  Lucentis       0.0890   263
-    ##  9 8 - PDR with edema Medicaid  Avastin        0.680    329
-    ## 10 8 - PDR with edema Medicaid  combo          0.151     73
+    ##  1 8 - PDR with edema Private   Avastin        0.530    819
+    ##  2 8 - PDR with edema Private   Eylea          0.183    283
+    ##  3 8 - PDR with edema Private   Lucentis       0.0920   142
+    ##  4 8 - PDR with edema Private   combo          0.194    300
+    ##  5 8 - PDR with edema Medicare  Avastin        0.530   1561
+    ##  6 8 - PDR with edema Medicare  Eylea          0.192    565
+    ##  7 8 - PDR with edema Medicare  Lucentis       0.0879   259
+    ##  8 8 - PDR with edema Medicare  combo          0.190    561
+    ##  9 8 - PDR with edema Medicaid  Avastin        0.683    330
+    ## 10 8 - PDR with edema Medicaid  Eylea          0.126     61
     ## # … with 97 more rows
 
 ``` r
@@ -5983,7 +6172,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-114-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-123-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity and insurance
@@ -6001,7 +6190,7 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-115-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-124-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Bevacizumab as first treatment by severity and insurance
@@ -6020,10 +6209,10 @@ drug_sev_cat_insurance %>%
   )
 ```
 
-    ## geom_path: Each group consists of only one observation. Do you need to
-    ## adjust the group aesthetic?
+    ## `geom_line()`: Each group consists of only one observation.
+    ## ℹ Do you need to adjust the group aesthetic?
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-116-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-125-1.png)<!-- -->
 
 #### Drug received by race and insurance
 
@@ -6045,23 +6234,23 @@ drug_sev_race_ins <-
   select(severity_score, race_ethnicity, insurance, vegf_group_28, prop, count = n)
 
 drug_sev_race_ins %>% 
-  arrange(desc(severity_score, race_ethnicity, insurance))
+  arrange(desc(severity_score))
 ```
 
-    ## # A tibble: 563 × 6
+    ## # A tibble: 560 × 6
     ##    severity_score race_ethnicity insurance       vegf_group_28  prop count
     ##             <dbl> <ord>          <ord>           <chr>         <dbl> <int>
     ##  1             85 White          Private         Avastin       1         7
-    ##  2             85 White          Medicare        Avastin       0.571     4
+    ##  2             85 White          Medicare        Avastin       0.625     5
     ##  3             85 White          Medicaid        Avastin       1         1
     ##  4             85 White          Unknown/Missing Avastin       1         1
-    ##  5             85 White          Medicare        Eylea         0.286     2
-    ##  6             85 White          Medicare        Lucentis      0.143     1
-    ##  7             85 Black          Private         Avastin       1         6
+    ##  5             85 White          Medicare        Eylea         0.25      2
+    ##  6             85 White          Medicare        Lucentis      0.125     1
+    ##  7             85 Black          Private         Avastin       1         5
     ##  8             85 Black          Medicare        Avastin       1         6
     ##  9             85 Black          Medicaid        Lucentis      1         1
     ## 10             85 Hispanic       Private         Avastin       0.5       1
-    ## # … with 553 more rows
+    ## # … with 550 more rows
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicare FFS  insurance
@@ -6081,7 +6270,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-127-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and Medicaid insurance
@@ -6102,7 +6291,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-119-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-128-1.png)<!-- -->
 
 ``` r
 # Graphing likelihood of Eylea as first treatment by severity, race, and private insurance
@@ -6123,7 +6312,7 @@ drug_sev_race_ins %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-120-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-129-1.png)<!-- -->
 
 ``` r
 # Calculate likelihood of drug by severity score, race, baseline va (given that patient received antivegf treatment)
@@ -6157,7 +6346,7 @@ drug_sev_race_va %>%
   ) 
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-122-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-131-1.png)<!-- -->
 
 #### Severity vs. vision
 
@@ -6174,7 +6363,8 @@ severity_race_vision <-
   arrange(desc(avg_severity))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_vision
@@ -6184,16 +6374,16 @@ severity_race_vision
     ## # Groups:   race_ethnicity [3]
     ##    race_ethnicity baseline_va_letter avg_severity count
     ##    <ord>                       <dbl>        <dbl> <int>
-    ##  1 Hispanic                       40         65.6   140
-    ##  2 Hispanic                       35         64.1   373
-    ##  3 Hispanic                       50         64.0   348
-    ##  4 Hispanic                       55         63.9   355
-    ##  5 Hispanic                       61         63.3   616
-    ##  6 Hispanic                       85         62.5   374
-    ##  7 White                          45         62.4   161
-    ##  8 Hispanic                       65         62.3   847
-    ##  9 Black                          35         62.2   317
-    ## 10 Hispanic                       58         62.1   381
+    ##  1 Hispanic                       40         65.3   133
+    ##  2 Hispanic                       55         64.0   356
+    ##  3 Hispanic                       35         64.0   388
+    ##  4 Hispanic                       50         63.7   354
+    ##  5 White                          45         63     167
+    ##  6 Hispanic                       61         62.9   616
+    ##  7 Hispanic                       65         62.7   838
+    ##  8 Hispanic                       58         62.4   390
+    ##  9 White                          26         62.4   137
+    ## 10 Black                          35         62.1   325
     ## # … with 26 more rows
 
 ``` r
@@ -6212,7 +6402,7 @@ severity_race_vision %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-124-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-133-1.png)<!-- -->
 
 Hispanic people are more likely to have a higher starting severity score
 at all levels of baseline visual acuity, as compared to Black, Asian,
@@ -6229,7 +6419,8 @@ severity_race_vision_flip <-
   arrange(desc(avg_va))
 ```
 
-    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'race_ethnicity'. You can override using
+    ## the `.groups` argument.
 
 ``` r
 severity_race_vision_flip %>%
@@ -6245,7 +6436,7 @@ severity_race_vision_flip %>%
   )
 ```
 
-![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-125-1.png)<!-- -->
+![](DR_Analysis_Main_files/figure-gfm/unnamed-chunk-134-1.png)<!-- -->
 
 ## Regression
 
