@@ -10,6 +10,7 @@ output:
 ---
 
 
+
 ## Setup
 
 #### Libraries and data import
@@ -151,7 +152,6 @@ tbl_data <-
     )
   )
 
-tbl_data
 ```
 
 
@@ -606,8 +606,6 @@ Interpretation:
 Notably, in this regression, all of these values have p values < .01 (and for all but Medicare patients, < .001)
 
 
-
-
 #### Bevacizumab Regression: Interaction model between insurance x race
 
 ```{r}
@@ -727,7 +725,55 @@ Interpretation:
 * There are also significant differences in treatment between Black and Hispanic patients who are on Medicare and Medicaid.
 
 
+####Avastin Regression Forest Plot to present results from 20/50 or worse regression: 
+```{r}
 
+summary(avastin_3.logm)
+
+#Extract values from regression output
+avastin_use_20_50 <- summary(avastin_3.logm)$coefficients[1:13,]
+
+#Convert values into data frame
+avastin_use_20_50 = as.data.frame(avastin_use_20_50)
+avastin_use_20_50 <- tibble::rownames_to_column(avastin_use_20_50, "FACTOR")
+
+#Create limits for values
+avastin_use_20_50$up_error = avastin_use_20_50$Estimate + 1.96*avastin_use_20_50$`Std. Error`
+avastin_use_20_50$down_error = avastin_use_20_50$Estimate - 1.96*avastin_use_20_50$`Std. Error`
+
+#Calculate odds ratios and confidence intervals
+avastin_use_20_50$odds <- exp(avastin_use_20_50$Estimate)
+
+avastin_use_20_50$upper_limit = exp(avastin_use_20_50$up_error)
+avastin_use_20_50$lower_limit = exp(avastin_use_20_50$down_error)
+
+avastin_use_20_50$FACTOR_clean <- c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "Unknown Gender (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Unknown Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score")
+
+#avastin_use_20_50$FACTOR_clean <- factor(avastin_use_20_50$FACTOR_clean, levels = c("Intercept", "Black (rel to White)", "Hispanic (rel to White)", "Medicare (rel to Private)", "Medicaid (rel to Private)", "Male (rel to Female)", "Unknown Gender (rel to Female)", "DR Diag. Age", "Former Smoker (rel to Non-Smoker)", "Unknown Smoker (rel to Non-Smoker)", "Current Smoker (rel to Non-Smoker)", "Baseline VA", "Severity Score"))
+
+avastin_use_20_50$FACTOR_clean <- factor(avastin_use_20_50$FACTOR_clean, levels = c("Severity Score", "Baseline VA","Current Smoker (rel to Non-Smoker)","Unknown Smoker (rel to Non-Smoker)",  "Former Smoker (rel to Non-Smoker)", "DR Diag. Age",  "Unknown Gender (rel to Female)", "Male (rel to Female)","Medicaid (rel to Private)", "Medicare (rel to Private)", "Hispanic (rel to White)","Black (rel to White)","Intercept"))
+
+
+
+View(avastin_use_20_50)
+
+plot_forest_avastin_use_20_50 <- 
+  ggplot(avastin_use_20_50,aes(y = FACTOR_clean, x = odds))+
+  geom_point()+
+  geom_segment(aes(x = lower_limit, xend = upper_limit, yend = FACTOR_clean))+
+  geom_vline(lty=2, aes(xintercept=1), colour = 'red') +
+  labs(y= "Factor", x = "Odds of Receiving Bevacizumab", title = "Factors Associated with Bevacizumab Treatment") + 
+  theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    # remove background lines
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank()
+  )
+
+plot_forest_avastin_use_20_50
+
+```
 
 ## Regression Y: Using No-Intercept Model to Determine Variables that influence likelihood of receiving Bevacizumab treatment
 ```{r}
@@ -834,6 +880,7 @@ Medicaid_avastin_logreg <-
 #Extract values from regression output
 bev_private <- summary(Private_avastin_logreg)$coefficients[1:9,]
 
+View(bev_private)
 #Convert values into data frame
 bev_private = as.data.frame(bev_private)
 bev_private <- tibble::rownames_to_column(bev_private, "FACTOR")
